@@ -1,17 +1,24 @@
 {
   "name": "canvapps-vscode",
   "displayName": "CanvApps - Canvas UI Support",
-  "description": "Language support, syntax highlighting, and snippets for CanvApps .cvs Single-File Components",
+  "description": "Language support, syntax highlighting, go-to-definition, and autocompletion for CanvApps .cvs Single-File Components",
   "version": "0.1.0",
   "publisher": "canvapps",
   "license": "MIT",
   "icon": "icon.png",
+  "main": "./dist/extension.js",
+  "activationEvents": [
+    "onLanguage:canvapps"
+  ],
   "repository": {
     "type": "git",
     "url": "https://github.com/Erickgiber/CanvApps"
   },
   "engines": {
     "vscode": "^1.75.0"
+  },
+  "scripts": {
+    "build": "esbuild src/extension.ts --bundle --outfile=dist/extension.js --external:vscode --format=cjs --platform=node"
   },
   "categories": [
     "Programming Languages",

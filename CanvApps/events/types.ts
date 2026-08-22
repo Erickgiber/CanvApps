@@ -9,14 +9,21 @@ export type UIEventType =
   | 'pointermove'
   | 'pointerenter'
   | 'pointerleave'
+  | 'pointerover'
+  | 'pointerout'
   | 'pointercancel'
   | 'click'
   | 'dblclick'
+  | 'hover'
   | 'wheel'
   | 'focus'
   | 'blur'
   | 'keydown'
-  | 'keyup';
+  | 'keyup'
+  | 'keypress'
+  | 'input'
+  | 'change'
+  | 'submit';
 
 /**
  * Event object passed to CanvApps pointer event listeners.

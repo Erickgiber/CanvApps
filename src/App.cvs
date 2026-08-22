@@ -85,25 +85,11 @@
     </view>
   </view>
 
-  <!-- 2. Hero Presentation Banner -->
-  <!-- <view width="100%" flexDirection="column" alignItems="center" gap="2" padding="[2, 0]">
-    <text fontSize="22" fontWeight="bold" color="#0f172a" textAlign="center">
-      High-Performance Canvas Architecture
-    </text>
-    <text fontSize="13" color="#64748b" textAlign="center">
-      Zero DOM overhead. Mathematical Flexbox solving and hardware acceleration in pure TypeScript.
-    </text>
-  </view> -->
-
-  <!-- 3. Top Stacked Container (Width: 100%): Reactive State Engine -->
+  <!-- 2. Top Stacked Container (Width: 100%): Reactive State Engine -->
   <view width="100%" backgroundColor="#ffffff" borderRadius="16" borderWidth="1" borderColor="#e2e8f0" padding="18" flexDirection="column" gap="12">
     <view flexDirection="row" justifyContent="space-between" alignItems="center">
       <view flexDirection="column" gap="2">
         <text fontSize="15" fontWeight="bold" color="#0f172a">⚡ Reactive State & Signals</text>
-        <text fontSize="12" color="#64748b">Fine-grained memory signals with zero virtual DOM diffing</text>
-      </view>
-      <view padding="[4, 10]" backgroundColor="#f1f5f9" borderRadius="8">
-        <text fontSize="11" fontWeight="600" color="#334155">DOM OVERHEAD: 0%</text>
       </view>
     </view>
 
@@ -141,7 +127,7 @@
     <view width="100%" flexDirection="column" gap="6" flexGrow="1">
       <view @each="milestones.value as item, index" width="100%" backgroundColor="#f8fafc" borderRadius="8" padding="[9, 14]" borderWidth="1" borderColor="#e2e8f0" flexDirection="row" alignItems="center" justifyContent="space-between">
         <text fontSize="13" color="#1e293b" flexGrow="1">• {{ item.text }}</text>
-        <button label="✕" backgroundColor="#fee2e2" hoverBackgroundColor="#fecaca" labelColor="#dc2626" width="28" height="28" borderRadius="14" fontSize="12" @click="() => removeMilestone(item.id)" />
+        <button @ label="✕" backgroundColor="#fee2e2" hoverBackgroundColor="#fecaca" labelColor="#dc2626" width="28" height="28" borderRadius="14" fontSize="12" @click="() => removeMilestone(item.id)" />
       </view>
     </view>
   </view>

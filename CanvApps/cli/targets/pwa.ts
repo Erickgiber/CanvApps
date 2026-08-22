@@ -69,14 +69,14 @@ export class PWATargetBuilder {
       orientation: pwa.orientation || 'any',
       icons: pwa.icons || [
         {
-          src: 'https://via.placeholder.com/192x192/0284c7/ffffff?text=App',
-          sizes: '192x192',
-          type: 'image/png',
-          purpose: 'any maskable',
+          src: './favicon.svg',
+          sizes: 'any',
+          type: 'image/svg+xml',
+          purpose: 'any',
         },
         {
-          src: 'https://via.placeholder.com/512x512/0284c7/ffffff?text=App',
-          sizes: '512x512',
+          src: './icon.png',
+          sizes: '256x256',
           type: 'image/png',
           purpose: 'any maskable',
         },

@@ -37,6 +37,7 @@
     "build": "npm run build:lib",
     "build:lib": "tsc --noEmit && vite build",
     "build:app": "tsx CanvApps/cli/bin.ts build",
+    "build:preview-code": "tsx CanvApps/cli/bin.ts preview-code",
     "preview": "vite preview --outDir dist-app",
     "preview:app": "vite preview --outDir dist-app"
   },

@@ -8,6 +8,7 @@ dist/
 dist-app/
 dist-demo/
 dist-ssr/
+preview-code/
 *.tsbuildinfo
 
 # Capacitor / Native Mobile Builds

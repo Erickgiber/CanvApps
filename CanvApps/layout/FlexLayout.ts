@@ -72,8 +72,7 @@ export class FlexLayout {
 
     const isRow =
       element.styles.flexDirection === 'row' ||
-      element.styles.flexDirection === 'row-reverse' ||
-      !element.styles.flexDirection;
+      element.styles.flexDirection === 'row-reverse';
 
     const isReverse =
       element.styles.flexDirection === 'row-reverse' ||

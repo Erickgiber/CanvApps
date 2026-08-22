@@ -42,19 +42,26 @@ export default createComponent;
     return `${prefix}_${++this.idCounter}`;
   }
 
-  private generateNode(node: ASTNode): { code: string; rootVar: string } {
+  private generateNode(node: ASTNode, inLoop = false): { code: string; rootVar: string } {
     if (node.type === 'text') {
       const textVar = this.nextId('textNode');
       if (node.isDynamic) {
-        return {
-          code: `
+        if (inLoop) {
+          return {
+            code: `  const ${textVar} = new UIText(String(${node.content}));\n`,
+            rootVar: textVar,
+          };
+        } else {
+          return {
+            code: `
   const ${textVar} = new UIText('');
   effect(() => {
     ${textVar}.setText(String(${node.content}));
   });
 `,
-          rootVar: textVar,
-        };
+            rootVar: textVar,
+          };
+        }
       } else {
         return {
           code: `  const ${textVar} = new UIText(${JSON.stringify(node.content)});\n`,
@@ -65,6 +72,32 @@ export default createComponent;
 
     // Element node
     const element = node as ASTElement;
+
+    // Handle Directives (*for / @each) BEFORE generating local element code
+    if (element.directives.forLoop) {
+      const { item, index = 'index', iterable } = element.directives.forLoop;
+      const listContainer = this.nextId('forContainer');
+      const itemTemplate = { ...element, directives: {} };
+      const { code: itemCode, rootVar: itemRoot } = this.generateNode(itemTemplate, true);
+
+      return {
+        code: `
+  const ${listContainer} = new UIView({ width: '100%', flexDirection: 'column', gap: 6 });
+  effect(() => {
+    ${listContainer}.removeAllChildren();
+    const list = ${iterable};
+    if (Array.isArray(list)) {
+      list.forEach((${item}, ${index}) => {
+${itemCode}
+        ${listContainer}.addChild(${itemRoot});
+      });
+    }
+  });
+`,
+        rootVar: listContainer,
+      };
+    }
+
     const elVar = this.nextId(element.tag);
     const codeLines: string[] = [];
 
@@ -72,14 +105,17 @@ export default createComponent;
     const { staticStyles, dynamicProps, events } = this.classifyProps(element.props);
 
     if (element.tag === 'text') {
-      // Find text children if any
       const textChild = element.children.find((c) => c.type === 'text');
       const label = textChild ? textChild.content : '';
       const isDynamic = textChild?.isDynamic;
 
       codeLines.push(`  const ${elVar} = new UIText(${isDynamic ? "''" : JSON.stringify(label)}, ${JSON.stringify(staticStyles)});`);
       if (isDynamic && textChild) {
-        codeLines.push(`  effect(() => { ${elVar}.setText(String(${textChild.content})); });`);
+        if (inLoop) {
+          codeLines.push(`  ${elVar}.setText(String(${textChild.content}));`);
+        } else {
+          codeLines.push(`  effect(() => { ${elVar}.setText(String(${textChild.content})); });`);
+        }
       }
     } else if (element.tag === 'button') {
       const textChild = element.children.find((c) => c.type === 'text');
@@ -92,50 +128,61 @@ export default createComponent;
       codeLines.push(`  const ${elVar} = new UIView(${JSON.stringify(staticStyles)});`);
     }
 
-    // 2. Attach Event Handlers (@click, @pointerdown, etc.)
+    // 2. Attach Event Handlers (@click, @pointerdown, @submit, etc.)
     for (const evt of events) {
-      codeLines.push(`  ${elVar}.on(${JSON.stringify(evt.name)}, (e) => { ${evt.value}(e); });`);
+      const val = evt.value.trim();
+      if (val.includes('=>')) {
+        codeLines.push(`  ${elVar}.on(${JSON.stringify(evt.name)}, (${val}) as any);`);
+      } else if (val.endsWith(')')) {
+        codeLines.push(`  ${elVar}.on(${JSON.stringify(evt.name)}, () => { ${val}; });`);
+      } else {
+        codeLines.push(`  ${elVar}.on(${JSON.stringify(evt.name)}, (e) => { ${val}(e); });`);
+      }
     }
 
-    // 3. Attach Dynamic Style Bindings (:prop="expr")
+    // 3. Attach Dynamic Bindings (:prop="expr")
     for (const dyn of dynamicProps) {
-      codeLines.push(`
+      if (inLoop) {
+        if (element.tag === 'input' && dyn.name === 'value') {
+          codeLines.push(`  ${elVar}.setValue(String(${dyn.value} ?? ''));`);
+        } else if (element.tag === 'text' && dyn.name === 'text') {
+          codeLines.push(`  ${elVar}.setText(String(${dyn.value} ?? ''));`);
+        } else if (element.tag === 'button' && dyn.name === 'label') {
+          codeLines.push(`  ${elVar}.setLabel(String(${dyn.value} ?? ''));`);
+        } else {
+          codeLines.push(`  ${elVar}.setStyle({ [${JSON.stringify(dyn.name)}]: ${dyn.value} });`);
+        }
+      } else {
+        if (element.tag === 'input' && dyn.name === 'value') {
+          codeLines.push(`
+  effect(() => {
+    ${elVar}.setValue(String(${dyn.value} ?? ''));
+  });`);
+        } else if (element.tag === 'text' && dyn.name === 'text') {
+          codeLines.push(`
+  effect(() => {
+    ${elVar}.setText(String(${dyn.value} ?? ''));
+  });`);
+        } else if (element.tag === 'button' && dyn.name === 'label') {
+          codeLines.push(`
+  effect(() => {
+    ${elVar}.setLabel(String(${dyn.value} ?? ''));
+  });`);
+        } else {
+          codeLines.push(`
   effect(() => {
     ${elVar}.setStyle({ [${JSON.stringify(dyn.name)}]: ${dyn.value} });
   });`);
+        }
+      }
     }
 
-    // 4. Handle Directives (*if, *for) & Children
-    if (element.directives.forLoop) {
-      const { item, index = 'index', iterable } = element.directives.forLoop;
-      const listContainer = this.nextId('forContainer');
-      const itemTemplate = { ...element, directives: {} };
-      const { code: itemCode, rootVar: itemRoot } = this.generateNode(itemTemplate);
-
-      return {
-        code: `
-  const ${listContainer} = new UIView({ width: '100%', flexDirection: 'column' });
-  effect(() => {
-    ${listContainer}.removeAllChildren();
-    const list = ${iterable};
-    if (Array.isArray(list)) {
-      list.forEach((${item}, ${index}) => {
-        ${itemCode}
-        ${listContainer}.addChild(${itemRoot});
-      });
-    }
-  });
-`,
-        rootVar: listContainer,
-      };
-    }
-
-    // Process non-text children (text children are handled inside <text> or <button>)
+    // Process non-text children
     for (const child of element.children) {
       if (child.type === 'text' && (element.tag === 'text' || element.tag === 'button')) {
         continue;
       }
-      const { code: childCode, rootVar: childVar } = this.generateNode(child);
+      const { code: childCode, rootVar: childVar } = this.generateNode(child, inLoop);
       codeLines.push(childCode);
       codeLines.push(`  ${elVar}.addChild(${childVar});`);
     }
@@ -161,7 +208,7 @@ export default createComponent;
       } else if (prop.isDynamic) {
         dynamicProps.push(prop);
       } else {
-        // Parse numbers, booleans, strings
+        // Parse numbers, booleans, arrays, strings
         let val: any = prop.value;
         if (!isNaN(Number(val)) && val !== '') {
           val = Number(val);
@@ -169,6 +216,12 @@ export default createComponent;
           val = true;
         } else if (val === 'false') {
           val = false;
+        } else if (typeof val === 'string' && val.startsWith('[') && val.endsWith(']')) {
+          try {
+            val = JSON.parse(val);
+          } catch {
+            // fallback
+          }
         }
         staticStyles[prop.name] = val;
       }

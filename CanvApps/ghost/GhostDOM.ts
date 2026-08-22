@@ -9,7 +9,8 @@ export interface GhostTarget extends UIElement {
   setValue?(val: string): void;
   getPlaceholder?(): string;
   getInputType?(): string;
-  onNativeInput?(val: string): void;
+  getSelectionRange?(): { start: number; end: number };
+  onNativeInput?(val: string, cursorIndex?: number): void;
   onNativeKeyDown?(e: KeyboardEvent): void;
   onNativeBlur?(): void;
   onNativeFocus?(): void;
@@ -112,8 +113,18 @@ export class GhostDOM {
     });
 
     if (ghost instanceof HTMLInputElement || ghost instanceof HTMLTextAreaElement) {
-      if (target.getValue && ghost.value !== target.getValue()) {
-        ghost.value = target.getValue() ?? '';
+      const currentTargetVal = target.getValue ? target.getValue() ?? '' : '';
+      if (ghost.value !== currentTargetVal) {
+        const prevStart = ghost.selectionStart;
+        const prevEnd = ghost.selectionEnd;
+        ghost.value = currentTargetVal;
+        if (prevStart !== null && prevEnd !== null && typeof document !== 'undefined' && document.activeElement === ghost) {
+          try {
+            ghost.setSelectionRange(prevStart, prevEnd);
+          } catch {
+            // ignore non-text inputs
+          }
+        }
       }
       if (target.getPlaceholder) {
         ghost.placeholder = target.getPlaceholder() ?? '';
@@ -128,11 +139,12 @@ export class GhostDOM {
     if (ghost instanceof HTMLInputElement || ghost instanceof HTMLTextAreaElement) {
       ghost.addEventListener('input', () => {
         const val = ghost.value;
+        const cursor = ghost.selectionStart ?? val.length;
         if (target.setValue) {
           target.setValue(val);
         }
         if (target.onNativeInput) {
-          target.onNativeInput(val);
+          target.onNativeInput(val, cursor);
         }
         target.markRenderDirty();
       });
@@ -158,11 +170,14 @@ export class GhostDOM {
         }
       });
 
-      ghost.addEventListener('select', () => {
+      const syncSelection = () => {
         if (target.onSelectionChange && ghost.selectionStart !== null && ghost.selectionEnd !== null) {
           target.onSelectionChange(ghost.selectionStart, ghost.selectionEnd);
         }
-      });
+      };
+      ghost.addEventListener('select', syncSelection);
+      ghost.addEventListener('keyup', syncSelection);
+      ghost.addEventListener('mouseup', syncSelection);
     }
   }
 
@@ -172,6 +187,16 @@ export class GhostDOM {
   public focusTarget(target: GhostTarget): void {
     const ghost = this.ghostElements.get(target.id) || this.register(target);
     ghost.focus();
+    if (ghost instanceof HTMLInputElement || ghost instanceof HTMLTextAreaElement) {
+      if (target.getSelectionRange) {
+        const { start, end } = target.getSelectionRange();
+        try {
+          ghost.setSelectionRange(start, end);
+        } catch {
+          // ignore
+        }
+      }
+    }
   }
 
   /**

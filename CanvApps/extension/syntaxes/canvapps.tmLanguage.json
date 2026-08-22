@@ -172,7 +172,7 @@
       "patterns": [
         {
           "name": "meta.directive.canvapps",
-          "match": "(\\*(?:if|for))\\s*(=)\\s*(\"[^\"]*\"|'[^']*')",
+          "match": "([*@](?:if|for|each)|each)\\s*(=)\\s*(\"[^\"]*\"|'[^']*')",
           "captures": {
             "1": { "name": "keyword.control.directive.canvapps" },
             "2": { "name": "punctuation.separator.key-value.html" },

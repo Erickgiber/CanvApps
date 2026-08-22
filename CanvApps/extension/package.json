@@ -36,6 +36,10 @@
         "extensions": [
           ".cvs"
         ],
+        "icon": {
+          "light": "./icons/canvapps-file.svg",
+          "dark": "./icons/canvapps-file.svg"
+        },
         "configuration": "./language-configuration.json"
       }
     ],

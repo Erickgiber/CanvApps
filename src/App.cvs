@@ -1,49 +1,161 @@
 <script lang="ts">
-  const counter = signal(0);
-  const newTodoText = signal('');
-  const todos = signal<string[]>([
-    'Compile .cvs SFC files with AST parser',
-    'Execute HMR on Canvas UI changes',
-    'Ship multi-target build (SPA, PWA, Capacitor)',
-  ]);
-
-  function handleIncrement() {
-    counter.update((n) => n + 1);
+  interface MilestoneItem {
+    id: number;
+    text: string;
+    isNew?: boolean;
   }
 
-  function handleAddTodo() {
-    const text = newTodoText.value.trim();
-    if (text) {
-      todos.update((list) => [...list, text]);
-      newTodoText.value = '';
+  // 1. Core Application Reactive State (Signals)
+  const cycleCount = signal(42);
+  const taskInput = signal('');
+
+  const milestones = signal<MilestoneItem[]>([
+    { id: 1, text: 'Pure mathematical Flexbox solver (Zero DOM layout)' },
+    { id: 2, text: 'Ghost DOM integration for native mobile keyboards' },
+    { id: 3, text: 'Sub-millisecond fine-grained Signals reactivity' },
+    { id: 4, text: 'Multi-target build orchestrator (SPA, PWA, Capacitor)' },
+  ]);
+
+  // 2. Counter Actions
+  function incrementCycle() {
+    cycleCount.update((n) => n + 1);
+  }
+
+  function decrementCycle() {
+    cycleCount.update((n) => Math.max(0, n - 1));
+  }
+
+  function resetCycles() {
+    cycleCount.value = 0;
+  }
+
+  // 3. Milestone Reactive Actions
+  function onInput(e: any) {
+    taskInput.value = e?.target?.value ?? e?.value ?? '';
+  }
+
+  function handleKeyDown(e: any) {
+    if (e.key === 'Enter') {
+      addMilestone();
     }
   }
 
-  function handleDeleteTodo(index: number) {
-    todos.update((list) => list.filter((_, idx) => idx !== index));
+  function addMilestone() {
+    const val = taskInput.value.trim();
+    if (!val) return;
+
+    // Reactively empty the input state
+    taskInput.value = '';
+
+    const newItem: MilestoneItem = {
+      id: Date.now(),
+      text: val,
+      isNew: true,
+    };
+
+    // Instant insertion with smooth entry state
+    milestones.update((list) => [newItem, ...list]);
+
+    // Settle transition
+    setTimeout(() => {
+      milestones.update((list) =>
+        list.map((m) => (m.id === newItem.id ? { ...m, isNew: false } : m))
+      );
+    }, 350);
+  }
+
+  function removeMilestone(id: number) {
+    // 100% Instant deletion without lag
+    milestones.update((list) => list.filter((m) => m.id !== id));
   }
 </script>
 
-<view width="100%" height="100%" flexDirection="column" alignItems="center" justifyContent="center" padding="32">
-  <view width="540" backgroundColor="#131c2e" borderRadius="16" borderWidth="1" borderColor="#1e293b" padding="28" flexDirection="column" gap="20">
-    
-    <!-- Title & Subtitle -->
-    <view flexDirection="column" alignItems="center" gap="6">
-      <text fontSize="26" fontWeight="bold" color="#38bdf8" textAlign="center">
-        🎨 CanvApps .cvs Compiler
-      </text>
-      <text fontSize="13" color="#64748b" textAlign="center">
-        Native Canvas UI compiled directly from Single-File Component templates.
-      </text>
+<view width="100%" height="100%" flexDirection="column" backgroundColor="#f8fafc" padding="[18, 28]" gap="14">
+  
+  <!-- 1. Top Navbar -->
+  <view width="100%" flexDirection="row" alignItems="center" justifyContent="space-between" padding="[12, 20]" backgroundColor="#ffffff" borderRadius="14" borderWidth="1" borderColor="#e2e8f0">
+    <view flexDirection="row" alignItems="center" gap="12">
+      <text fontSize="18" fontWeight="bold" color="#0f172a">🎨 CanvApps</text>
+      <view padding="[4, 10]" backgroundColor="#f1f5f9" borderRadius="12" borderWidth="1" borderColor="#e2e8f0">
+        <text fontSize="11" fontWeight="600" color="#475569">100% Canvas UI Framework</text>
+      </view>
     </view>
 
-    <!-- Reactive Counter Box -->
-    <view width="100%" backgroundColor="#0f172a" borderRadius="10" padding="16" flexDirection="row" alignItems="center" justifyContent="space-between">
-      <text fontSize="15" fontWeight="600" color="#f8fafc">
-        Total Clicks: {{ counter.value }}
-      </text>
-      <button label="+ Increment" backgroundColor="#0284c7" hoverBackgroundColor="#0369a1" @click="handleIncrement" />
+    <view flexDirection="row" alignItems="center" gap="10">
+      <view padding="[4, 12]" backgroundColor="#ecfdf5" borderRadius="12" borderWidth="1" borderColor="#a7f3d0">
+        <text fontSize="11" fontWeight="600" color="#047857">● 120 FPS Retina</text>
+      </view>
+      <view padding="[4, 12]" backgroundColor="#eff6ff" borderRadius="12" borderWidth="1" borderColor="#bfdbfe">
+        <text fontSize="11" fontWeight="600" color="#1d4ed8">● PWA Ready</text>
+      </view>
     </view>
-
   </view>
+
+  <!-- 2. Hero Presentation Banner -->
+  <view width="100%" flexDirection="column" alignItems="center" gap="2" padding="[2, 0]">
+    <text fontSize="22" fontWeight="bold" color="#0f172a" textAlign="center">
+      High-Performance Canvas Architecture
+    </text>
+    <text fontSize="13" color="#64748b" textAlign="center">
+      Zero DOM overhead. Mathematical Flexbox solving and hardware acceleration in pure TypeScript.
+    </text>
+  </view>
+
+  <!-- 3. Top Stacked Container (Width: 100%): Reactive State Engine -->
+  <view width="100%" backgroundColor="#ffffff" borderRadius="16" borderWidth="1" borderColor="#e2e8f0" padding="18" flexDirection="column" gap="12">
+    <view flexDirection="row" justifyContent="space-between" alignItems="center">
+      <view flexDirection="column" gap="2">
+        <text fontSize="15" fontWeight="bold" color="#0f172a">⚡ Reactive State & Signals</text>
+        <text fontSize="12" color="#64748b">Fine-grained memory signals with zero virtual DOM diffing</text>
+      </view>
+      <view padding="[4, 10]" backgroundColor="#f1f5f9" borderRadius="8">
+        <text fontSize="11" fontWeight="600" color="#334155">DOM OVERHEAD: 0%</text>
+      </view>
+    </view>
+
+    <!-- Counter Row -->
+    <view width="100%" backgroundColor="#f8fafc" borderRadius="12" borderWidth="1" borderColor="#e2e8f0" padding="14" flexDirection="row" alignItems="center" justifyContent="space-between">
+      <view flexDirection="column" gap="2">
+        <text fontSize="10" fontWeight="600" color="#64748b">CYCLE COUNTER</text>
+        <text fontSize="20" fontWeight="bold" color="#2563eb">
+          {{ cycleCount.value }} Total Cycles
+        </text>
+      </view>
+
+      <view flexDirection="row" gap="8">
+        <button label="Decrease" backgroundColor="#ffffff" hoverBackgroundColor="#f1f5f9" labelColor="#334155" borderWidth="1" borderColor="#cbd5e1" padding="[8, 14]" @click="decrementCycle" />
+        <button label="Increment" backgroundColor="#2563eb" hoverBackgroundColor="#1d4ed8" labelColor="#ffffff" padding="[8, 16]" @click="incrementCycle" />
+        <button label="Reset" backgroundColor="#fee2e2" hoverBackgroundColor="#fecaca" labelColor="#dc2626" padding="[8, 12]" @click="resetCycles" />
+      </view>
+    </view>
+  </view>
+
+  <!-- 4. Bottom Stacked Container (Width: 100%): Ghost DOM & Svelte-style Iteration -->
+  <view width="100%" flexGrow="1" backgroundColor="#ffffff" borderRadius="16" borderWidth="1" borderColor="#e2e8f0" padding="18" flexDirection="column" gap="12">
+    <view flexDirection="column" gap="2">
+      <text fontSize="15" fontWeight="bold" color="#0f172a">📱 Ghost DOM & Svelte-Style Iteration</text>
+      <text fontSize="12" color="#64748b">Reactive @each iteration, submit on Enter with automatic input clearing</text>
+    </view>
+
+    <!-- Task Input Bar with Reactive Value Binding and Submit on Enter -->
+    <view width="100%" flexDirection="row" gap="10">
+      <input placeholder="Type a new framework milestone and press Enter..." flexGrow="1" backgroundColor="#f8fafc" color="#0f172a" placeholderColor="#94a3b8" borderColor="#cbd5e1" focusBorderColor="#2563eb" padding="[10, 14]" fontSize="13" :value="taskInput.value" @input="onInput" @keydown="handleKeyDown" @submit="addMilestone" />
+      <button label="+ Add Milestone" backgroundColor="#059669" hoverBackgroundColor="#047857" labelColor="#ffffff" padding="[10, 18]" fontSize="13" @click="addMilestone" />
+    </view>
+
+    <!-- Milestone Stream List with @each rows as row syntax -->
+    <view width="100%" flexDirection="column" gap="6" flexGrow="1">
+      <view @each="milestones.value as item, index" width="100%" backgroundColor="#f8fafc" borderRadius="8" padding="[9, 14]" borderWidth="1" borderColor="#e2e8f0" flexDirection="row" alignItems="center" justifyContent="space-between">
+        <text fontSize="13" color="#1e293b" flexGrow="1">• {{ item.text }}</text>
+        <button label="✕" backgroundColor="#fee2e2" hoverBackgroundColor="#fecaca" labelColor="#dc2626" width="28" height="28" borderRadius="14" fontSize="12" @click="() => removeMilestone(item.id)" />
+      </view>
+    </view>
+  </view>
+
+  <!-- 5. Footer Bar -->
+  <view width="100%" flexDirection="row" alignItems="center" justifyContent="space-between" padding="[4, 4]">
+    <text fontSize="11" color="#64748b">Single-File Component (.cvs) • Pure Canvas 2D Pipeline</text>
+    <text fontSize="11" color="#64748b">Multi-Target Automated Distribution (SPA • PWA • Capacitor)</text>
+  </view>
+
 </view>

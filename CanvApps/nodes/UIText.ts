@@ -146,7 +146,7 @@ export class UIText extends UIElement {
   /**
    * Measures intrinsic text dimensions given maximum constraints.
    */
-  public override measure(availableWidth: number): Size {
+  public override measure(availableWidth: number, _availableHeight = 0): Size {
     const text = this.styles.text ?? '';
     if (!text) {
       return { width: 0, height: 0 };
@@ -215,9 +215,13 @@ export class UIText extends UIElement {
       ctx.textAlign = 'left';
     }
 
+    const totalLinesHeight = lines.length * lineHeight;
+    const innerHeight = Math.max(0, this.layoutRect.height - padding.top - padding.bottom);
+    const verticalStart = padding.top + Math.max(0, (innerHeight - totalLinesHeight) / 2);
     const halfLine = lineHeight / 2;
+
     for (let i = 0; i < lines.length; i++) {
-      const y = padding.top + i * lineHeight + halfLine;
+      const y = verticalStart + i * lineHeight + halfLine;
       ctx.fillText(lines[i], x, y);
     }
 

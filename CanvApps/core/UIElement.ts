@@ -302,8 +302,59 @@ export abstract class UIElement {
    * @returns Calculated intrinsic dimensions.
    */
   public measure(availableWidth: number, availableHeight: number): Size {
-    const width = typeof this.styles.width === 'number' ? this.styles.width : availableWidth;
-    const height = typeof this.styles.height === 'number' ? this.styles.height : availableHeight;
+    const padding = this.getComputedPadding();
+    const innerAvailableW = Math.max(0, availableWidth - padding.left - padding.right);
+    const innerAvailableH = Math.max(0, availableHeight - padding.top - padding.bottom);
+
+    let intrinsicW = 0;
+    let intrinsicH = 0;
+
+    const isColumn = this.styles.flexDirection === 'column' || this.styles.flexDirection === 'column-reverse' || !this.styles.flexDirection;
+    const gap = this.styles.gap ?? 0;
+    const mainGap = isColumn ? (this.styles.rowGap ?? gap) : (this.styles.columnGap ?? gap);
+
+    const flowChildren = this.children.filter(
+      (c) => c.visible && c.styles.display !== 'none' && c.styles.position !== 'absolute'
+    );
+
+    if (flowChildren.length > 0) {
+      if (isColumn) {
+        for (let i = 0; i < flowChildren.length; i++) {
+          const child = flowChildren[i];
+          const childMargin = child.getComputedMargin();
+          const childSize = child.measure(innerAvailableW, innerAvailableH);
+          intrinsicW = Math.max(intrinsicW, childSize.width + childMargin.left + childMargin.right);
+          intrinsicH += childSize.height + childMargin.top + childMargin.bottom;
+          if (i > 0) intrinsicH += mainGap;
+        }
+      } else {
+        for (let i = 0; i < flowChildren.length; i++) {
+          const child = flowChildren[i];
+          const childMargin = child.getComputedMargin();
+          const childSize = child.measure(innerAvailableW, innerAvailableH);
+          intrinsicW += childSize.width + childMargin.left + childMargin.right;
+          intrinsicH = Math.max(intrinsicH, childSize.height + childMargin.top + childMargin.bottom);
+          if (i > 0) intrinsicW += mainGap;
+        }
+      }
+    }
+
+    const width =
+      typeof this.styles.width === 'number'
+        ? this.styles.width
+        : typeof this.styles.width === 'string' && this.styles.width.endsWith('%')
+        ? (parseFloat(this.styles.width) / 100) * availableWidth
+        : intrinsicW > 0
+        ? intrinsicW + padding.left + padding.right
+        : availableWidth;
+
+    const height =
+      typeof this.styles.height === 'number'
+        ? this.styles.height
+        : typeof this.styles.height === 'string' && this.styles.height.endsWith('%')
+        ? (parseFloat(this.styles.height) / 100) * availableHeight
+        : intrinsicH + padding.top + padding.bottom;
+
     return { width, height };
   }
 

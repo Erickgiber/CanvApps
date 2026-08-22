@@ -34,6 +34,7 @@ export class CLIBuilder {
     // 1. Execute Vite Application Bundling
     console.log(`⚡ [Step 1/2]: Compiling Canvas Application & .cvs Components with Vite...`);
     await viteBuild({
+      configFile: false,
       root: cwd,
       plugins: [canvappsPlugin()],
       build: {

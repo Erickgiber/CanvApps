@@ -4,7 +4,7 @@ import createApp from './App.cvs';
 // 1. Initialize CanvApps Engine
 const engine = new Engine({
   container: '#app-container',
-  backgroundColor: '#090d16',
+  backgroundColor: '#f8fafc',
   autoResize: true,
 });
 

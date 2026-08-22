@@ -58,15 +58,20 @@ export class CVSParser {
           return null;
         }
 
-        const isDynamic = content.startsWith('{{') && content.endsWith('}}');
-        const cleanContent = isDynamic
-          ? content.slice(2, -2).trim()
-          : content;
+        const hasInterpolation = content.includes('{{') && content.includes('}}');
+        if (hasInterpolation) {
+          const expr = '`' + content.replace(/\{\{\s*([\s\S]*?)\s*\}\}/g, '${$1}') + '`';
+          return {
+            type: 'text',
+            content: expr,
+            isDynamic: true,
+          };
+        }
 
         return {
           type: 'text',
-          content: cleanContent,
-          isDynamic,
+          content,
+          isDynamic: false,
         };
       }
 
@@ -79,7 +84,17 @@ export class CVSParser {
 
         // Parse attributes
         for (const attr of token.attributes || []) {
-          if (attr.name.startsWith('@')) {
+          if (attr.name === '*if' || attr.name === '@if') {
+            directives.ifCondition = attr.value;
+          } else if (
+            attr.name === '*for' ||
+            attr.name === '@for' ||
+            attr.name === '*each' ||
+            attr.name === '@each' ||
+            attr.name === 'each'
+          ) {
+            directives.forLoop = this.parseForDirective(attr.value);
+          } else if (attr.name.startsWith('@')) {
             props.push({
               name: attr.name.slice(1),
               value: attr.value,
@@ -93,10 +108,6 @@ export class CVSParser {
               isDynamic: true,
               isEvent: false,
             });
-          } else if (attr.name === '*if') {
-            directives.ifCondition = attr.value;
-          } else if (attr.name === '*for') {
-            directives.forLoop = this.parseForDirective(attr.value);
           } else {
             props.push({
               name: attr.name,
@@ -154,6 +165,23 @@ export class CVSParser {
    * Helper to parse *for="item in items" or *for="(item, index) in items"
    */
   private static parseForDirective(value: string): { item: string; index?: string; iterable: string } {
+    // 1. Support Svelte-style "iterable as item" or "iterable as item, index" or "iterable as (item, index)"
+    if (/\bas\b/.test(value)) {
+      const parts = value.split(/\bas\b/);
+      const iterable = parts[0].trim();
+      let rhs = parts[1].trim();
+      if (rhs.startsWith('(') && rhs.endsWith(')')) {
+        rhs = rhs.slice(1, -1).trim();
+      }
+      const subParts = rhs.split(',').map((s) => s.trim());
+      return {
+        item: subParts[0],
+        index: subParts[1],
+        iterable,
+      };
+    }
+
+    // 2. Support standard "item in items" or "(item, index) in items"
     const parts = value.split(/\bin\b/);
     if (parts.length !== 2) {
       return { item: 'item', iterable: value.trim() };
@@ -217,7 +245,7 @@ export class CVSParser {
         }
 
         // Tag opening or self-closing e.g. <view ...> or <input ... />
-        const tagEnd = cleanSrc.indexOf('>', cursor);
+        const tagEnd = this.findTagEnd(cleanSrc, cursor + 1);
         if (tagEnd !== -1) {
           const tagRaw = cleanSrc.slice(cursor + 1, tagEnd);
           const isSelfClosing = tagRaw.endsWith('/');
@@ -300,5 +328,23 @@ export class CVSParser {
     }
 
     return attrs;
+  }
+
+  private static findTagEnd(src: string, start: number): number {
+    let inQuotes = false;
+    let quoteChar = '';
+    for (let i = start; i < src.length; i++) {
+      const char = src[i];
+      if ((char === '"' || char === "'") && !inQuotes) {
+        inQuotes = true;
+        quoteChar = char;
+      } else if (char === quoteChar && inQuotes) {
+        inQuotes = false;
+        quoteChar = '';
+      } else if (char === '>' && !inQuotes) {
+        return i;
+      }
+    }
+    return -1;
   }
 }

@@ -34,9 +34,11 @@
   },
   "scripts": {
     "dev": "vite",
-    "build": "tsc --noEmit && vite build",
+    "build": "npm run build:lib",
+    "build:lib": "tsc --noEmit && vite build",
     "build:app": "tsx CanvApps/cli/bin.ts build",
-    "preview": "vite preview"
+    "preview": "vite preview --outDir dist-app",
+    "preview:app": "vite preview --outDir dist-app"
   },
   "keywords": [
     "canvas",

@@ -1,0 +1,49 @@
+<script lang="ts">
+  const counter = signal(0);
+  const newTodoText = signal('');
+  const todos = signal<string[]>([
+    'Compile .cvs SFC files with AST parser',
+    'Execute HMR on Canvas UI changes',
+    'Ship multi-target build (SPA, PWA, Capacitor)',
+  ]);
+
+  function handleIncrement() {
+    counter.update((n) => n + 1);
+  }
+
+  function handleAddTodo() {
+    const text = newTodoText.value.trim();
+    if (text) {
+      todos.update((list) => [...list, text]);
+      newTodoText.value = '';
+    }
+  }
+
+  function handleDeleteTodo(index: number) {
+    todos.update((list) => list.filter((_, idx) => idx !== index));
+  }
+</script>
+
+<view width="100%" height="100%" flexDirection="column" alignItems="center" justifyContent="center" padding="32">
+  <view width="540" backgroundColor="#131c2e" borderRadius="16" borderWidth="1" borderColor="#1e293b" padding="28" flexDirection="column" gap="20">
+    
+    <!-- Title & Subtitle -->
+    <view flexDirection="column" alignItems="center" gap="6">
+      <text fontSize="26" fontWeight="bold" color="#38bdf8" textAlign="center">
+        🎨 CanvApps .cvs Compiler
+      </text>
+      <text fontSize="13" color="#64748b" textAlign="center">
+        Native Canvas UI compiled directly from Single-File Component templates.
+      </text>
+    </view>
+
+    <!-- Reactive Counter Box -->
+    <view width="100%" backgroundColor="#0f172a" borderRadius="10" padding="16" flexDirection="row" alignItems="center" justifyContent="space-between">
+      <text fontSize="15" fontWeight="600" color="#f8fafc">
+        Total Clicks: {{ counter.value }}
+      </text>
+      <button label="+ Increment" backgroundColor="#0284c7" hoverBackgroundColor="#0369a1" @click="handleIncrement" />
+    </view>
+
+  </view>
+</view>

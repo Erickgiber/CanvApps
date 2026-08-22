@@ -1,0 +1,301 @@
+import { UIElement } from './UIElement';
+import { FlexLayout } from '../layout/FlexLayout';
+import { EventDispatcher } from '../events/EventDispatcher';
+import { GhostDOM, GhostTarget } from '../ghost/GhostDOM';
+
+/**
+ * Options for configuring the CanvApps rendering engine.
+ */
+export interface EngineOptions {
+  /**
+   * Target canvas element or selector string. If omitted, a canvas is created.
+   */
+  canvas?: HTMLCanvasElement | string;
+
+  /**
+   * Parent container element or selector to auto-mount and fit the canvas.
+   */
+  container?: HTMLElement | string;
+
+  /**
+   * Background clear color for each frame (e.g. '#ffffff' or 'transparent').
+   */
+  backgroundColor?: string;
+
+  /**
+   * Manually override device pixel ratio. Defaults to `window.devicePixelRatio`.
+   */
+  dpr?: number;
+
+  /**
+   * Whether to automatically listen for window/container resize events.
+   */
+  autoResize?: boolean;
+}
+
+/**
+ * Central orchestrator managing the Canvas rendering loop, HiDPI / Retina resolution scaling,
+ * dirty-tree layout passes, event dispatching, Ghost DOM accessibility/inputs, and frame repaints.
+ */
+export class Engine {
+  public readonly canvas: HTMLCanvasElement;
+  public readonly ctx: CanvasRenderingContext2D;
+  public readonly events: EventDispatcher;
+  public readonly ghost: GhostDOM;
+
+  private root: UIElement | null = null;
+  private width = 0;
+  private height = 0;
+  private dpr = 1;
+  private backgroundColor: string;
+
+  private rafId: number | null = null;
+  private isRunning = false;
+  private resizeObserver: ResizeObserver | null = null;
+  private isDirty = true;
+
+  constructor(options: EngineOptions = {}) {
+    // 1. Resolve canvas instance
+    if (typeof options.canvas === 'string') {
+      const el = document.querySelector(options.canvas);
+      if (!(el instanceof HTMLCanvasElement)) {
+        throw new Error(`Engine: canvas selector "${options.canvas}" did not match an HTMLCanvasElement.`);
+      }
+      this.canvas = el;
+    } else if (options.canvas instanceof HTMLCanvasElement) {
+      this.canvas = options.canvas;
+    } else {
+      this.canvas = document.createElement('canvas');
+      this.canvas.style.display = 'block';
+    }
+
+    // 2. Initialize 2D rendering context with alpha channel enabled
+    const ctx = this.canvas.getContext('2d', { alpha: true });
+    if (!ctx) {
+      throw new Error('Engine: Failed to acquire 2D Canvas rendering context.');
+    }
+    this.ctx = ctx;
+
+    this.dpr = options.dpr ?? (typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1);
+    this.backgroundColor = options.backgroundColor ?? 'transparent';
+
+    // 3. Mount to container if specified
+    let mountParent: HTMLElement | undefined;
+    if (options.container) {
+      const parent =
+        typeof options.container === 'string'
+          ? document.querySelector(options.container)
+          : options.container;
+      if (parent instanceof HTMLElement) {
+        mountParent = parent;
+        parent.style.position = 'relative'; // Ensure absolute GhostDOM overlays properly
+        parent.appendChild(this.canvas);
+      }
+    }
+
+    // 4. Initialize EventDispatcher & GhostDOM
+    this.events = new EventDispatcher({
+      canvas: this.canvas,
+      getRoot: () => this.root,
+      invalidate: () => this.invalidate(),
+    });
+
+    this.ghost = new GhostDOM(mountParent);
+
+    // 5. Setup auto-resizing
+    if (options.autoResize !== false && typeof window !== 'undefined') {
+      this.setupAutoResize(options.container);
+    } else {
+      this.resize(this.canvas.clientWidth || 800, this.canvas.clientHeight || 600);
+    }
+  }
+
+  /**
+   * Sets or replaces the root element hierarchy.
+   *
+   * @param root The root UIElement.
+   * @returns This engine instance for chaining.
+   */
+  public setRoot(root: UIElement): this {
+    this.root = root;
+    this.root.markLayoutDirty();
+    this.invalidate();
+    return this;
+  }
+
+  /**
+   * Returns the current root element.
+   */
+  public getRoot(): UIElement | null {
+    return this.root;
+  }
+
+  /**
+   * Configures automatic dimension tracking using ResizeObserver and window events.
+   */
+  private setupAutoResize(container?: HTMLElement | string): void {
+    const target =
+      typeof container === 'string'
+        ? document.querySelector(container)
+        : container ?? this.canvas.parentElement ?? document.body;
+
+    if (typeof ResizeObserver !== 'undefined' && target instanceof HTMLElement) {
+      this.resizeObserver = new ResizeObserver((entries) => {
+        for (const entry of entries) {
+          const { width, height } = entry.contentRect;
+          if (width > 0 && height > 0) {
+            this.resize(width, height);
+          }
+        }
+      });
+      this.resizeObserver.observe(target);
+    } else if (typeof window !== 'undefined') {
+      const onResize = () => {
+        const w = window.innerWidth;
+        const h = window.innerHeight;
+        this.resize(w, h);
+      };
+      window.addEventListener('resize', onResize);
+      onResize();
+    }
+  }
+
+  /**
+   * Resizes the canvas backing store accounting for HiDPI/Retina display scale factor.
+   *
+   * @param cssWidth Width in CSS logical pixels.
+   * @param cssHeight Height in CSS logical pixels.
+   */
+  public resize(cssWidth: number, cssHeight: number): void {
+    if (this.width === cssWidth && this.height === cssHeight) {
+      return;
+    }
+
+    this.width = cssWidth;
+    this.height = cssHeight;
+    this.dpr = typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1;
+
+    // Scale physical backing store buffer
+    this.canvas.width = Math.round(cssWidth * this.dpr);
+    this.canvas.height = Math.round(cssHeight * this.dpr);
+
+    // Set CSS display dimensions
+    this.canvas.style.width = `${cssWidth}px`;
+    this.canvas.style.height = `${cssHeight}px`;
+
+    // Invalidate layout and trigger redraw
+    if (this.root) {
+      this.root.markLayoutDirty();
+    }
+    this.invalidate();
+  }
+
+  /**
+   * Marks the engine dirty, ensuring a redraw pass is executed on next animation frame.
+   */
+  public invalidate(): void {
+    this.isDirty = true;
+  }
+
+  /**
+   * Starts the continuous rendering loop.
+   */
+  public start(): this {
+    if (this.isRunning) {
+      return this;
+    }
+    this.isRunning = true;
+
+    const tick = () => {
+      if (!this.isRunning) {
+        return;
+      }
+      this.renderFrame();
+      this.rafId = requestAnimationFrame(tick);
+    };
+
+    this.rafId = requestAnimationFrame(tick);
+    return this;
+  }
+
+  /**
+   * Pauses the rendering loop.
+   */
+  public stop(): this {
+    this.isRunning = false;
+    if (this.rafId !== null) {
+      cancelAnimationFrame(this.rafId);
+      this.rafId = null;
+    }
+    return this;
+  }
+
+  /**
+   * Executes a single layout calculation, ghost DOM synchronization, and canvas render pass if dirty.
+   */
+  public renderFrame(): void {
+    if (!this.root) {
+      return;
+    }
+
+    const needsLayout = this.root.isLayoutDirty || this.isDirty;
+    const needsRender = this.root.isRenderDirty || this.isDirty;
+
+    if (!needsLayout && !needsRender) {
+      return;
+    }
+
+    // 1. Layout pass
+    if (needsLayout) {
+      FlexLayout.calculateLayout(this.root, this.width, this.height);
+      this.syncGhostDOM(this.root);
+    }
+
+    // 2. Clear canvas with retina scaling
+    this.ctx.save();
+    this.ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
+
+    if (this.backgroundColor && this.backgroundColor !== 'transparent') {
+      this.ctx.fillStyle = this.backgroundColor;
+      this.ctx.fillRect(0, 0, this.width, this.height);
+    } else {
+      this.ctx.clearRect(0, 0, this.width, this.height);
+    }
+
+    // 3. Render tree
+    this.root.render(this.ctx);
+
+    this.ctx.restore();
+
+    this.isDirty = false;
+  }
+
+  /**
+   * Recursively discovers and updates GhostDOM targets across the element hierarchy.
+   */
+  private syncGhostDOM(element: UIElement): void {
+    if ('getGhostType' in element) {
+      this.ghost.register(element as unknown as GhostTarget);
+    }
+
+    for (const child of element.children) {
+      if (child.visible && child.styles.display !== 'none') {
+        this.syncGhostDOM(child);
+      }
+    }
+  }
+
+  /**
+   * Cleans up observers, stops rendering, and detaches listeners.
+   */
+  public destroy(): void {
+    this.stop();
+    this.events.destroy();
+    this.ghost.destroy();
+    if (this.resizeObserver) {
+      this.resizeObserver.disconnect();
+      this.resizeObserver = null;
+    }
+    this.root = null;
+  }
+}

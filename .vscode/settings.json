@@ -1,0 +1,9 @@
+{
+  "files.associations": {
+    "*.cvs": "canvapps"
+  },
+  "emmet.includeLanguages": {
+    "canvapps": "html",
+    "cvs": "html"
+  }
+}

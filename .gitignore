@@ -1,0 +1,55 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Build Outputs
+dist/
+dist-app/
+dist-demo/
+dist-ssr/
+*.tsbuildinfo
+
+# Capacitor / Native Mobile Builds
+android/
+ios/
+www/
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Environment and Local Configs
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Editor & System Files
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# IDE Directories
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+*.bak
+
+# Temporary / Cache Files
+.vite-temp/
+.turbo/
+.parcel-cache/

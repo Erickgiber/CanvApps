@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+  <defs>
+    <!-- Background Gradient -->
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#090d16" />
+      <stop offset="100%" stop-color="#131c2e" />
+    </linearGradient>
+
+    <!-- Vibrant Brand Gradients -->
+    <linearGradient id="primaryGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38bdf8" />
+      <stop offset="50%" stop-color="#0284c7" />
+      <stop offset="100%" stop-color="#6366f1" />
+    </linearGradient>
+
+    <linearGradient id="accentGrad" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#06b6d4" />
+      <stop offset="100%" stop-color="#3b82f6" />
+    </linearGradient>
+
+    <!-- Subtle Glow Filter -->
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="8" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+  </defs>
+
+  <!-- Container Base with Rounded Squircle -->
+  <rect x="8" y="8" width="240" height="240" rx="54" fill="url(#bgGrad)" stroke="#1e293b" stroke-width="3" />
+
+  <!-- Subtle Canvas Grid Pattern -->
+  <path d="M48 96 h160 M48 160 h160 M96 48 v160 M160 48 v160" stroke="#1e293b" stroke-width="1.5" stroke-dasharray="4,4" opacity="0.6" />
+
+  <!-- Glowing Canvas Frame / Layer Icon -->
+  <g filter="url(#glow)">
+    <!-- Stylized Modern 'C' and Canvas View Layers -->
+    <!-- Top-Right Anchor Point -->
+    <circle cx="176" cy="80" r="10" fill="#38bdf8" />
+    
+    <!-- Dynamic 'C' Curve / Frame -->
+    <path d="M 166 80 
+             H 104 
+             A 32 32 0 0 0 72 112 
+             V 144 
+             A 32 32 0 0 0 104 176 
+             H 166" 
+          fill="none" 
+          stroke="url(#primaryGrad)" 
+          stroke-width="22" 
+          stroke-linecap="round" 
+          stroke-linejoin="round" />
+
+    <!-- Bottom-Right Anchor Point -->
+    <circle cx="176" cy="176" r="10" fill="#6366f1" />
+
+    <!-- Central Interactive Vector Node -->
+    <circle cx="128" cy="128" r="14" fill="#090d16" stroke="#38bdf8" stroke-width="6" />
+  </g>
+
+  <!-- Render Sparkle Accent -->
+  <path d="M192 64 L196 74 L206 78 L196 82 L192 92 L188 82 L178 78 L188 74 Z" fill="#38bdf8" />
+</svg>

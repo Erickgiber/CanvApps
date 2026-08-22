@@ -76,30 +76,24 @@
   <view width="100%" flexDirection="row" alignItems="center" justifyContent="space-between" padding="[12, 20]" backgroundColor="#ffffff" borderRadius="14" borderWidth="1" borderColor="#e2e8f0">
     <view flexDirection="row" alignItems="center" gap="12">
       <text fontSize="18" fontWeight="bold" color="#0f172a">🎨 CanvApps</text>
-      <view padding="[4, 10]" backgroundColor="#f1f5f9" borderRadius="12" borderWidth="1" borderColor="#e2e8f0">
-        <text fontSize="11" fontWeight="600" color="#475569">100% Canvas UI Framework</text>
-      </view>
     </view>
 
     <view flexDirection="row" alignItems="center" gap="10">
-      <view padding="[4, 12]" backgroundColor="#ecfdf5" borderRadius="12" borderWidth="1" borderColor="#a7f3d0">
-        <text fontSize="11" fontWeight="600" color="#047857">● 120 FPS Retina</text>
-      </view>
-      <view padding="[4, 12]" backgroundColor="#eff6ff" borderRadius="12" borderWidth="1" borderColor="#bfdbfe">
-        <text fontSize="11" fontWeight="600" color="#1d4ed8">● PWA Ready</text>
+      <view>
+        <text fontSize="11" fontWeight="600" color="#047857">By Erickgiber</text>
       </view>
     </view>
   </view>
 
   <!-- 2. Hero Presentation Banner -->
-  <view width="100%" flexDirection="column" alignItems="center" gap="2" padding="[2, 0]">
+  <!-- <view width="100%" flexDirection="column" alignItems="center" gap="2" padding="[2, 0]">
     <text fontSize="22" fontWeight="bold" color="#0f172a" textAlign="center">
       High-Performance Canvas Architecture
     </text>
     <text fontSize="13" color="#64748b" textAlign="center">
       Zero DOM overhead. Mathematical Flexbox solving and hardware acceleration in pure TypeScript.
     </text>
-  </view>
+  </view> -->
 
   <!-- 3. Top Stacked Container (Width: 100%): Reactive State Engine -->
   <view width="100%" backgroundColor="#ffffff" borderRadius="16" borderWidth="1" borderColor="#e2e8f0" padding="18" flexDirection="column" gap="12">

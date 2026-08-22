@@ -376,4 +376,4 @@ Install the official extension for first-class developer tooling:
 
 ## 📄 License
 
-MIT © [Erick Giber](https://github.com/Erickgiber)
+MIT © [Erickgiber](https://github.com/Erickgiber)

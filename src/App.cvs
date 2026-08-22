@@ -5,7 +5,10 @@
     isNew?: boolean;
   }
 
-  // 1. Core Application Reactive State (Signals)
+  // 1. Responsive Viewport Signals
+  const { isMobile } = useBreakpoints();
+
+  // 2. Core Application Reactive State (Signals)
   const cycleCount = signal(42);
   const taskInput = signal('');
 
@@ -16,7 +19,7 @@
     { id: 4, text: 'Multi-target build orchestrator (SPA, PWA, Capacitor)' },
   ]);
 
-  // 2. Counter Actions
+  // 3. Counter Actions
   function incrementCycle() {
     cycleCount.update((n) => n + 1);
   }
@@ -29,7 +32,7 @@
     cycleCount.value = 0;
   }
 
-  // 3. Milestone Reactive Actions
+  // 4. Milestone Reactive Actions
   function onInput(e: any) {
     taskInput.value = e?.target?.value ?? e?.value ?? '';
   }
@@ -70,72 +73,76 @@
   }
 </script>
 
-<view width="100%" height="100%" flexDirection="column" backgroundColor="#f8fafc" padding="[18, 28]" gap="14">
+<view width="100%" height="100%" flexDirection="column" backgroundColor="#f8fafc" :padding="isMobile.value ? [12, 14] : [18, 28]" gap="12">
   
   <!-- 1. Top Navbar -->
-  <view width="100%" flexDirection="row" alignItems="center" justifyContent="space-between" padding="[12, 20]" backgroundColor="#ffffff" borderRadius="14" borderWidth="1" borderColor="#e2e8f0">
-    <view flexDirection="row" alignItems="center" gap="12">
-      <text fontSize="18" fontWeight="bold" color="#0f172a">🎨 CanvApps</text>
+  <view width="100%" flexDirection="row" alignItems="center" justifyContent="space-between" :padding="isMobile.value ? [10, 14] : [12, 20]" backgroundColor="#ffffff" borderRadius="14" borderWidth="1" borderColor="#e2e8f0">
+    <view flexDirection="row" alignItems="center" gap="10">
+      <text fontSize="17" fontWeight="bold" color="#0f172a">🎨 CanvApps</text>
+      <view padding="[3, 8]" backgroundColor="#eff6ff" borderRadius="8">
+        <text fontSize="10" fontWeight="600" color="#2563eb">100% Canvas UI</text>
+      </view>
     </view>
 
-    <view flexDirection="row" alignItems="center" gap="10">
-      <view>
+    <view flexDirection="row" alignItems="center" gap="8">
+      <view padding="[3, 8]" backgroundColor="#ecfdf5" borderRadius="8">
         <text fontSize="11" fontWeight="600" color="#047857">By Erickgiber</text>
       </view>
     </view>
   </view>
 
-  <!-- 2. Top Stacked Container (Width: 100%): Reactive State Engine -->
-  <view width="100%" backgroundColor="#ffffff" borderRadius="16" borderWidth="1" borderColor="#e2e8f0" padding="18" flexDirection="column" gap="12">
+  <!-- 2. Reactive State & Signals Container -->
+  <view width="100%" backgroundColor="#ffffff" borderRadius="16" borderWidth="1" borderColor="#e2e8f0" :padding="isMobile.value ? 14 : 18" flexDirection="column" gap="10">
     <view flexDirection="row" justifyContent="space-between" alignItems="center">
       <view flexDirection="column" gap="2">
-        <text fontSize="15" fontWeight="bold" color="#0f172a">⚡ Reactive State & Signals</text>
+        <text fontSize="14" fontWeight="bold" color="#0f172a">⚡ Reactive State & Signals</text>
+        <text fontSize="11" color="#64748b">Fine-grained memory signals with zero virtual DOM diffing</text>
       </view>
     </view>
 
-    <!-- Counter Row -->
-    <view width="100%" backgroundColor="#f8fafc" borderRadius="12" borderWidth="1" borderColor="#e2e8f0" padding="14" flexDirection="row" alignItems="center" justifyContent="space-between">
-      <view flexDirection="column" gap="2">
+    <!-- Counter Box (Responsive Stacking for Mobile & Desktop) -->
+    <view width="100%" backgroundColor="#f8fafc" borderRadius="12" borderWidth="1" borderColor="#e2e8f0" :padding="isMobile.value ? [10, 12] : [12, 14]" :flexDirection="isMobile.value ? 'column' : 'row'" :alignItems="isMobile.value ? 'stretch' : 'center'" :justifyContent="isMobile.value ? 'flex-start' : 'space-between'" :gap="isMobile.value ? 10 : 12">
+      <view :flexDirection="isMobile.value ? 'row' : 'column'" :justifyContent="isMobile.value ? 'space-between' : 'flex-start'" :alignItems="isMobile.value ? 'center' : 'flex-start'" gap="2">
         <text fontSize="10" fontWeight="600" color="#64748b">CYCLE COUNTER</text>
-        <text fontSize="20" fontWeight="bold" color="#2563eb">
+        <text fontSize="18" fontWeight="bold" color="#2563eb">
           {{ cycleCount.value }} Total Cycles
         </text>
       </view>
 
-      <view flexDirection="row" gap="8">
-        <button label="Decrease" backgroundColor="#ffffff" hoverBackgroundColor="#f1f5f9" labelColor="#334155" borderWidth="1" borderColor="#cbd5e1" padding="[8, 14]" @click="decrementCycle" />
-        <button label="Increment" backgroundColor="#2563eb" hoverBackgroundColor="#1d4ed8" labelColor="#ffffff" padding="[8, 16]" @click="incrementCycle" />
-        <button label="Reset" backgroundColor="#fee2e2" hoverBackgroundColor="#fecaca" labelColor="#dc2626" padding="[8, 12]" @click="resetCycles" />
+      <view flexDirection="row" :gap="isMobile.value ? 6 : 8">
+        <button label="Decrease" backgroundColor="#ffffff" hoverBackgroundColor="#f1f5f9" labelColor="#334155" borderWidth="1" borderColor="#cbd5e1" :padding="isMobile.value ? [8, 8] : [8, 14]" :flexGrow="isMobile.value ? 1 : 0" fontSize="12" @click="decrementCycle" />
+        <button label="Increment" backgroundColor="#2563eb" hoverBackgroundColor="#1d4ed8" labelColor="#ffffff" :padding="isMobile.value ? [8, 8] : [8, 16]" :flexGrow="isMobile.value ? 1 : 0" fontSize="12" @click="incrementCycle" />
+        <button label="Reset" backgroundColor="#fee2e2" hoverBackgroundColor="#fecaca" labelColor="#dc2626" :padding="isMobile.value ? [8, 8] : [8, 12]" :flexGrow="isMobile.value ? 1 : 0" fontSize="12" @click="resetCycles" />
       </view>
     </view>
   </view>
 
-  <!-- 4. Bottom Stacked Container (Width: 100%): Ghost DOM & Svelte-style Iteration -->
-  <view width="100%" flexGrow="1" backgroundColor="#ffffff" borderRadius="16" borderWidth="1" borderColor="#e2e8f0" padding="18" flexDirection="column" gap="12">
+  <!-- 3. Ghost DOM & Svelte-style Iteration Container -->
+  <view width="100%" flexGrow="1" backgroundColor="#ffffff" borderRadius="16" borderWidth="1" borderColor="#e2e8f0" :padding="isMobile.value ? 14 : 18" flexDirection="column" gap="10">
     <view flexDirection="column" gap="2">
-      <text fontSize="15" fontWeight="bold" color="#0f172a">📱 Ghost DOM & Svelte-Style Iteration</text>
-      <text fontSize="12" color="#64748b">Reactive @each iteration, submit on Enter with automatic input clearing</text>
+      <text fontSize="14" fontWeight="bold" color="#0f172a">📱 Ghost DOM & Svelte-Style Iteration</text>
+      <text fontSize="11" color="#64748b">Reactive @each iteration with native mobile keyboard & text selection</text>
     </view>
 
-    <!-- Task Input Bar with Reactive Value Binding and Submit on Enter -->
-    <view width="100%" flexDirection="row" gap="10">
-      <input placeholder="Type a new framework milestone and press Enter..." flexGrow="1" backgroundColor="#f8fafc" color="#0f172a" placeholderColor="#94a3b8" borderColor="#cbd5e1" focusBorderColor="#2563eb" padding="[10, 14]" fontSize="13" :value="taskInput.value" @input="onInput" @keydown="handleKeyDown" @submit="addMilestone" />
-      <button label="+ Add Milestone" backgroundColor="#059669" hoverBackgroundColor="#047857" labelColor="#ffffff" padding="[10, 18]" fontSize="13" @click="addMilestone" />
+    <!-- Task Input Form (Responsive Column on Mobile, Row on Desktop) -->
+    <view width="100%" :flexDirection="isMobile.value ? 'column' : 'row'" :gap="isMobile.value ? 8 : 10">
+      <input placeholder="Type a milestone and press Enter..." flexGrow="1" backgroundColor="#f8fafc" color="#0f172a" placeholderColor="#94a3b8" borderColor="#cbd5e1" focusBorderColor="#2563eb" padding="[9, 12]" fontSize="13" :value="taskInput.value" @input="onInput" @keydown="handleKeyDown" @submit="addMilestone" />
+      <button label="+ Add Milestone" backgroundColor="#059669" hoverBackgroundColor="#047857" labelColor="#ffffff" :padding="isMobile.value ? [9, 14] : [9, 18]" fontSize="13" @click="addMilestone" />
     </view>
 
     <!-- Milestone Stream List with @each rows as row syntax -->
     <view width="100%" flexDirection="column" gap="6" flexGrow="1">
-      <view @each="milestones.value as item, index" width="100%" backgroundColor="#f8fafc" borderRadius="8" padding="[9, 14]" borderWidth="1" borderColor="#e2e8f0" flexDirection="row" alignItems="center" justifyContent="space-between">
-        <text fontSize="13" color="#1e293b" flexGrow="1">• {{ item.text }}</text>
-        <button @ label="✕" backgroundColor="#fee2e2" hoverBackgroundColor="#fecaca" labelColor="#dc2626" width="28" height="28" borderRadius="14" fontSize="12" @click="() => removeMilestone(item.id)" />
+      <view @each="milestones.value as item, index" width="100%" backgroundColor="#f8fafc" borderRadius="8" :padding="isMobile.value ? [8, 10] : [9, 14]" borderWidth="1" borderColor="#e2e8f0" flexDirection="row" alignItems="center" justifyContent="space-between" gap="8">
+        <text fontSize="12" color="#1e293b" flexGrow="1" wordWrap="true">• {{ item.text }}</text>
+        <button label="✕" backgroundColor="#fee2e2" hoverBackgroundColor="#fecaca" labelColor="#dc2626" width="28" height="28" borderRadius="14" fontSize="12" @click="() => removeMilestone(item.id)" />
       </view>
     </view>
   </view>
 
-  <!-- 5. Footer Bar -->
-  <view width="100%" flexDirection="row" alignItems="center" justifyContent="space-between" padding="[4, 4]">
-    <text fontSize="11" color="#64748b">Single-File Component (.cvs) • Pure Canvas 2D Pipeline</text>
-    <text fontSize="11" color="#64748b">Multi-Target Automated Distribution (SPA • PWA • Capacitor)</text>
+  <!-- 4. Footer Bar -->
+  <view width="100%" :flexDirection="isMobile.value ? 'column' : 'row'" :alignItems="isMobile.value ? 'center' : 'center'" :justifyContent="isMobile.value ? 'center' : 'space-between'" :gap="isMobile.value ? 2 : 0" padding="[2, 4]">
+    <text fontSize="10" color="#64748b" textAlign="center">Single-File Component (.cvs) • Pure Canvas 2D Pipeline</text>
+    <text fontSize="10" color="#64748b" textAlign="center">Multi-Target Automated Distribution (SPA • PWA • Capacitor)</text>
   </view>
 
 </view>

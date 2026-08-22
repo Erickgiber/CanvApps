@@ -1,6 +1,7 @@
 import { UIElement } from '../core/UIElement';
 import { Size } from '../types/geometry';
 import { VisualStyles } from '../types/style';
+import { GhostTarget } from '../ghost/GhostDOM';
 
 /**
  * Text node typography and formatting styles.
@@ -17,12 +18,15 @@ export interface TextStyles extends VisualStyles {
   wordWrap?: boolean;
   maxLines?: number;
   textOverflow?: 'clip' | 'ellipsis';
+  selectable?: boolean;
 }
 
 /**
  * UI element for rendering multiline, wrapped, and aligned typography on Canvas 2D.
+ *
+ * Implements GhostTarget for full browser text selection, copy/paste, and screen reader access.
  */
-export class UIText extends UIElement {
+export class UIText extends UIElement implements GhostTarget {
   public declare styles: TextStyles;
 
   private static measureContext: CanvasRenderingContext2D | null = null;
@@ -33,6 +37,18 @@ export class UIText extends UIElement {
   constructor(text = '', styles: TextStyles = {}) {
     super(styles);
     this.styles.text = text;
+  }
+
+  public getGhostType(): 'text' {
+    return 'text';
+  }
+
+  public getText(): string {
+    return this.styles.text ?? '';
+  }
+
+  public isSelectable(): boolean {
+    return this.styles.selectable !== false;
   }
 
   /**

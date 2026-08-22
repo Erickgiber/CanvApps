@@ -4,9 +4,11 @@ import { UIElement } from '../core/UIElement';
  * Interface representing a Canvas element that participates in the Ghost DOM layer.
  */
 export interface GhostTarget extends UIElement {
-  getGhostType(): 'input' | 'textarea' | 'button' | 'accessible';
+  getGhostType(): 'input' | 'textarea' | 'button' | 'text' | 'accessible';
   getValue?(): string;
   setValue?(val: string): void;
+  getText?(): string;
+  isSelectable?(): boolean;
   getPlaceholder?(): string;
   getInputType?(): string;
   getSelectionRange?(): { start: number; end: number };
@@ -18,13 +20,14 @@ export interface GhostTarget extends UIElement {
 }
 
 /**
- * GhostDOM Manager: Mounts invisible, semantically accurate HTML elements matching
- * interactive Canvas nodes in real-time.
+ * GhostDOM Manager: Mounts semantically accurate HTML elements matching
+ * interactive and selectable Canvas nodes in real-time.
  *
  * Provides:
  * 1. Native mobile keyboard (iOS/Android) invocation and auto-correction.
- * 2. Full accessibility (screen readers, VoiceOver, TalkBack, ARIA).
- * 3. Native clipboard copy/paste/cut integration.
+ * 2. Full text selection & native OS context menu ("Copy", "Select All", "Share").
+ * 3. Full accessibility (screen readers, VoiceOver, TalkBack, ARIA).
+ * 4. Native clipboard copy/paste/cut integration.
  */
 export class GhostDOM {
   private container: HTMLElement;
@@ -65,25 +68,50 @@ export class GhostDOM {
         const input = document.createElement('input');
         input.type = target.getInputType ? target.getInputType() : 'text';
         ghost = input;
+      } else if (type === 'text') {
+        const span = document.createElement('span');
+        span.textContent = target.getText ? target.getText() : '';
+        ghost = span;
       } else {
         ghost = document.createElement('div');
         ghost.tabIndex = 0;
       }
 
-      // Invisible styling but physically positioned for mobile keyboard auto-zoom/focus
-      Object.assign(ghost.style, {
-        position: 'absolute',
-        opacity: '0',
-        pointerEvents: 'auto', // Allows direct browser touch focus when clicked
-        border: 'none',
-        outline: 'none',
-        background: 'transparent',
-        color: 'transparent',
-        padding: '0',
-        margin: '0',
-        resize: 'none',
-        zIndex: '-1',
-      });
+      if (type === 'text') {
+        // Text node ghost: visually transparent but fully selectable by browser cursor/touch & native context menu
+        Object.assign(ghost.style, {
+          position: 'absolute',
+          opacity: '0.0001',
+          pointerEvents: 'auto',
+          userSelect: 'text',
+          WebkitUserSelect: 'text',
+          cursor: 'text',
+          border: 'none',
+          outline: 'none',
+          background: 'transparent',
+          color: '#000000',
+          padding: '0',
+          margin: '0',
+          whiteSpace: 'pre-wrap',
+          overflow: 'hidden',
+          zIndex: '1',
+        });
+      } else {
+        // Invisible input/interactive
+        Object.assign(ghost.style, {
+          position: 'absolute',
+          opacity: '0',
+          pointerEvents: 'auto',
+          border: 'none',
+          outline: 'none',
+          background: 'transparent',
+          color: 'transparent',
+          padding: '0',
+          margin: '0',
+          resize: 'none',
+          zIndex: '-1',
+        });
+      }
 
       this.bindEvents(ghost, target);
       this.container.appendChild(ghost);
@@ -129,6 +157,21 @@ export class GhostDOM {
       if (target.getPlaceholder) {
         ghost.placeholder = target.getPlaceholder() ?? '';
       }
+    } else if (ghost instanceof HTMLSpanElement || target.getGhostType() === 'text') {
+      const currentText = target.getText ? target.getText() ?? '' : '';
+      if (ghost.textContent !== currentText) {
+        ghost.textContent = currentText;
+      }
+      const styles = (target.styles ?? {}) as Record<string, any>;
+      const fontSize = styles.fontSize ?? 14;
+      const fontWeight = styles.fontWeight ?? 'normal';
+      const fontFamily = styles.fontFamily ?? 'system-ui, -apple-system, sans-serif';
+      ghost.style.fontSize = `${fontSize}px`;
+      ghost.style.fontWeight = String(fontWeight);
+      ghost.style.fontFamily = fontFamily;
+      if (styles.lineHeight) {
+        ghost.style.lineHeight = `${styles.lineHeight}px`;
+      }
     }
   }
 
@@ -140,91 +183,75 @@ export class GhostDOM {
       ghost.addEventListener('input', () => {
         const val = ghost.value;
         const cursor = ghost.selectionStart ?? val.length;
-        if (target.setValue) {
-          target.setValue(val);
-        }
         if (target.onNativeInput) {
           target.onNativeInput(val, cursor);
         }
-        target.markRenderDirty();
       });
 
-      ghost.addEventListener('keydown', (e) => {
+      ghost.addEventListener('keydown', ((e: KeyboardEvent) => {
         if (target.onNativeKeyDown) {
-          target.onNativeKeyDown(e as KeyboardEvent);
+          target.onNativeKeyDown(e);
         }
-        target.markRenderDirty();
-      });
-
-      ghost.addEventListener('focus', () => {
-        target.focus();
-        if (target.onNativeFocus) {
-          target.onNativeFocus();
-        }
-      });
+      }) as EventListener);
 
       ghost.addEventListener('blur', () => {
-        target.blur();
         if (target.onNativeBlur) {
           target.onNativeBlur();
         }
       });
 
-      const syncSelection = () => {
+      ghost.addEventListener('focus', () => {
+        if (target.onNativeFocus) {
+          target.onNativeFocus();
+        }
+      });
+
+      ghost.addEventListener('select', () => {
         if (target.onSelectionChange && ghost.selectionStart !== null && ghost.selectionEnd !== null) {
           target.onSelectionChange(ghost.selectionStart, ghost.selectionEnd);
         }
-      };
-      ghost.addEventListener('select', syncSelection);
-      ghost.addEventListener('keyup', syncSelection);
-      ghost.addEventListener('mouseup', syncSelection);
+      });
     }
   }
 
   /**
    * Focuses the native ghost element.
    */
-  public focusTarget(target: GhostTarget): void {
-    const ghost = this.ghostElements.get(target.id) || this.register(target);
-    ghost.focus();
-    if (ghost instanceof HTMLInputElement || ghost instanceof HTMLTextAreaElement) {
-      if (target.getSelectionRange) {
-        const { start, end } = target.getSelectionRange();
-        try {
-          ghost.setSelectionRange(start, end);
-        } catch {
-          // ignore
-        }
-      }
+  public focus(target: GhostTarget): void {
+    const ghost = this.ghostElements.get(target.id);
+    if (ghost && typeof ghost.focus === 'function') {
+      ghost.focus();
     }
   }
 
   /**
    * Blurs the native ghost element.
    */
-  public blurTarget(target: GhostTarget): void {
+  public blur(target: GhostTarget): void {
     const ghost = this.ghostElements.get(target.id);
-    if (ghost) {
+    if (ghost && typeof ghost.blur === 'function') {
       ghost.blur();
     }
   }
 
   /**
-   * Unregisters a target when unmounted.
+   * Removes a ghost target from the overlay.
    */
-  public unregister(targetId: string): void {
-    const ghost = this.ghostElements.get(targetId);
-    if (ghost) {
-      ghost.remove();
-      this.ghostElements.delete(targetId);
+  public unregister(target: GhostTarget): void {
+    const ghost = this.ghostElements.get(target.id);
+    if (ghost && ghost.parentElement) {
+      ghost.parentElement.removeChild(ghost);
+      this.ghostElements.delete(target.id);
     }
   }
 
   /**
-   * Cleans up entire overlay.
+   * Cleans up all ghost elements and removes the overlay.
    */
   public destroy(): void {
-    this.container.remove();
+    if (this.container && this.container.parentElement) {
+      this.container.parentElement.removeChild(this.container);
+    }
     this.ghostElements.clear();
   }
 }

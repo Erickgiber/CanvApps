@@ -27,7 +27,9 @@
   },
   "files": [
     "dist",
-    "CanvApps"
+    "CanvApps",
+    "logo.svg",
+    "README.md"
   ],
   "bin": {
     "canvapps": "./CanvApps/cli/bin.ts"

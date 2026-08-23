@@ -58,10 +58,12 @@ export class GhostDOM {
         #canvapps-ghost-dom-overlay .canvapps-ghost-text {
           color: transparent !important;
           caret-color: transparent !important;
+          -webkit-text-fill-color: transparent !important;
         }
         #canvapps-ghost-dom-overlay .canvapps-ghost-text::selection {
           background-color: rgba(37, 99, 235, 0.28) !important;
           color: transparent !important;
+          -webkit-text-fill-color: transparent !important;
         }
         #canvapps-ghost-dom-overlay .canvapps-ghost-text::-moz-selection {
           background-color: rgba(37, 99, 235, 0.28) !important;
@@ -75,7 +77,7 @@ export class GhostDOM {
     parent.appendChild(this.container);
 
     if (typeof window !== 'undefined') {
-      window.addEventListener('pointerdown', this.handleGlobalPointerDown.bind(this));
+      window.addEventListener('pointerdown', this.handleGlobalPointerDown.bind(this), true);
     }
   }
 
@@ -92,6 +94,19 @@ export class GhostDOM {
     const isTextGhost = target && target.classList && target.classList.contains('canvapps-ghost-text');
     if (!isTextGhost) {
       selection.removeAllRanges();
+    }
+  }
+
+  /**
+   * Prunes orphan ghost elements that are no longer part of the active UIElement tree.
+   * Prevents accumulating multiple overlapping/duplicate text layers when items update.
+   */
+  public prune(activeIds: Set<string>): void {
+    for (const [id, el] of this.ghostElements.entries()) {
+      if (!activeIds.has(id)) {
+        el.remove();
+        this.ghostElements.delete(id);
+      }
     }
   }
 
@@ -175,15 +190,17 @@ export class GhostDOM {
     }
 
     const { x, y, width, height } = target.worldRect;
-    Object.assign(ghost.style, {
-      left: `${x}px`,
-      top: `${y}px`,
-      width: `${Math.max(1, width)}px`,
-      height: `${Math.max(1, height)}px`,
-      display: target.visible && target.styles.display !== 'none' ? 'block' : 'none',
-    });
+    const isVisible = target.visible && target.styles.display !== 'none';
 
     if (ghost instanceof HTMLInputElement || ghost instanceof HTMLTextAreaElement) {
+      Object.assign(ghost.style, {
+        left: `${x}px`,
+        top: `${y}px`,
+        width: `${Math.max(1, width)}px`,
+        height: `${Math.max(1, height)}px`,
+        display: isVisible ? 'block' : 'none',
+      });
+
       const currentTargetVal = target.getValue ? target.getValue() ?? '' : '';
       if (ghost.value !== currentTargetVal) {
         const prevStart = ghost.selectionStart;
@@ -201,29 +218,50 @@ export class GhostDOM {
         ghost.placeholder = target.getPlaceholder() ?? '';
       }
     } else if (ghost instanceof HTMLSpanElement || target.getGhostType() === 'text') {
-      const currentText = target.getText ? target.getText() ?? '' : '';
-      if (ghost.textContent !== currentText) {
-        ghost.textContent = currentText;
-      }
+      const padding = target.getComputedPadding ? target.getComputedPadding() : { top: 0, right: 0, bottom: 0, left: 0 };
+      const innerX = x + padding.left;
+      const innerY = y + padding.top;
+      const innerWidth = Math.max(1, width - padding.left - padding.right);
+      const innerHeight = Math.max(1, height - padding.top - padding.bottom);
+
       const styles = (target.styles ?? {}) as Record<string, any>;
       const fontSize = styles.fontSize ?? 14;
       const fontWeight = styles.fontWeight ?? 'normal';
       const fontFamily = styles.fontFamily ?? 'system-ui, -apple-system, sans-serif';
       const textAlign = styles.textAlign ?? 'left';
       const selectable = target.isSelectable ? target.isSelectable() : true;
+      const currentText = target.getText ? target.getText() ?? '' : '';
+      const lineHeightMultiplier = styles.lineHeight ?? 1.2;
+      const computedLineHeight = fontSize * lineHeightMultiplier;
 
-      ghost.style.fontSize = `${fontSize}px`;
-      ghost.style.fontWeight = String(fontWeight);
-      ghost.style.fontFamily = fontFamily;
-      ghost.style.textAlign = textAlign;
-      ghost.style.userSelect = selectable ? 'text' : 'none';
-      (ghost.style as any).WebkitUserSelect = selectable ? 'text' : 'none';
-      ghost.style.pointerEvents = selectable ? 'auto' : 'none';
-      ghost.style.cursor = selectable ? 'text' : 'default';
+      Object.assign(ghost.style, {
+        left: `${innerX}px`,
+        top: `${innerY}px`,
+        width: `${innerWidth}px`,
+        height: `${innerHeight}px`,
+        display: isVisible && selectable ? 'block' : 'none',
+        fontSize: `${fontSize}px`,
+        fontWeight: String(fontWeight),
+        fontFamily,
+        textAlign,
+        lineHeight: `${computedLineHeight}px`,
+        userSelect: selectable ? 'text' : 'none',
+        WebkitUserSelect: selectable ? 'text' : 'none',
+        pointerEvents: selectable ? 'auto' : 'none',
+        cursor: selectable ? 'text' : 'default',
+      });
 
-      if (styles.lineHeight) {
-        ghost.style.lineHeight = `${styles.lineHeight}px`;
+      if (ghost.textContent !== currentText) {
+        ghost.textContent = currentText;
       }
+    } else {
+      Object.assign(ghost.style, {
+        left: `${x}px`,
+        top: `${y}px`,
+        width: `${Math.max(1, width)}px`,
+        height: `${Math.max(1, height)}px`,
+        display: isVisible ? 'block' : 'none',
+      });
     }
   }
 
@@ -267,43 +305,26 @@ export class GhostDOM {
   }
 
   /**
-   * Focuses the native ghost element.
+   * Removes a specific ghost target by its element ID.
    */
-  public focus(target: GhostTarget): void {
-    const ghost = this.ghostElements.get(target.id);
-    if (ghost && typeof ghost.focus === 'function') {
-      ghost.focus();
+  public unregister(targetId: string): void {
+    const el = this.ghostElements.get(targetId);
+    if (el) {
+      el.remove();
+      this.ghostElements.delete(targetId);
     }
   }
 
   /**
-   * Blurs the native ghost element.
-   */
-  public blur(target: GhostTarget): void {
-    const ghost = this.ghostElements.get(target.id);
-    if (ghost && typeof ghost.blur === 'function') {
-      ghost.blur();
-    }
-  }
-
-  /**
-   * Removes a ghost target from the overlay.
-   */
-  public unregister(target: GhostTarget): void {
-    const ghost = this.ghostElements.get(target.id);
-    if (ghost && ghost.parentElement) {
-      ghost.parentElement.removeChild(ghost);
-      this.ghostElements.delete(target.id);
-    }
-  }
-
-  /**
-   * Cleans up all ghost elements and removes the overlay.
+   * Destroys the GhostDOM container and removes all overlays from the document.
    */
   public destroy(): void {
-    if (this.container && this.container.parentElement) {
-      this.container.parentElement.removeChild(this.container);
+    if (typeof window !== 'undefined') {
+      window.removeEventListener('pointerdown', this.handleGlobalPointerDown.bind(this), true);
     }
     this.ghostElements.clear();
+    if (this.container.parentElement) {
+      this.container.parentElement.removeChild(this.container);
+    }
   }
 }

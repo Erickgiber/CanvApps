@@ -9,7 +9,7 @@
   const { isMobile } = useBreakpoints();
 
   // 2. Core Application Reactive State (Signals)
-  const cycleCount = signal(42);
+  const cycleCount = signal(0);
   const taskInput = signal('');
 
   const milestones = signal<MilestoneItem[]>([

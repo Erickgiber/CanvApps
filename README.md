@@ -430,7 +430,65 @@ CanvApps includes a high-performance `<modal>` Canvas node with full control ove
 </script>
 ```
 
-#### 8. Native Text Selection & Clipboard (`selectable`)
+#### 9. External Global Reactive Stores & State Persistence (`createStore`, `defineStore`, `persistentSignal`)
+CanvApps allows creating reactive stores and persistent signals directly in standard TypeScript files (`.store.ts` or `.ts`), allowing state (user sessions, auth tokens, themes, global cache) to be shared across views, components, and browser tabs with zero reactivity loss:
+
+```ts
+// src/stores/session.store.ts
+import { createStore, computed, persistentSignal } from 'canvapps';
+
+export interface UserSession {
+  user: { name: string; email: string; avatar: string } | null;
+  isAuthenticated: boolean;
+  theme: 'light' | 'dark';
+}
+
+// 1. Create a Global Reactive Store with Auto-Persistence to localStorage
+export const sessionStore = createStore<UserSession>({
+  user: null,
+  isAuthenticated: false,
+  theme: 'light',
+}, {
+  name: 'session',
+  persist: true, // Auto-persists & syncs across browser tabs in real-time
+});
+
+// 2. Computed signals derived from global stores
+export const isUserLoggedIn = computed(() => sessionStore.state.isAuthenticated);
+
+// 3. Store actions in TypeScript
+export function login(email: string) {
+  sessionStore.set({
+    user: { name: 'Meliodas', email, avatar: '👨‍💻' },
+    isAuthenticated: true,
+  });
+}
+
+export function logout() {
+  sessionStore.reset();
+}
+
+// 4. Standalone Persistent Signals
+export const authToken = persistentSignal('jwt_token', '');
+```
+
+##### Using Stores inside `.cvs` Single-File Components:
+```html
+<script lang="ts">
+  import { sessionStore, login, logout } from './stores/session.store';
+</script>
+
+<view width="100%">
+  @if (sessionStore.state.isAuthenticated) {
+    <text fontSize="16">Welcome back, {{ sessionStore.state.user.name }}!</text>
+    <button label="Log Out" @click="logout" />
+  } else {
+    <button label="Sign In" @click="() => login('user@canvapps.dev')" />
+  }
+</view>
+```
+
+#### 10. Native Text Selection & Clipboard (`selectable`)
 By default, `<text>` nodes rendered on Canvas 2D are selectable with a visible highlight and copyable via Ghost DOM. You can customize text selection per component:
 ```html
 <text fontSize="14" color="#0f172a" selectable="true">

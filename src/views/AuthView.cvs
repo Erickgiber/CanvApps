@@ -1,0 +1,142 @@
+<script lang="ts">
+  import { sessionStore, isUserLoggedIn, updateProfile, logoutSession, incrementSessionStreak, toggleTheme } from '../stores/session.store';
+
+  // 1. Responsive Viewport Signals
+  const { isMobile } = useBreakpoints();
+  const isDark = computed(() => sessionStore.state.theme === 'dark');
+
+  // 2. Local Input Signals
+  const nameInput = signal(sessionStore.state.user?.name ?? 'Julian Vance');
+  const emailInput = signal(sessionStore.state.user?.email ?? 'julian.vance@canvapps.dev');
+  const saveSuccessToast = signal(false);
+
+  function handleSaveProfile() {
+    updateProfile(nameInput.value, emailInput.value);
+    saveSuccessToast.value = true;
+    setTimeout(() => {
+      saveSuccessToast.value = false;
+    }, 2000);
+  }
+
+  function handleStreakBonus() {
+    incrementSessionStreak();
+  }
+
+  function handleLogout() {
+    logoutSession();
+  }
+
+  function handleLogin() {
+    sessionStore.set({
+      user: {
+        name: nameInput.value || 'Julian Vance',
+        email: emailInput.value || 'julian.vance@canvapps.dev',
+        role: 'Principal Engineer',
+        avatar: '👨‍💼',
+      },
+      isAuthenticated: true,
+      streakCount: Math.max(1, sessionStore.state.streakCount),
+    });
+  }
+</script>
+
+<motion animation="scale-in" :duration="450">
+  <view width="100%" flexDirection="column" :gap={isMobile.value ? 10 : 14} alignItems="center">
+
+    <!-- Container wrapper for optimal layout readability -->
+    <view width="100%" flexDirection="column" :gap={isMobile.value ? 10 : 14}>
+
+      <!-- 1. Session Status Overview Card -->
+      <view width="100%" :backgroundColor={isDark.value ? '#181818' : '#ffffff'} borderRadius="16" borderWidth="1" :borderColor={isDark.value ? '#282828' : '#e2e8f0'} :padding={isMobile.value ? [12, 14] : [16, 20]} flexDirection="column" gap="10">
+        
+        <!-- Clean Title Header -->
+        <view width="100%" flexDirection="row" alignItems="center">
+          <text :fontSize={isMobile.value ? 14 : 16} fontWeight="bold" :color={isDark.value ? '#f5f5f5' : '#0f172a'}>🔑 Authentication & Session</text>
+        </view>
+
+        @if (isUserLoggedIn.value) {
+          <!-- Profile Card -->
+          <view width="100%" :backgroundColor={isDark.value ? '#202020' : '#f8fafc'} borderRadius="12" borderWidth="1" :borderColor={isDark.value ? '#2c2c2c' : '#e2e8f0'} :padding={isMobile.value ? [10, 12] : [14, 16]} :flexDirection={isMobile.value ? 'column' : 'row'} :alignItems={isMobile.value ? 'flex-start' : 'center'} :justifyContent={isMobile.value ? 'flex-start' : 'space-between'} :gap={isMobile.value ? 10 : 14}>
+            
+            <!-- User Info Row -->
+            <view flexDirection="row" alignItems="center" :gap={isMobile.value ? 10 : 12} flexGrow="1">
+              <view :width={isMobile.value ? 40 : 46} :height={isMobile.value ? 40 : 46} borderRadius="23" :backgroundColor={isDark.value ? '#282828' : '#eff6ff'} borderWidth="1" :borderColor={isDark.value ? '#333333' : '#dbeafe'} alignItems="center" justifyContent="center">
+                <text :fontSize={isMobile.value ? 20 : 24} textAlign="center" :lineHeight="1">{{ sessionStore.state.user.avatar }}</text>
+              </view>
+              <view flexDirection="column" gap="2">
+                <text :fontSize={isMobile.value ? 14 : 15} fontWeight="bold" :color={isDark.value ? '#f5f5f5' : '#0f172a'}>{{ sessionStore.state.user.name }}</text>
+                <text fontSize="11" :color={isDark.value ? '#888888' : '#64748b'}>{{ sessionStore.state.user.email }} • {{ sessionStore.state.user.role }}</text>
+              </view>
+            </view>
+
+            <!-- Streak & Theme Info Pills -->
+            <view flexDirection="row" alignItems="center" :gap={isMobile.value ? 6 : 8}>
+              <view flexDirection="row" alignItems="center" gap="6" :backgroundColor={isDark.value ? '#251c10' : '#fef3c7'} borderRadius="8" borderWidth="1" :borderColor={isDark.value ? '#443018' : '#fde68a'} :padding={isMobile.value ? [4, 8] : [6, 12]}>
+                <text fontSize="11" :color={isDark.value ? '#fbbf24' : '#b45309'} fontWeight="bold">🔥 Streak:</text>
+                <text fontSize="12" :color={isDark.value ? '#fde68a' : '#d97706'} fontWeight="bold">{{ sessionStore.state.streakCount }}</text>
+              </view>
+              <view flexDirection="row" alignItems="center" gap="6" :backgroundColor={isDark.value ? '#182438' : '#eff6ff'} borderRadius="8" borderWidth="1" :borderColor={isDark.value ? '#223854' : '#dbeafe'} :padding={isMobile.value ? [4, 8] : [6, 12]}>
+                <text fontSize="11" :color={isDark.value ? '#93c5fd' : '#1e40af'} fontWeight="bold">🎨 Theme:</text>
+                <text fontSize="11" :color={isDark.value ? '#60a5fa' : '#2563eb'} fontWeight="bold">{{ sessionStore.state.theme }}</text>
+              </view>
+            </view>
+
+          </view>
+        }
+      </view>
+
+      <!-- 2. Clean Form Container with 100% Width Fields -->
+      <view width="100%" :backgroundColor={isDark.value ? '#181818' : '#ffffff'} borderRadius="16" borderWidth="1" :borderColor={isDark.value ? '#282828' : '#e2e8f0'} :padding={isMobile.value ? [12, 14] : [16, 20]} flexDirection="column" gap="12">
+        <view width="100%" flexDirection="row" alignItems="center">
+          <text :fontSize={isMobile.value ? 14 : 15} fontWeight="bold" :color={isDark.value ? '#f5f5f5' : '#0f172a'}>⚙️ User Profile Details</text>
+        </view>
+
+        @if (isUserLoggedIn.value) {
+          <view width="100%" :backgroundColor={isDark.value ? '#202020' : '#f8fafc'} borderRadius="12" borderWidth="1" :borderColor={isDark.value ? '#2c2c2c' : '#e2e8f0'} :padding={isMobile.value ? [12, 12] : [16, 18]} flexDirection="column" gap="12">
+            
+            <!-- Full Width Input: Full Name -->
+            <view width="100%" flexDirection="column" gap="5">
+              <text fontSize="11" fontWeight="bold" :color={isDark.value ? '#888888' : '#475569'}>👤 FULL NAME</text>
+              <input width="100%" :value="nameInput.value" placeholder="Enter full name..." :backgroundColor={isDark.value ? '#181818' : '#ffffff'} :borderColor={isDark.value ? '#303030' : '#cbd5e1'} :color={isDark.value ? '#f5f5f5' : '#0f172a'} placeholderColor="#777777" :padding={isMobile.value ? [9, 12] : [10, 14]} borderRadius="8" :fontSize={isMobile.value ? 12 : 13} @input="(e) => nameInput.value = (e as any).value" />
+            </view>
+
+            <!-- Full Width Input: Email Address -->
+            <view width="100%" flexDirection="column" gap="5">
+              <text fontSize="11" fontWeight="bold" :color={isDark.value ? '#888888' : '#475569'}>✉️ EMAIL ADDRESS</text>
+              <input width="100%" :value="emailInput.value" placeholder="Enter email address..." :backgroundColor={isDark.value ? '#181818' : '#ffffff'} :borderColor={isDark.value ? '#303030' : '#cbd5e1'} :color={isDark.value ? '#f5f5f5' : '#0f172a'} placeholderColor="#777777" :padding={isMobile.value ? [9, 12] : [10, 14]} borderRadius="8" :fontSize={isMobile.value ? 12 : 13} @input="(e) => emailInput.value = (e as any).value" />
+            </view>
+
+            <!-- Actions Row with Responsive Full Width Buttons -->
+            <view width="100%" :flexDirection={isMobile.value ? 'column' : 'row'} :gap={isMobile.value ? 8 : 10} padding="[4, 0]">
+              <button label="💾 Save Changes" backgroundColor="#2563eb" hoverBackgroundColor="#1d4ed8" labelColor="#ffffff" :width={isMobile.value ? '100%' : undefined} :padding={isMobile.value ? [10, 14] : [10, 20]} fontSize="12" fontWeight="bold" borderRadius="8" @click="handleSaveProfile" />
+              <button label="🔥 +1 Streak Bonus" backgroundColor="#f59e0b" hoverBackgroundColor="#d97706" labelColor="#ffffff" :width={isMobile.value ? '100%' : undefined} :padding={isMobile.value ? [10, 14] : [10, 18]} fontSize="12" fontWeight="bold" borderRadius="8" @click="handleStreakBonus" />
+              <button label="🚪 End Session" :backgroundColor={isDark.value ? '#2a1818' : '#fee2e2'} :hoverBackgroundColor={isDark.value ? '#381f1f' : '#fecaca'} :labelColor={isDark.value ? '#f87171' : '#dc2626'} borderWidth="1" :borderColor={isDark.value ? '#442222' : '#fca5a5'} :width={isMobile.value ? '100%' : undefined} :padding={isMobile.value ? [10, 14] : [10, 16]} fontSize="12" fontWeight="bold" borderRadius="8" @click="handleLogout" />
+            </view>
+
+          </view>
+
+          <!-- Toast Feedback -->
+          @if (saveSuccessToast.value) {
+            <view width="100%" :backgroundColor={isDark.value ? '#182a1f' : '#ecfdf5'} borderRadius="8" borderWidth="1" :borderColor={isDark.value ? '#244830' : '#a7f3d0'} padding="[8, 14]" flexDirection="row" alignItems="center" gap="8">
+              <text fontSize="13">✅</text>
+              <text fontSize="12" fontWeight="bold" :color={isDark.value ? '#34d399' : '#065f46'}>Session profile updated in Reactive Store!</text>
+            </view>
+          }
+
+        } else {
+          <!-- Logged Out View -->
+          <view width="100%" :backgroundColor={isDark.value ? '#181818' : '#f8fafc'} borderRadius="12" borderWidth="1" :borderColor={isDark.value ? '#282828' : '#e2e8f0'} :padding={isMobile.value ? [18, 14] : [24, 20]} flexDirection="column" alignItems="center" justifyContent="center" gap="14">
+            <text fontSize="32">🔒</text>
+            <view flexDirection="column" alignItems="center" gap="4">
+              <text fontSize="15" fontWeight="bold" :color={isDark.value ? '#f5f5f5' : '#0f172a'}>Session Currently Inactive</text>
+              <text fontSize="11" :color={isDark.value ? '#888888' : '#64748b'} textAlign="center">The user session was cleared from memory. Re-authenticate below to restore access.</text>
+            </view>
+            <button label="🔑 Re-Authenticate as Julian Vance" backgroundColor="#2563eb" hoverBackgroundColor="#1d4ed8" labelColor="#ffffff" :padding={isMobile.value ? [10, 16] : [12, 22]} fontSize="12" fontWeight="bold" borderRadius="8" @click="handleLogin" />
+          </view>
+        }
+      </view>
+
+    </view>
+
+  </view>
+</motion>

@@ -39,7 +39,7 @@ export class CVSCodeGenerator {
     }
 
     return `
-import { UIView, UIText, UIButton, UIInput, UIModal, UIMotion, UIElement, KineticFX, Motion, createRouter, useRouter, effect, signal, useBreakpoints, useMediaQuery } from '@canvapps';
+import { UIView, UIText, UIButton, UIInput, UIModal, UIMotion, UIElement, KineticFX, Motion, createRouter, useRouter, effect, signal, computed, batch, untrack, createStore, persistentSignal, useBreakpoints, useMediaQuery, useWindowSize } from '@canvapps';
 ${importLines.join('\n')}
 
 export function createComponent(props: Record<string, any> = {}): UIElement {
@@ -117,12 +117,15 @@ export default createComponent;
         code: `
   const ${ifContainer} = new UIView(${initialStyles});
   effect(() => {
-    ${ifContainer}.removeAllChildren();
-    if (${node.condition}) {
-      ${ifContainer}.visible = true;
-      ${ifContainer}.setStyle({ display: 'flex' });
+    const isConditionActive = Boolean(${node.condition});
+    untrack(() => {
+      ${ifContainer}.removeAllChildren();
+      if (isConditionActive) {
+        ${ifContainer}.visible = true;
+        ${ifContainer}.setStyle({ display: 'flex' });
 ${consequentLines.join('\n')}
-    }${node.alternate && node.alternate.length > 0 ? ` else {\n      ${ifContainer}.visible = true;\n      ${ifContainer}.setStyle({ display: 'flex' });\n${alternateLines.join('\n')}\n    }` : ` else {\n      ${ifContainer}.visible = false;\n      ${ifContainer}.setStyle({ display: 'none' });\n    }`}
+      }${node.alternate && node.alternate.length > 0 ? ` else {\n        ${ifContainer}.visible = true;\n        ${ifContainer}.setStyle({ display: 'flex' });\n${alternateLines.join('\n')}\n      }` : ` else {\n        ${ifContainer}.visible = false;\n        ${ifContainer}.setStyle({ display: 'none' });\n      }`}
+    });
   });
 `,
         rootVar: ifContainer,

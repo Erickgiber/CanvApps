@@ -128,12 +128,16 @@ export interface VisualStyles extends LayoutStyles {
   borderColor?: string;
   borderWidth?: number;
   boxShadow?: BoxShadow;
-  overflow?: 'visible' | 'hidden';
+  overflow?: 'visible' | 'hidden' | 'scroll' | 'auto';
   cursor?: string;
+
+  translateX?: number;
+  translateY?: number;
 
   // Animation & Motion Properties
   animation?: string;
-  enter?: 'scale' | 'fade' | 'zoom-in' | 'slide-up' | 'slide-down' | 'cinematic-splash';
+  enter?: string;
+  exit?: string;
   duration?: number;
   entranceDuration?: number;
   hold?: number;

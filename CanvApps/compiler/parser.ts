@@ -354,7 +354,8 @@ export class CVSParser {
       const safeItem = parsedLoop.item;
       const safeIndex = parsedLoop.index || '';
 
-      const replacement = `<canvapps-each iterable="${safeIterable}" item="${safeItem}" index="${safeIndex}">${bodyContent}</canvapps-each>`;
+      const nestedBody = this.preprocessControlBlocks(bodyContent);
+      const replacement = `<canvapps-each iterable="${safeIterable}" item="${safeItem}" index="${safeIndex}">${nestedBody}</canvapps-each>`;
 
       src = src.slice(0, eachMatch) + replacement + src.slice(totalEnd);
       index = eachMatch + replacement.length;
@@ -459,8 +460,11 @@ export class CVSParser {
       }
 
       const safeCond = condition.replace(/"/g, '&quot;');
-      const replacement = `<canvapps-if condition="${safeCond}"><canvapps-then>${thenContent}</canvapps-then>${
-        elseContent !== null ? `<canvapps-else>${elseContent}</canvapps-else>` : ''
+      const nestedThen = this.preprocessControlBlocks(thenContent);
+      const nestedElse = elseContent !== null ? this.preprocessControlBlocks(elseContent) : null;
+
+      const replacement = `<canvapps-if condition="${safeCond}"><canvapps-then>${nestedThen}</canvapps-then>${
+        nestedElse !== null ? `<canvapps-else>${nestedElse}</canvapps-else>` : ''
       }</canvapps-if>`;
 
       src = src.slice(0, ifMatch) + replacement + src.slice(totalEnd);

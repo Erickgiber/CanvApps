@@ -306,7 +306,31 @@ Import any `.cvs` Single-File Component in `<script lang="ts">` and invoke it di
 </view>
 ```
 
-#### 5. Reactive Router & View Management (`createRouter`, `useRouter`)
+#### 5. Persistent Master Layouts (`AppLayout.cvs`) & Reusable Headers
+CanvApps enables building **Persistent Master Layouts** that keep static UI elements (Headers, Sidebars, Toasts, Modals) mounted in memory while dynamic scene content transitions smoothly inside child slots:
+
+```html
+<!-- src/layouts/AppLayout.cvs -->
+<script lang="ts">
+  import AppHeader from '../components/AppHeader.cvs';
+
+  function onNavigate(target: string) {
+    props.onNavigate?.(target);
+  }
+</script>
+
+<view width="100%" height="100%" flexDirection="column" backgroundColor="#f8fafc" padding="[16, 24]" gap="14">
+  <!-- Persistent Header with dynamic route switcher & theme toggling -->
+  <AppHeader :activeRoute="props.activeRoute" @navigate="onNavigate" />
+
+  <!-- Dynamic Content Slot -->
+  <view width="100%" flexGrow="1" position="relative">
+    <slot />
+  </view>
+</view>
+```
+
+#### 6. Reactive Router & View Management (`createRouter`, `useRouter`)
 CanvApps provides a fine-grained, signal-powered router for Single-Page and Multi-View Applications with zero DOM overhead:
 ```ts
 <script lang="ts">
@@ -357,13 +381,15 @@ Wrap any view or element in `<motion>` to automate 60/120 FPS Retina transitions
 ##### B. Supported `<motion>` Animation Presets & Props
 | Prop / Attribute | Type | Description |
 | :--- | :--- | :--- |
-| `animation` | `'scale-in' \| 'fade-in' \| 'zoom-in' \| 'slide-up' \| 'slide-down' \| 'cinematic-splash'` | Transition preset |
+| `animation` / `enter` | `'slide-left' \| 'slide-right' \| 'slide-up' \| 'slide-down' \| 'elastic' \| 'scale-in' \| 'zoom-in' \| 'fade-in' \| 'cinematic-splash'` | Entrance transition preset |
+| `exit` | `'slide-left' \| 'slide-right' \| 'slide-up' \| 'slide-down' \| 'scale' \| 'zoom-out' \| 'fade'` | Exit transition preset |
 | `duration` | `number` (ms) | Main animation / entrance duration |
 | `hold` | `number` (ms) | Hold duration before exit transition |
 | `exitDuration` | `number` (ms) | Exit transition duration |
 | `delay` | `number` (ms) | Initial delay before starting |
 | `autoPlay` | `boolean` | Defaults to `true` |
-| `@finish` | `(e) => void` | Event emitted upon animation completion |
+| `@finish` | `(e) => void` | Event emitted upon entrance completion |
+| `@exitFinish` | `(e) => void` | Event emitted upon exit completion |
 | `@update` | `(state) => void` | Continuous 60/120 FPS frame callback |
 
 ##### C. Kinetic Flight Tokens & Particle Bursts (`KineticFX`)
@@ -430,7 +456,65 @@ CanvApps includes a high-performance `<modal>` Canvas node with full control ove
 </script>
 ```
 
-#### 8. Native Text Selection & Clipboard (`selectable`)
+#### 9. External Global Reactive Stores & State Persistence (`createStore`, `defineStore`, `persistentSignal`)
+CanvApps allows creating reactive stores and persistent signals directly in standard TypeScript files (`.store.ts` or `.ts`), allowing state (user sessions, auth tokens, themes, global cache) to be shared across views, components, and browser tabs with zero reactivity loss:
+
+```ts
+// src/stores/session.store.ts
+import { createStore, computed, persistentSignal } from 'canvapps';
+
+export interface UserSession {
+  user: { name: string; email: string; avatar: string } | null;
+  isAuthenticated: boolean;
+  theme: 'light' | 'dark';
+}
+
+// 1. Create a Global Reactive Store with Auto-Persistence to localStorage
+export const sessionStore = createStore<UserSession>({
+  user: null,
+  isAuthenticated: false,
+  theme: 'light',
+}, {
+  name: 'session',
+  persist: true, // Auto-persists & syncs across browser tabs in real-time
+});
+
+// 2. Computed signals derived from global stores
+export const isUserLoggedIn = computed(() => sessionStore.state.isAuthenticated);
+
+// 3. Store actions in TypeScript
+export function login(email: string) {
+  sessionStore.set({
+    user: { name: 'Meliodas', email, avatar: '👨‍💻' },
+    isAuthenticated: true,
+  });
+}
+
+export function logout() {
+  sessionStore.reset();
+}
+
+// 4. Standalone Persistent Signals
+export const authToken = persistentSignal('jwt_token', '');
+```
+
+##### Using Stores inside `.cvs` Single-File Components:
+```html
+<script lang="ts">
+  import { sessionStore, login, logout } from './stores/session.store';
+</script>
+
+<view width="100%">
+  @if (sessionStore.state.isAuthenticated) {
+    <text fontSize="16">Welcome back, {{ sessionStore.state.user.name }}!</text>
+    <button label="Log Out" @click="logout" />
+  } else {
+    <button label="Sign In" @click="() => login('user@canvapps.dev')" />
+  }
+</view>
+```
+
+#### 10. Native Text Selection & Clipboard (`selectable`)
 By default, `<text>` nodes rendered on Canvas 2D are selectable with a visible highlight and copyable via Ghost DOM. You can customize text selection per component:
 ```html
 <text fontSize="14" color="#0f172a" selectable="true">

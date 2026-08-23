@@ -13,6 +13,19 @@ let isBatching = false;
 const batchedSubscribers = new Set<Subscriber>();
 
 /**
+ * Runs a function without establishing reactive subscriptions on any signals accessed within it.
+ */
+export function untrack<T>(fn: () => T): T {
+  const prevSubscriber = activeSubscriber;
+  activeSubscriber = null;
+  try {
+    return fn();
+  } finally {
+    activeSubscriber = prevSubscriber;
+  }
+}
+
+/**
  * Runs multiple signal state updates in a batch, notifying subscribers once at the end.
  */
 export function batch(fn: () => void): void {

@@ -1,0 +1,54 @@
+<script lang="ts">
+  import { sessionStore, toggleTheme, navigateRoute } from '../stores/session.store';
+
+  // Responsive signals
+  const { isMobile } = useBreakpoints();
+  const isDark = computed(() => sessionStore.state.theme === 'dark');
+
+  function handleRouteSwitch() {
+    const target = sessionStore.state.activeRoute === 'auth' ? 'dashboard' : 'auth';
+    navigateRoute(target);
+    if (typeof (props as any)?.onNavigate === 'function') {
+      (props as any).onNavigate(target);
+    }
+  }
+
+  function handleThemeClick() {
+    toggleTheme();
+  }
+
+  function openDocs() {
+    if (typeof window !== 'undefined') {
+      window.open('https://github.com/Erickgiber/CanvApps', '_blank');
+    }
+  }
+</script>
+
+<!-- Top Persistent Navbar Header Component -->
+<view width="100%" flexDirection="row" alignItems="center" justifyContent="space-between" padding={[12, 20]} :backgroundColor={isDark.value ? '#181818' : '#ffffff'} borderRadius="14" borderWidth="1" :borderColor={isDark.value ? '#282828' : '#e2e8f0'}>
+  
+  <!-- Left: Logo & Tech Badges -->
+  <view flexDirection="row" alignItems="center" gap="8">
+    <text :fontSize={isMobile.value ? 15 : 18} fontWeight="bold" :color={isDark.value ? '#f5f5f5' : '#0f172a'} :wordWrap="false">🎨 CanvApps</text>
+    @if (!isMobile.value) {
+      <view padding="[3, 8]" :backgroundColor={isDark.value ? '#222222' : '#eff6ff'} borderRadius="6" borderWidth="1" :borderColor={isDark.value ? '#333333' : '#dbeafe'}>
+        <text fontSize="10" fontWeight="bold" :color={isDark.value ? '#60a5fa' : '#2563eb'}>Pure Canvas 2D</text>
+      </view>
+    }
+  </view>
+
+  <!-- Right: Theme Toggle, Dynamic Route Switcher & Docs Link -->
+  <view flexDirection="row" alignItems="center" :gap={isMobile.value ? 5 : 8}>
+    
+    <!-- 1. Theme Toggle Button -->
+    <button :label={isMobile.value ? (isDark.value ? '☀️' : '🌙') : (isDark.value ? '☀️ Light' : '🌙 Dark')} :backgroundColor={isDark.value ? '#222222' : '#f8fafc'} :hoverBackgroundColor={isDark.value ? '#2e2e2e' : '#f1f5f9'} activeBackgroundColor="#e2e8f0" :labelColor={isDark.value ? '#e5e5e5' : '#475569'} borderWidth="1" :borderColor={isDark.value ? '#333333' : '#cbd5e1'} borderRadius="8" :padding={isMobile.value ? [5, 8] : [6, 12]} :fontSize={isMobile.value ? 11 : 12} fontWeight="bold" @click="handleThemeClick" />
+
+    <!-- 2. Dynamic Route Switcher Button (Switches between Dashboard and Auth) -->
+    <button :label={sessionStore.state.activeRoute === 'auth' ? (isMobile.value ? '📊 App' : '📊 Dashboard') : (isMobile.value ? '🔑 Auth' : '🔑 Test Auth')} :backgroundColor={sessionStore.state.activeRoute === 'auth' ? '#059669' : '#2563eb'} :hoverBackgroundColor={sessionStore.state.activeRoute === 'auth' ? '#047857' : '#1d4ed8'} labelColor="#ffffff" borderRadius="8" :padding={isMobile.value ? [5, 8] : [6, 14]} :fontSize={isMobile.value ? 11 : 12} fontWeight="bold" @click="handleRouteSwitch" />
+
+    <!-- 3. GitHub Docs Link -->
+    <button label="GitHub ↗" :backgroundColor={isDark.value ? '#222222' : '#eff6ff'} :hoverBackgroundColor={isDark.value ? '#2e2e2e' : '#dbeafe'} activeBackgroundColor="#bfdbfe" :labelColor={isDark.value ? '#a0a0a0' : '#2563eb'} borderWidth="1" :borderColor={isDark.value ? '#333333' : '#dbeafe'} borderRadius="8" :padding={isMobile.value ? [5, 7] : [6, 14]} :fontSize={isMobile.value ? 11 : 12} fontWeight="bold" @click="openDocs" />
+
+  </view>
+
+</view>

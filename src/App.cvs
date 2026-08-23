@@ -20,7 +20,7 @@
   }
 </script>
 
-<view width="100%" height="100%" backgroundColor="#090d16" position="relative">
+<view width="100%" height="100%" backgroundColor="#101010" position="relative">
 
   <!-- 1. Master Application Persistent Layout (Contains Header, Slot & Footer) -->
   @if (!isSplashActive.value) {

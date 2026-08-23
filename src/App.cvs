@@ -73,81 +73,84 @@
   }
 </script>
 
-<view width="100%" height="100%" flexDirection="column" backgroundColor="#f8fafc" :padding={isMobile.value ? [8, 8] : [16, 24]} :gap={isMobile.value ? 8 : 12}>
+<view width="100%" height="100%" flexDirection="column" backgroundColor="#f8fafc" :padding={isMobile.value ? [10, 10] : [16, 24]} :gap={isMobile.value ? 8 : 12}>
   
   <!-- 1. Top Navbar Header -->
-  <view width="100%" flexDirection="row" alignItems="center" justifyContent="space-between" :padding={isMobile.value ? [8, 10] : [12, 18]} backgroundColor="#ffffff" borderRadius="12" borderWidth="1" borderColor="#e2e8f0">
-    <view flexDirection="row" alignItems="center" :gap={isMobile.value ? 6 : 10}>
+  <view width="100%" flexDirection="row" alignItems="center" justifyContent="space-between" :padding={isMobile.value ? [8, 12] : [12, 18]} backgroundColor="#ffffff" borderRadius="12" borderWidth="1" borderColor="#e2e8f0">
+    <view flexDirection="row" alignItems="center" :gap={isMobile.value ? 6 : 8}>
       <text :fontSize={isMobile.value ? 15 : 17} fontWeight="bold" color="#0f172a">🎨 CanvApps</text>
-      <view :padding={isMobile.value ? [2, 6] : [3, 8]} backgroundColor="#eff6ff" borderRadius="6">
-        <text :fontSize={isMobile.value ? 9 : 10} fontWeight="600" color="#2563eb">100% Canvas UI</text>
+      <view padding="[2, 6]" backgroundColor="#eff6ff" borderRadius="6">
+        <text fontSize="9" fontWeight="bold" color="#2563eb">100% Canvas UI</text>
       </view>
     </view>
 
     <!-- Header Status with @if ... else condition -->
-    <view flexDirection="row" alignItems="center" gap="6">
+    <view flexDirection="row" alignItems="center">
       @if (cycleCount.value > 50) {
-        <view :padding={isMobile.value ? [2, 6] : [3, 8]} backgroundColor="#ecfdf5" borderRadius="6">
-          <text :fontSize={isMobile.value ? 10 : 11} fontWeight="600" color="#047857">🔥 High ({{ cycleCount.value }})</text>
+        <view padding="[3, 8]" backgroundColor="#ecfdf5" borderRadius="8" borderWidth="1" borderColor="#d1fae5">
+          <text fontSize="10" fontWeight="600" color="#047857">🔥 High ({{ cycleCount.value }})</text>
         </view>
       } else {
-        <view :padding={isMobile.value ? [2, 6] : [3, 8]} backgroundColor="#eff6ff" borderRadius="6">
-          <text :fontSize={isMobile.value ? 10 : 11} fontWeight="600" color="#2563eb">⚡ Standard ({{ cycleCount.value }})</text>
+        <view padding="[3, 8]" backgroundColor="#eff6ff" borderRadius="8" borderWidth="1" borderColor="#dbeafe">
+          <text fontSize="10" fontWeight="600" color="#2563eb">⚡ Standard ({{ cycleCount.value }})</text>
         </view>
       }
     </view>
   </view>
 
   <!-- 2. Reactive State & Signals Container -->
-  <view width="100%" backgroundColor="#ffffff" borderRadius="14" borderWidth="1" borderColor="#e2e8f0" :padding={isMobile.value ? [10, 10] : [14, 18]} flexDirection="column" :gap={isMobile.value ? 8 : 10}>
-    <view flexDirection="row" justifyContent="space-between" alignItems="center">
-      <view flexDirection="column" gap="2">
-        <text :fontSize={isMobile.value ? 13 : 14} fontWeight="bold" color="#0f172a">⚡ Reactive State & Signals</text>
-        <text :fontSize={isMobile.value ? 10 : 11} color="#64748b">Fine-grained memory signals with zero virtual DOM diffing</text>
-      </view>
+  <view width="100%" backgroundColor="#ffffff" borderRadius="14" borderWidth="1" borderColor="#e2e8f0" :padding={isMobile.value ? [10, 12] : [14, 18]} flexDirection="column" :gap={isMobile.value ? 8 : 10}>
+    <view flexDirection="column" gap="2">
+      <text :fontSize={isMobile.value ? 13 : 14} fontWeight="bold" color="#0f172a">⚡ Reactive Signals</text>
+      <text fontSize="10" color="#64748b">Fine-grained memory signals with zero Virtual DOM diffing</text>
     </view>
 
-    <!-- Counter Box (Responsive Stacking for Mobile & Desktop) -->
+    <!-- Counter Box (Responsive Layout) -->
     <view width="100%" backgroundColor="#f8fafc" borderRadius="10" borderWidth="1" borderColor="#e2e8f0" :padding={isMobile.value ? [8, 10] : [10, 14]} :flexDirection={isMobile.value ? 'column' : 'row'} :alignItems={isMobile.value ? 'stretch' : 'center'} :justifyContent={isMobile.value ? 'flex-start' : 'space-between'} :gap={isMobile.value ? 8 : 12}>
-      <view :flexDirection={isMobile.value ? 'row' : 'column'} :justifyContent={isMobile.value ? 'space-between' : 'flex-start'} :alignItems={isMobile.value ? 'center' : 'flex-start'} gap="2">
+      
+      <!-- Counter Stat Row -->
+      <view flexDirection="row" justifyContent="space-between" alignItems="center">
         <text fontSize="9" fontWeight="600" color="#64748b">CYCLE COUNTER</text>
-        <text :fontSize={isMobile.value ? 16 : 18} fontWeight="bold" color="#2563eb">
-          {{ cycleCount.value }} Total Cycles
-        </text>
+        <view padding="[2, 8]" backgroundColor="#dbeafe" borderRadius="6">
+          <text :fontSize={isMobile.value ? 13 : 15} fontWeight="bold" color="#1d4ed8">
+            {{ cycleCount.value }} Cycles
+          </text>
+        </view>
       </view>
 
-      <view flexDirection="row" :gap={isMobile.value ? 5 : 8}>
-        <button label="Decrease" backgroundColor="#ffffff" hoverBackgroundColor="#f1f5f9" labelColor="#334155" borderWidth="1" borderColor="#cbd5e1" :padding={isMobile.value ? [6, 8] : [8, 14]} :flexGrow={1} :fontSize={isMobile.value ? 11 : 12} @click="decrementCycle" />
-        <button label="Increment" backgroundColor="#2563eb" hoverBackgroundColor="#1d4ed8" labelColor="#ffffff" :padding={isMobile.value ? [6, 8] : [8, 16]} :flexGrow={1} :fontSize={isMobile.value ? 11 : 12} @click="incrementCycle" />
-        <button label="Reset" backgroundColor="#fee2e2" hoverBackgroundColor="#fecaca" labelColor="#dc2626" :padding={isMobile.value ? [6, 8] : [8, 12]} :flexGrow={1} :fontSize={isMobile.value ? 11 : 12} @click="resetCycles" />
+      <!-- Action Buttons Row -->
+      <view flexDirection="row" :gap={isMobile.value ? 6 : 8}>
+        <button label="− 1" backgroundColor="#ffffff" hoverBackgroundColor="#f1f5f9" labelColor="#334155" borderWidth="1" borderColor="#cbd5e1" :padding={isMobile.value ? [7, 8] : [8, 14]} :flexGrow={1} fontSize="12" borderRadius="8" @click="decrementCycle" />
+        <button label="+ 1" backgroundColor="#2563eb" hoverBackgroundColor="#1d4ed8" labelColor="#ffffff" :padding={isMobile.value ? [7, 8] : [8, 16]} :flexGrow={1} fontSize="12" borderRadius="8" @click="incrementCycle" />
+        <button label="↺ Reset" backgroundColor="#fee2e2" hoverBackgroundColor="#fecaca" labelColor="#dc2626" :padding={isMobile.value ? [7, 8] : [8, 12]} :flexGrow={1} fontSize="12" borderRadius="8" @click="resetCycles" />
       </view>
     </view>
   </view>
 
   <!-- 3. Ghost DOM & Iteration Container -->
-  <view width="100%" flexGrow="1" backgroundColor="#ffffff" borderRadius="14" borderWidth="1" borderColor="#e2e8f0" :padding={isMobile.value ? [10, 10] : [14, 18]} flexDirection="column" :gap={isMobile.value ? 8 : 10}>
+  <view width="100%" flexGrow="1" backgroundColor="#ffffff" borderRadius="14" borderWidth="1" borderColor="#e2e8f0" :padding={isMobile.value ? [10, 12] : [14, 18]} flexDirection="column" :gap={isMobile.value ? 8 : 10}>
     <view flexDirection="column" gap="2">
-      <text :fontSize={isMobile.value ? 13 : 14} fontWeight="bold" color="#0f172a">📱 Ghost DOM & Block-Level Iteration</text>
-      <text :fontSize={isMobile.value ? 10 : 11} color="#64748b">Selectable Canvas text, native mobile inputs & @each streaming</text>
+      <text :fontSize={isMobile.value ? 13 : 14} fontWeight="bold" color="#0f172a">📱 Ghost DOM & @each Streaming</text>
+      <text fontSize="10" color="#64748b">Selectable Canvas text, native mobile inputs & @each streaming</text>
     </view>
 
-    <!-- Task Input Form (Responsive Column on Mobile, Row on Desktop) -->
-    <view width="100%" :flexDirection={isMobile.value ? 'column' : 'row'} :gap={isMobile.value ? 6 : 8}>
-      <input placeholder="Type a milestone and press Enter..." flexGrow="1" backgroundColor="#f8fafc" color="#0f172a" placeholderColor="#94a3b8" borderColor="#cbd5e1" focusBorderColor="#2563eb" :padding={isMobile.value ? [8, 10] : [9, 12]} :fontSize={isMobile.value ? 12 : 13} :value="taskInput.value" @input="onInput" @keydown="handleKeyDown" @submit="addMilestone" />
-      <button label="+ Add Milestone" backgroundColor="#059669" hoverBackgroundColor="#047857" labelColor="#ffffff" :padding={isMobile.value ? [8, 12] : [9, 16]} :fontSize={isMobile.value ? 12 : 13} @click="addMilestone" />
+    <!-- Task Input Row (Adaptive Inline on Mobile & Desktop) -->
+    <view width="100%" flexDirection="row" :gap={isMobile.value ? 6 : 8} alignItems="center">
+      <input :placeholder={isMobile.value ? 'Type milestone...' : 'Type a milestone and press Enter...'} flexGrow="1" backgroundColor="#f8fafc" color="#0f172a" placeholderColor="#94a3b8" borderColor="#cbd5e1" focusBorderColor="#2563eb" :padding={isMobile.value ? [8, 10] : [9, 12]} :fontSize={isMobile.value ? 12 : 13} borderRadius="8" :value="taskInput.value" @input="onInput" @keydown="handleKeyDown" @submit="addMilestone" />
+      <button :label={isMobile.value ? '+ Add' : '+ Add Milestone'} backgroundColor="#059669" hoverBackgroundColor="#047857" labelColor="#ffffff" :padding={isMobile.value ? [8, 12] : [9, 16]} :fontSize={isMobile.value ? 12 : 13} borderRadius="8" @click="addMilestone" />
     </view>
 
     <!-- Milestone Stream List with @if ... else and @each rows as row { ... } -->
     <view width="100%" flexDirection="column" gap="5" flexGrow="1">
       @if (milestones.value.length === 0) {
         <view width="100%" backgroundColor="#f8fafc" borderRadius="8" :padding={isMobile.value ? 12 : 16} borderWidth="1" borderColor="#e2e8f0" alignItems="center" justifyContent="center">
-          <text :fontSize={isMobile.value ? 11 : 12} color="#94a3b8">No milestones in list. Type a new milestone above!</text>
+          <text fontSize="11" color="#94a3b8">No milestones in list. Type a new milestone above!</text>
         </view>
       } else {
         @each milestones.value as item, index {
-          <view width="100%" backgroundColor="#f8fafc" borderRadius="8" :padding={isMobile.value ? [7, 9] : [9, 12]} borderWidth="1" borderColor="#e2e8f0" flexDirection="row" alignItems="center" justifyContent="space-between" gap="6">
+          <view width="100%" backgroundColor="#f8fafc" borderRadius="8" :padding={isMobile.value ? [7, 9] : [8, 12]} borderWidth="1" borderColor="#e2e8f0" flexDirection="row" alignItems="center" justifyContent="space-between" gap="6">
             <text :fontSize={isMobile.value ? 11 : 12} color="#1e293b" flexGrow="1" wordWrap="true">• {{ item.text }}</text>
-            <button label="✕" backgroundColor="#fee2e2" hoverBackgroundColor="#fecaca" labelColor="#dc2626" width="24" height="24" borderRadius="12" :fontSize={isMobile.value ? 10 : 12} @click="() => removeMilestone(item.id)" />
+            <button label="✕" backgroundColor="#fee2e2" hoverBackgroundColor="#fecaca" labelColor="#dc2626" width="22" height="22" borderRadius="11" fontSize="10" @click="() => removeMilestone(item.id)" />
           </view>
         }
       }
@@ -156,8 +159,8 @@
 
   <!-- 4. Footer Bar -->
   <view width="100%" :flexDirection={isMobile.value ? 'column' : 'row'} alignItems="center" :justifyContent={isMobile.value ? 'center' : 'space-between'} :gap={isMobile.value ? 1 : 0} padding="[2, 4]">
-    <text fontSize="9" color="#64748b" textAlign="center">Single-File Component (.cvs) • Pure Canvas 2D Pipeline</text>
-    <text fontSize="9" color="#64748b" textAlign="center">Multi-Target Distribution (SPA • PWA • Capacitor)</text>
+    <text fontSize="9" color="#94a3b8" textAlign="center">Single-File Component (.cvs) • Pure Canvas 2D Pipeline</text>
+    <text fontSize="9" color="#94a3b8" textAlign="center">Multi-Target Distribution (SPA • PWA • Capacitor)</text>
   </view>
 
 </view>

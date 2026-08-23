@@ -59,8 +59,46 @@
     "control-blocks": {
       "patterns": [
         {
-          "name": "keyword.control.directive.canvapps",
-          "match": "(@if|@else\\s+if|@else|else\\s+if|else|@each|\\{#if|\\{:else\\}|\\{/if\\}|\\{#each|\\{/each\\})"
+          "name": "meta.control.if.canvapps",
+          "begin": "(@if|@else\\s+if)\\s*(\\()",
+          "beginCaptures": {
+            "1": { "name": "keyword.control.directive.canvapps" },
+            "2": { "name": "punctuation.section.parens.begin.canvapps" }
+          },
+          "end": "(\\))\\s*(\\{)",
+          "endCaptures": {
+            "1": { "name": "punctuation.section.parens.end.canvapps" },
+            "2": { "name": "punctuation.section.curly.begin.canvapps" }
+          },
+          "patterns": [
+            { "include": "source.ts" },
+            { "include": "#ts-embedded" }
+          ]
+        },
+        {
+          "name": "meta.control.each.canvapps",
+          "begin": "(@each)\\s+([^\\s{]+(?:\\.[^\\s{]+)*)\\s+(as)\\s+([a-zA-Z_$][a-zA-Z0-9_$]*)(?:\\s*,\\s*([a-zA-Z_$][a-zA-Z0-9_$]*))?\\s*(\\{)",
+          "beginCaptures": {
+            "1": { "name": "keyword.control.directive.canvapps" },
+            "2": { "name": "variable.other.readwrite.ts" },
+            "3": { "name": "keyword.control.as.canvapps" },
+            "4": { "name": "variable.parameter.item.canvapps" },
+            "5": { "name": "variable.parameter.index.canvapps" },
+            "6": { "name": "punctuation.section.curly.begin.canvapps" }
+          },
+          "end": "(?<=\\{)"
+        },
+        {
+          "name": "meta.control.else.canvapps",
+          "match": "(@else|else)\\s*(\\{)",
+          "captures": {
+            "1": { "name": "keyword.control.directive.canvapps" },
+            "2": { "name": "punctuation.section.curly.begin.canvapps" }
+          }
+        },
+        {
+          "name": "punctuation.section.curly.end.canvapps",
+          "match": "(\\})"
         }
       ]
     },
@@ -110,35 +148,59 @@
     "tag-attributes": {
       "patterns": [
         {
-          "name": "meta.directive.canvapps",
-          "match": "([*@](?:if|for|each)|each)\\s*(=)\\s*(\"[^\"]*\"|'[^']*'|\\{[^}]*\\})",
-          "captures": {
+          "name": "meta.directive.if.canvapps",
+          "begin": "(@if)\\s*(=)\\s*(\"|')",
+          "beginCaptures": {
             "1": { "name": "keyword.control.directive.canvapps" },
             "2": { "name": "punctuation.separator.key-value.html" },
-            "3": { "name": "string.quoted.directive.canvapps", "patterns": [{ "include": "source.ts" }, { "include": "#ts-embedded" }] }
-          }
+            "3": { "name": "punctuation.definition.string.begin.html" }
+          },
+          "end": "(\"|')",
+          "endCaptures": {
+            "1": { "name": "punctuation.definition.string.end.html" }
+          },
+          "patterns": [
+            { "include": "source.ts" },
+            { "include": "#ts-embedded" }
+          ]
         },
         {
           "name": "meta.event-binding.canvapps",
-          "match": "(@[a-zA-Z0-9_-]+)\\s*(=)\\s*(\"[^\"]*\"|'[^']*'|\\{[^}]*\\})",
-          "captures": {
+          "begin": "(@[a-zA-Z0-9_-]+)\\s*(=)\\s*(\"|'|\\{)",
+          "beginCaptures": {
             "1": { "name": "entity.other.attribute-name.event.canvapps" },
             "2": { "name": "punctuation.separator.key-value.html" },
-            "3": { "name": "string.quoted.event.canvapps" }
-          }
+            "3": { "name": "punctuation.definition.string.begin.html" }
+          },
+          "end": "(\"|'|\\})",
+          "endCaptures": {
+            "1": { "name": "punctuation.definition.string.end.html" }
+          },
+          "patterns": [
+            { "include": "source.ts" },
+            { "include": "#ts-embedded" }
+          ]
         },
         {
           "name": "meta.dynamic-binding.canvapps",
-          "match": "(:[a-zA-Z0-9_-]+)\\s*(=)\\s*(\"[^\"]*\"|'[^']*'|\\{[^}]*\\})",
-          "captures": {
+          "begin": "(:[a-zA-Z0-9_-]+)\\s*(=)\\s*(\\{|\"|')",
+          "beginCaptures": {
             "1": { "name": "entity.other.attribute-name.binding.canvapps" },
             "2": { "name": "punctuation.separator.key-value.html" },
-            "3": { "name": "string.quoted.binding.canvapps", "patterns": [{ "include": "source.ts" }, { "include": "#ts-embedded" }] }
-          }
+            "3": { "name": "punctuation.definition.string.begin.html" }
+          },
+          "end": "(\\}|\"|')",
+          "endCaptures": {
+            "1": { "name": "punctuation.definition.string.end.html" }
+          },
+          "patterns": [
+            { "include": "source.ts" },
+            { "include": "#ts-embedded" }
+          ]
         },
         {
           "name": "meta.attribute.standard.canvapps",
-          "match": "([a-zA-Z0-9_-]+)\\s*(?:(=)\\s*(\"[^\"]*\"|'[^']*'|\\{[^}]*\\}|[^\\s>]+))?",
+          "match": "([a-zA-Z0-9_-]+)\\s*(?:(=)\\s*(\"[^\"]*\"|'[^']*'|[^\\s>]+))?",
           "captures": {
             "1": { "name": "entity.other.attribute-name.html" },
             "2": { "name": "punctuation.separator.key-value.html" },
@@ -185,6 +247,22 @@
           ]
         },
         {
+          "name": "keyword.operator.comparison.ts",
+          "match": "(===|!==|==|!=|<=|>=|<|>)"
+        },
+        {
+          "name": "keyword.operator.logical.ts",
+          "match": "(&&|\\|\\||!)"
+        },
+        {
+          "name": "keyword.operator.arithmetic.ts",
+          "match": "(\\+|\\-|\\*|\\/|%)"
+        },
+        {
+          "name": "keyword.operator.ternary.ts",
+          "match": "(\\?|:)"
+        },
+        {
           "name": "keyword.control.ts",
           "match": "\\b(import|from|export|default|return|if|else|for|while|do|switch|case|break|continue|try|catch|finally|throw|new|async|await|yield)\\b"
         },
@@ -202,7 +280,7 @@
         },
         {
           "name": "support.function.canvapps.ts",
-          "match": "\\b(signal|computed|effect|batch|useBreakpoints|useMediaQuery|bindSignal|defineConfig|createState)\\b"
+          "match": "\\b(signal|computed|effect|batch|useBreakpoints|useMediaQuery|bindSignal|defineConfig|createState|createStore|defineStore)\\b"
         },
         {
           "name": "constant.language.boolean.ts",
@@ -213,8 +291,16 @@
           "match": "\\b([0-9]+(?:\\.[0-9]+)?)\\b"
         },
         {
+          "name": "variable.other.property.ts",
+          "match": "(?<=\\.)([a-zA-Z_$][a-zA-Z0-9_$]*)"
+        },
+        {
           "name": "entity.name.function.ts",
           "match": "\\b([a-zA-Z_$][a-zA-Z0-9_$]*)\\s*(?=\\()"
+        },
+        {
+          "name": "variable.other.readwrite.ts",
+          "match": "\\b([a-zA-Z_$][a-zA-Z0-9_$]*)\\b"
         }
       ]
     }

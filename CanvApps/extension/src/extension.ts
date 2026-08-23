@@ -1,59 +1,149 @@
 import * as vscode from 'vscode';
+import * as fs from 'fs';
+import * as path from 'path';
+
+/**
+ * Resolves a module specifier to an absolute file path on disk.
+ */
+function resolveImportPath(baseDir: string, importPath: string): string | null {
+  const extensions = ['', '.cvs', '.ts', '.tsx', '.js', '/index.ts', '/index.cvs', '/index.js'];
+  for (const ext of extensions) {
+    const candidate = path.resolve(baseDir, importPath + ext);
+    if (fs.existsSync(candidate) && fs.statSync(candidate).isFile()) {
+      return candidate;
+    }
+  }
+  return null;
+}
 
 /**
  * CanvApps Extension Activation
  */
 export function activate(context: vscode.ExtensionContext): void {
-  // 1. Definition Provider (Cmd+Click / Ctrl+Click on functions, signals, and variables)
+  // 1. Definition Provider (Cmd+Click / Ctrl+Click on functions, signals, variables, stores, and components)
   const definitionProvider = vscode.languages.registerDefinitionProvider('canvapps', {
     provideDefinition(document: vscode.TextDocument, position: vscode.Position) {
-      const wordRange = document.getWordRangeAtPosition(position, /[@:A-Za-z0-9_$.]+/);
+      const wordRange = document.getWordRangeAtPosition(position, /[A-Za-z0-9_$]+/);
       if (!wordRange) {
         return null;
       }
 
-      let word = document.getText(wordRange);
-      // Clean leading prefixes like @ or : or {{
-      word = word.replace(/^[@:]/, '').replace(/\.value$/, '');
-
-      if (!word || word === 'item' || word === 'index') {
+      const word = document.getText(wordRange);
+      if (!word) {
         return null;
       }
 
       const text = document.getText();
+      const currentDir = path.dirname(document.uri.fsPath);
+
+      // Extract <script> block
       const scriptRegex = /<script\b[^>]*>([\s\S]*?)<\/script>/i;
       const scriptMatch = scriptRegex.exec(text);
-      if (!scriptMatch) {
-        return null;
-      }
 
-      const scriptContent = scriptMatch[1];
-      const scriptStartIndex = scriptMatch.index + scriptMatch[0].indexOf(scriptContent);
+      if (scriptMatch) {
+        const scriptContent = scriptMatch[1];
+        const scriptStartIndex = scriptMatch.index + scriptMatch[0].indexOf(scriptContent);
 
-      // Search for function, const, let, var, signal, type declaration
-      const defRegex = new RegExp(
-        `(?:function\\s+${word}\\b|(?:const|let|var)\\s+${word}\\b|type\\s+${word}\\b|interface\\s+${word}\\b)`,
-        'g'
-      );
+        // A. Search for local definitions (function, const, let, var, class, type, interface) in <script>
+        const localDefRegex = new RegExp(
+          `(?:function\\s+${word}\\b|(?:const|let|var)\\s+${word}\\b|class\\s+${word}\\b|type\\s+${word}\\b|interface\\s+${word}\\b|enum\\s+${word}\\b)`,
+          'g'
+        );
 
-      let match: RegExpExecArray | null;
-      while ((match = defRegex.exec(scriptContent)) !== null) {
-        const matchOffset = scriptStartIndex + match.index;
-        const targetPos = document.positionAt(matchOffset);
-        return new vscode.Location(document.uri, targetPos);
+        let localMatch: RegExpExecArray | null;
+        while ((localMatch = localDefRegex.exec(scriptContent)) !== null) {
+          const matchOffset = scriptStartIndex + localMatch.index;
+          const targetPos = document.positionAt(matchOffset);
+          return new vscode.Location(document.uri, targetPos);
+        }
+
+        // B. Search for imported symbols in <script>
+        const importRegex = /import\s+([\s\S]*?)\s+from\s+['"]([^'"]+)['"]/g;
+        let impMatch: RegExpExecArray | null;
+
+        while ((impMatch = importRegex.exec(scriptContent)) !== null) {
+          const importClause = impMatch[1].trim();
+          const importSource = impMatch[2].trim();
+
+          const resolvedFilePath = resolveImportPath(currentDir, importSource);
+          if (!resolvedFilePath) continue;
+
+          // Case B1: Default import (e.g. `import DashboardView from './views/DashboardView.cvs'`)
+          const defaultImportMatch = importClause.match(/^[a-zA-Z_$][a-zA-Z0-9_$]*/);
+          if (defaultImportMatch && defaultImportMatch[0] === word) {
+            return new vscode.Location(vscode.Uri.file(resolvedFilePath), new vscode.Position(0, 0));
+          }
+
+          // Case B2: Named imports (e.g. `import { sessionStore, navigateRoute } from './stores/session.store'`)
+          if (importClause.includes('{') && importClause.includes('}')) {
+            const namedClause = importClause.substring(importClause.indexOf('{') + 1, importClause.indexOf('}'));
+            const specifiers = namedClause.split(',').map((s) => s.trim().split(/\s+as\s+/)[0]);
+
+            if (specifiers.includes(word)) {
+              try {
+                const targetContent = fs.readFileSync(resolvedFilePath, 'utf8');
+                const targetDefRegex = new RegExp(
+                  `(?:export\\s+(?:const|let|var|function|class|type|interface|enum)\\s+${word}\\b|(?:const|let|var|function|class|type|interface|enum)\\s+${word}\\b)`,
+                  'm'
+                );
+                const targetMatch = targetDefRegex.exec(targetContent);
+
+                if (targetMatch) {
+                  const linesBefore = targetContent.substring(0, targetMatch.index).split('\n');
+                  const lineNum = linesBefore.length - 1;
+                  const charNum = linesBefore[linesBefore.length - 1].length;
+                  return new vscode.Location(vscode.Uri.file(resolvedFilePath), new vscode.Position(lineNum, charNum));
+                }
+              } catch {
+                // Fallback to top of file
+              }
+              return new vscode.Location(vscode.Uri.file(resolvedFilePath), new vscode.Position(0, 0));
+            }
+          }
+        }
       }
 
       return null;
     },
   });
 
-  // 2. Completion Item Provider (Suggesting events, directives, attributes, and script symbols)
+  // 2. Hover Provider (Provides instant documentation on CanvApps built-in elements & directives)
+  const hoverProvider = vscode.languages.registerHoverProvider('canvapps', {
+    provideHover(document: vscode.TextDocument, position: vscode.Position) {
+      const wordRange = document.getWordRangeAtPosition(position, /[@:A-Za-z0-9_$-]+/);
+      if (!wordRange) return null;
+
+      const word = document.getText(wordRange);
+
+      const docs: Record<string, string> = {
+        view: '### `<view>` (Pure Canvas 2D Flexbox Container)\n\nUniversal layout container rendered directly on Canvas 2D using sub-pixel flexbox math.',
+        text: '### `<text>` (Direct Canvas Text Node)\n\nHardware-accelerated text rendering with automatic line-breaking and sub-pixel glyph alignment.',
+        button: '### `<button>` (Interactive Canvas Button)\n\nZero-DOM interactive button with built-in hover, active, and focus states.',
+        input: '### `<input>` (Ghost DOM Input Node)\n\nCombines native IME touch keyboard entry and clipboard support with Pure Canvas rendering.',
+        modal: '### `<modal>` (Fullscreen Canvas Dialog Overlay)\n\nFrosted glass blur, radial gradient backdrops, and animated dialog cards with zero DOM overhead.',
+        motion: '### `<motion>` (GPU-Timed Motion Wrapper)\n\nSpring physics and timeline animations (`scale-in`, `fade`, `slide-up`, `cinematic-splash`).',
+        slot: '### `<slot />` (Dynamic Layout Outlet)\n\nRenders child scene content injected from parent layouts.',
+        '@if': '### `@if (condition) { ... }`\n\nConditional directive that dynamically mounts or unmounts branches based on reactive signals.',
+        '@each': '### `@each array as item, index { ... }`\n\nReactive iteration directive that projects an array of items without Virtual DOM diffing.',
+        '@click': '### `@click="handler"`\n\nFires on pointer release when coordinates match element bounding box.',
+        signal: '### `signal(initialValue)`\n\nCreates a fine-grained reactive Signal in direct memory.',
+        computed: '### `computed(() => expr)`\n\nCreates a memoized reactive value that updates only when dependencies change.',
+      };
+
+      if (docs[word]) {
+        return new vscode.Hover(new vscode.MarkdownString(docs[word]));
+      }
+
+      return null;
+    },
+  });
+
+  // 3. Completion Item Provider (Suggesting events, directives, attributes, and script symbols)
   const completionProvider = vscode.languages.registerCompletionItemProvider(
     'canvapps',
     {
       provideCompletionItems(document: vscode.TextDocument, position: vscode.Position) {
         const linePrefix = document.lineAt(position).text.substring(0, position.character);
-
         const items: vscode.CompletionItem[] = [];
 
         // A. Event completions (@click, @input, @submit, @hover, etc.)
@@ -142,7 +232,7 @@ export function activate(context: vscode.ExtensionContext): void {
     '@', ':', '<', '"', ' '
   );
 
-  context.subscriptions.push(definitionProvider, completionProvider);
+  context.subscriptions.push(definitionProvider, hoverProvider, completionProvider);
 }
 
 export function deactivate(): void {}

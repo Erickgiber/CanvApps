@@ -379,6 +379,16 @@ export abstract class UIElement {
           if (i > 0) intrinsicW += mainGap;
         }
       }
+    } else {
+      const absChildren = this.children.filter(
+        (c) => c.visible && c.styles.display !== 'none' && c.styles.position === 'absolute'
+      );
+      for (const abs of absChildren) {
+        const absMargin = abs.getComputedMargin();
+        const absSize = abs.measure(innerAvailableW, innerAvailableH);
+        intrinsicW = Math.max(intrinsicW, absSize.width + absMargin.left + absMargin.right);
+        intrinsicH = Math.max(intrinsicH, absSize.height + absMargin.top + absMargin.bottom);
+      }
     }
 
     const width =

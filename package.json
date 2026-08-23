@@ -42,6 +42,7 @@
     "build:lib:unminified": "vite build --mode unminified",
     "build:app": "tsx CanvApps/cli/bin.ts build",
     "build:preview-code": "tsx CanvApps/cli/bin.ts preview-code",
+    "package:extension": "tsx CanvApps/extension/package-vsix.ts",
     "preview": "vite preview --outDir dist-app",
     "preview:app": "vite preview --outDir dist-app"
   },

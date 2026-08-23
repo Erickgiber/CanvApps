@@ -1,5 +1,5 @@
 # Azure Pipelines Configuration for CanvApps
-# Builds CanvApps Framework & Preview Bundle for deployment
+# Builds CanvApps Compiled Framework & Production Minified App
 
 trigger:
   branches:
@@ -21,12 +21,12 @@ steps:
 
 - script: |
     npm run build:lib
-    npm run build:preview-code
-  displayName: 'Build CanvApps Framework & Preview Bundle (preview-code/bundle)'
+    npm run build:app
+  displayName: 'Build Compiled Framework & Minified App (dist-app)'
 
 - task: PublishPipelineArtifact@1
   inputs:
-    targetPath: '$(System.DefaultWorkingDirectory)/preview-code/bundle'
-    artifact: 'canvapps-preview'
+    targetPath: '$(System.DefaultWorkingDirectory)/dist-app'
+    artifact: 'canvapps-production'
     publishLocation: 'pipeline'
-  displayName: 'Publish preview-code/bundle Artifact'
+  displayName: 'Publish dist-app Production Artifact'

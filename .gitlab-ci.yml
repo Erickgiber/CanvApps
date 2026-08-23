@@ -6,9 +6,9 @@ pages:
   script:
     - npm install
     - npm run build:lib
-    - npm run build:preview-code
+    - npm run build:app
     - rm -rf public
-    - mv preview-code/bundle public
+    - mv dist-app public
   artifacts:
     paths:
       - public

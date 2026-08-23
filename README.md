@@ -250,6 +250,64 @@ CanvApps supports an elegant Single-File Component format (`.cvs`) that compiles
 </view>
 ```
 
+### 🌈 `.cvs` Template Syntax Guide
+
+#### 1. Dynamic Property Bindings (`:prop={expr}` or `:prop="expr"`)
+Pass reactive signals or ternary conditional expressions directly to layout properties:
+```html
+<view 
+  :gap={isMobile.value ? 6 : 12} 
+  :flexDirection={isMobile.value ? 'column' : 'row'} 
+  :padding={isMobile.value ? [10, 12] : [18, 28]}
+>
+  <button :backgroundColor={isActive.value ? '#2563eb' : '#64748b'} label="Toggle" />
+</view>
+```
+
+#### 2. Conditional Block Rendering (`@if { ... } else { ... }`)
+Conditionally render Canvas subtrees reactively without boilerplate:
+```html
+@if (isMobile.value) {
+  <text fontSize="12" color="#64748b">📱 Mobile Layout Active</text>
+} else {
+  <text fontSize="16" color="#0f172a">💻 Desktop 120 FPS Retina Layout</text>
+}
+```
+*Also supports Svelte-style blocks (`{#if cond} ... {:else} ... {/if}`) and inline directives (`<view @if="cond">`).*
+
+#### 3. Reactive List Iteration (`@each`)
+Iterate signals with sub-millisecond updates:
+```html
+<view @each="tasks.value as item, index">
+  <text fontSize="13">• {{ item.title }}</text>
+  <button label="✕" @click="() => removeTask(item.id)" />
+</view>
+```
+
+#### 4. Responsive Viewport Hooks
+```ts
+<script lang="ts">
+  const { isMobile, isTablet, isDesktop, width } = useBreakpoints();
+  const isLandscape = useMediaQuery('(orientation: landscape)');
+</script>
+```
+
+#### 5. Native Text Selection & Clipboard (`selectable`)
+By default, `<text>` nodes rendered on Canvas 2D are selectable with a visible highlight and copyable via Ghost DOM. You can customize text selection per component:
+```html
+<text fontSize="14" color="#0f172a" selectable="true">
+  This text can be selected with native highlight and copied using Cmd+C or the OS context menu.
+</text>
+
+<text fontSize="12" color="#94a3b8" selectable="false">
+  Non-selectable UI label.
+</text>
+
+<text :selectable="isSelectable.value">
+  Dynamic selection signal.
+</text>
+```
+
 ### Vite Plugin Setup (`vite.config.ts`)
 
 ```ts

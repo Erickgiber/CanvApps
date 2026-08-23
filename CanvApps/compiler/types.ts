@@ -4,12 +4,12 @@
 export interface ASTProp {
   name: string;
   value: string;
-  isDynamic: boolean; // e.g. :width="200" or :text="counter.value"
+  isDynamic: boolean; // e.g. :width="200" or :text="counter.value" or :gap={isMobile.value ? 6 : 8}
   isEvent: boolean;   // e.g. @click="handleClick"
 }
 
 /**
- * Directive attributes on template elements (*if, *for).
+ * Directive attributes on template elements (*if, *for, @each, @if).
  */
 export interface ASTDirectives {
   ifCondition?: string;
@@ -30,6 +30,16 @@ export interface ASTTextNode {
 }
 
 /**
+ * Conditional branching block node (@if ... { ... } else { ... }).
+ */
+export interface ASTIfBlock {
+  type: 'if-block';
+  condition: string;
+  consequent: ASTNode[];
+  alternate?: ASTNode[];
+}
+
+/**
  * Element node inside a template tree.
  */
 export interface ASTElement {
@@ -40,7 +50,7 @@ export interface ASTElement {
   children: ASTNode[];
 }
 
-export type ASTNode = ASTElement | ASTTextNode;
+export type ASTNode = ASTElement | ASTTextNode | ASTIfBlock;
 
 /**
  * Complete Abstract Syntax Tree for a .cvs Single File Component.

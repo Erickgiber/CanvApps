@@ -1,4 +1,4 @@
-import { CVSComponentAST, ASTElement, ASTNode, ASTProp } from './types';
+import { ASTElement, ASTNode, ASTProp, CVSComponentAST } from './types';
 
 /**
  * Generates executable TypeScript code from a CVSComponentAST.
@@ -7,16 +7,10 @@ export class CVSCodeGenerator {
   private idCounter = 0;
 
   /**
-   * Transforms an AST into executable TypeScript code.
-   *
-   * @param ast The parsed CVSComponentAST.
-   * @returns Complete TypeScript code ready for execution or bundling.
+   * Generates full TypeScript source file string for the given component AST.
    */
   public generate(ast: CVSComponentAST): string {
-    this.idCounter = 0;
-
-    const script = ast.script || '';
-    const template = ast.template;
+    const { script, template } = ast;
 
     if (!template) {
       return `${script}\n\nexport default function createComponent() { return null; }`;
@@ -39,10 +33,12 @@ export default createComponent;
   }
 
   private nextId(prefix = 'node'): string {
-    return `${prefix}_${++this.idCounter}`;
+    const clean = prefix.replace(/[^a-zA-Z0-9_$]/g, '_');
+    return `${clean}_${++this.idCounter}`;
   }
 
   private generateNode(node: ASTNode, inLoop = false): { code: string; rootVar: string } {
+    // 1. Text node
     if (node.type === 'text') {
       const textVar = this.nextId('textNode');
       if (node.isDynamic) {
@@ -70,7 +66,41 @@ export default createComponent;
       }
     }
 
-    // Element node
+    // 2. Conditional block node (@if ... { ... } else { ... })
+    if (node.type === 'if-block') {
+      const ifContainer = this.nextId('ifContainer');
+      const consequentLines: string[] = [];
+      const alternateLines: string[] = [];
+
+      for (const child of node.consequent) {
+        const { code: cCode, rootVar: cVar } = this.generateNode(child, inLoop);
+        consequentLines.push(cCode);
+        consequentLines.push(`        ${ifContainer}.addChild(${cVar});`);
+      }
+
+      if (node.alternate && node.alternate.length > 0) {
+        for (const child of node.alternate) {
+          const { code: aCode, rootVar: aVar } = this.generateNode(child, inLoop);
+          alternateLines.push(aCode);
+          alternateLines.push(`        ${ifContainer}.addChild(${aVar});`);
+        }
+      }
+
+      return {
+        code: `
+  const ${ifContainer} = new UIView({});
+  effect(() => {
+    ${ifContainer}.removeAllChildren();
+    if (${node.condition}) {
+${consequentLines.join('\n')}
+    }${node.alternate && node.alternate.length > 0 ? ` else {\n${alternateLines.join('\n')}\n    }` : ''}
+  });
+`,
+        rootVar: ifContainer,
+      };
+    }
+
+    // 3. Element node
     const element = node as ASTElement;
 
     // Handle Directives (*for / @each) BEFORE generating local element code
@@ -95,6 +125,27 @@ ${itemCode}
   });
 `,
         rootVar: listContainer,
+      };
+    }
+
+    // Handle Directives (*if / @if on attribute)
+    if (element.directives.ifCondition) {
+      const ifContainer = this.nextId('ifContainer');
+      const itemTemplate = { ...element, directives: { ...element.directives, ifCondition: undefined } };
+      const { code: itemCode, rootVar: itemRoot } = this.generateNode(itemTemplate, inLoop);
+
+      return {
+        code: `
+  const ${ifContainer} = new UIView({});
+  effect(() => {
+    ${ifContainer}.removeAllChildren();
+    if (${element.directives.ifCondition}) {
+${itemCode}
+      ${ifContainer}.addChild(${itemRoot});
+    }
+  });
+`,
+        rootVar: ifContainer,
       };
     }
 
@@ -140,13 +191,15 @@ ${itemCode}
       }
     }
 
-    // 3. Attach Dynamic Bindings (:prop="expr")
+    // 3. Attach Dynamic Bindings (:prop="expr" or :prop={expr})
     for (const dyn of dynamicProps) {
       if (inLoop) {
         if (element.tag === 'input' && dyn.name === 'value') {
           codeLines.push(`  ${elVar}.setValue(String(${dyn.value} ?? ''));`);
         } else if (element.tag === 'text' && dyn.name === 'text') {
           codeLines.push(`  ${elVar}.setText(String(${dyn.value} ?? ''));`);
+        } else if (element.tag === 'text' && dyn.name === 'selectable') {
+          codeLines.push(`  ${elVar}.setSelectable(Boolean(${dyn.value}));`);
         } else if (element.tag === 'button' && dyn.name === 'label') {
           codeLines.push(`  ${elVar}.setLabel(String(${dyn.value} ?? ''));`);
         } else {
@@ -163,6 +216,11 @@ ${itemCode}
   effect(() => {
     ${elVar}.setText(String(${dyn.value} ?? ''));
   });`);
+        } else if (element.tag === 'text' && dyn.name === 'selectable') {
+          codeLines.push(`
+  effect(() => {
+    ${elVar}.setSelectable(Boolean(${dyn.value}));
+  });`);
         } else if (element.tag === 'button' && dyn.name === 'label') {
           codeLines.push(`
   effect(() => {
@@ -177,7 +235,7 @@ ${itemCode}
       }
     }
 
-    // Process non-text children
+    // Process children
     for (const child of element.children) {
       if (child.type === 'text' && (element.tag === 'text' || element.tag === 'button')) {
         continue;
@@ -208,25 +266,43 @@ ${itemCode}
       } else if (prop.isDynamic) {
         dynamicProps.push(prop);
       } else {
-        // Parse numbers, booleans, arrays, strings
-        let val: any = prop.value;
-        if (!isNaN(Number(val)) && val !== '') {
-          val = Number(val);
-        } else if (val === 'true') {
-          val = true;
-        } else if (val === 'false') {
-          val = false;
-        } else if (typeof val === 'string' && val.startsWith('[') && val.endsWith(']')) {
-          try {
-            val = JSON.parse(val);
-          } catch {
-            // fallback
-          }
-        }
-        staticStyles[prop.name] = val;
+        staticStyles[prop.name] = this.coerceStaticValue(prop.name, prop.value);
       }
     }
 
     return { staticStyles, dynamicProps, events };
+  }
+
+  private coerceStaticValue(key: string, value: string): any {
+    if (value === 'true') return true;
+    if (value === 'false') return false;
+
+    if (
+      key === 'width' ||
+      key === 'height' ||
+      key === 'minWidth' ||
+      key === 'minHeight' ||
+      key === 'maxWidth' ||
+      key === 'maxHeight'
+    ) {
+      if (/^\d+%$/.test(value)) {
+        return value;
+      }
+    }
+
+    if (/^-?\d+(\.\d+)?$/.test(value)) {
+      return Number(value);
+    }
+
+    if (value.startsWith('[') && value.endsWith(']')) {
+      try {
+        return JSON.parse(value);
+      } catch {
+        const parts = value.slice(1, -1).split(',').map((s) => s.trim());
+        return parts.map((p) => (/^-?\d+$/.test(p) ? Number(p) : p));
+      }
+    }
+
+    return value;
   }
 }

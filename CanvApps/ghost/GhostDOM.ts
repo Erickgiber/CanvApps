@@ -25,7 +25,7 @@ export interface GhostTarget extends UIElement {
  *
  * Provides:
  * 1. Native mobile keyboard (iOS/Android) invocation and auto-correction.
- * 2. Full text selection & native OS context menu ("Copy", "Select All", "Share").
+ * 2. Full text selection with visible highlight & native OS context menu ("Copy", "Select All", "Share").
  * 3. Full accessibility (screen readers, VoiceOver, TalkBack, ARIA).
  * 4. Native clipboard copy/paste/cut integration.
  */
@@ -38,7 +38,7 @@ export class GhostDOM {
     this.container.id = 'canvapps-ghost-dom-overlay';
     this.container.setAttribute('aria-hidden', 'false');
 
-    // Make overlay absolute, overlaying the canvas without blocking pointer events
+    // Make overlay absolute, overlaying the canvas without blocking unselected pointer events
     Object.assign(this.container.style, {
       position: 'absolute',
       top: '0',
@@ -50,8 +50,49 @@ export class GhostDOM {
       zIndex: '1',
     });
 
+    // Inject global selection highlighting styles for GhostDOM text nodes
+    if (typeof document !== 'undefined' && !document.getElementById('canvapps-ghost-dom-styles')) {
+      const style = document.createElement('style');
+      style.id = 'canvapps-ghost-dom-styles';
+      style.textContent = `
+        #canvapps-ghost-dom-overlay .canvapps-ghost-text {
+          color: transparent !important;
+          caret-color: transparent !important;
+        }
+        #canvapps-ghost-dom-overlay .canvapps-ghost-text::selection {
+          background-color: rgba(37, 99, 235, 0.28) !important;
+          color: transparent !important;
+        }
+        #canvapps-ghost-dom-overlay .canvapps-ghost-text::-moz-selection {
+          background-color: rgba(37, 99, 235, 0.28) !important;
+          color: transparent !important;
+        }
+      `;
+      document.head.appendChild(style);
+    }
+
     const parent = mountContainer ?? document.body;
     parent.appendChild(this.container);
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('pointerdown', this.handleGlobalPointerDown.bind(this));
+    }
+  }
+
+  /**
+   * Deselects active text selection when clicking outside text nodes.
+   */
+  private handleGlobalPointerDown(e: PointerEvent): void {
+    const selection = window.getSelection();
+    if (!selection || selection.isCollapsed) {
+      return;
+    }
+
+    const target = e.target as HTMLElement | null;
+    const isTextGhost = target && target.classList && target.classList.contains('canvapps-ghost-text');
+    if (!isTextGhost) {
+      selection.removeAllRanges();
+    }
   }
 
   /**
@@ -70,33 +111,35 @@ export class GhostDOM {
         ghost = input;
       } else if (type === 'text') {
         const span = document.createElement('span');
+        span.className = 'canvapps-ghost-text';
         span.textContent = target.getText ? target.getText() : '';
+        const selectable = target.isSelectable ? target.isSelectable() : true;
+
+        Object.assign(span.style, {
+          position: 'absolute',
+          opacity: '1',
+          pointerEvents: selectable ? 'auto' : 'none',
+          userSelect: selectable ? 'text' : 'none',
+          WebkitUserSelect: selectable ? 'text' : 'none',
+          cursor: selectable ? 'text' : 'default',
+          border: 'none',
+          outline: 'none',
+          background: 'transparent',
+          color: 'transparent',
+          padding: '0',
+          margin: '0',
+          whiteSpace: 'pre-wrap',
+          wordBreak: 'break-word',
+          overflow: 'hidden',
+          zIndex: '1',
+        });
         ghost = span;
       } else {
         ghost = document.createElement('div');
         ghost.tabIndex = 0;
       }
 
-      if (type === 'text') {
-        // Text node ghost: visually transparent but fully selectable by browser cursor/touch & native context menu
-        Object.assign(ghost.style, {
-          position: 'absolute',
-          opacity: '0.0001',
-          pointerEvents: 'auto',
-          userSelect: 'text',
-          WebkitUserSelect: 'text',
-          cursor: 'text',
-          border: 'none',
-          outline: 'none',
-          background: 'transparent',
-          color: '#000000',
-          padding: '0',
-          margin: '0',
-          whiteSpace: 'pre-wrap',
-          overflow: 'hidden',
-          zIndex: '1',
-        });
-      } else {
+      if (type !== 'text') {
         // Invisible input/interactive
         Object.assign(ghost.style, {
           position: 'absolute',
@@ -166,9 +209,18 @@ export class GhostDOM {
       const fontSize = styles.fontSize ?? 14;
       const fontWeight = styles.fontWeight ?? 'normal';
       const fontFamily = styles.fontFamily ?? 'system-ui, -apple-system, sans-serif';
+      const textAlign = styles.textAlign ?? 'left';
+      const selectable = target.isSelectable ? target.isSelectable() : true;
+
       ghost.style.fontSize = `${fontSize}px`;
       ghost.style.fontWeight = String(fontWeight);
       ghost.style.fontFamily = fontFamily;
+      ghost.style.textAlign = textAlign;
+      ghost.style.userSelect = selectable ? 'text' : 'none';
+      (ghost.style as any).WebkitUserSelect = selectable ? 'text' : 'none';
+      ghost.style.pointerEvents = selectable ? 'auto' : 'none';
+      ghost.style.cursor = selectable ? 'text' : 'default';
+
       if (styles.lineHeight) {
         ghost.style.lineHeight = `${styles.lineHeight}px`;
       }

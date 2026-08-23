@@ -116,6 +116,14 @@ export class EventDispatcher {
   // ---------------------------------------------------------------------------
 
   private handlePointerDown(e: PointerEvent): void {
+    // Clear any active text selection when clicking on the canvas or UI elements
+    if (typeof window !== 'undefined') {
+      const selection = window.getSelection();
+      if (selection && !selection.isCollapsed) {
+        selection.removeAllRanges();
+      }
+    }
+
     const { x, y } = this.clientToCanvas(e.clientX, e.clientY);
     const target = this.hitTest(x, y);
 

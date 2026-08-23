@@ -52,6 +52,15 @@ export class UIText extends UIElement implements GhostTarget {
   }
 
   /**
+   * Sets whether this text node is selectable by the user.
+   */
+  public setSelectable(selectable: boolean): this {
+    this.styles.selectable = selectable;
+    this.markRenderDirty();
+    return this;
+  }
+
+  /**
    * Updates text content and triggers layout recalculation.
    *
    * @param text New text content.

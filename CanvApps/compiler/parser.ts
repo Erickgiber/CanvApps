@@ -1,4 +1,4 @@
-import { CVSComponentAST, ASTElement, ASTNode, ASTProp, ASTDirectives } from './types';
+import { CVSComponentAST, ASTElement, ASTNode, ASTProp, ASTDirectives, ASTIfBlock } from './types';
 
 /**
  * High-performance Parser converting .cvs Single File Component markup into an AST.
@@ -40,7 +40,10 @@ export class CVSParser {
       return null;
     }
 
-    const tokens = this.tokenize(trimmed);
+    // Preprocess conditional blocks: @if (cond) { ... } else { ... }
+    const preprocessed = this.preprocessConditions(trimmed);
+
+    const tokens = this.tokenize(preprocessed);
     let index = 0;
 
     const parseNode = (): ASTNode | null => {
@@ -73,6 +76,42 @@ export class CVSParser {
           content,
           isDynamic: false,
         };
+      }
+
+      // Conditional block token: <canvapps-if>
+      if (token.type === 'tag-open' && token.tagName === 'canvapps-if') {
+        index++;
+        const conditionAttr = token.attributes?.find((a) => a.name === 'condition');
+        const condition = conditionAttr ? conditionAttr.value.replace(/&quot;/g, '"') : 'true';
+
+        const children: ASTNode[] = [];
+        while (index < tokens.length) {
+          const next = tokens[index];
+          if (next.type === 'tag-close' && next.tagName === 'canvapps-if') {
+            index++;
+            break;
+          }
+          const child = parseNode();
+          if (child) {
+            children.push(child);
+          }
+        }
+
+        const thenElem = children.find((c) => c.type === 'element' && c.tag === 'canvapps-then') as ASTElement | undefined;
+        const elseElem = children.find((c) => c.type === 'element' && c.tag === 'canvapps-else') as ASTElement | undefined;
+
+        const consequent = thenElem
+          ? thenElem.children
+          : children.filter((c) => c.type !== 'element' || (c.tag !== 'canvapps-then' && c.tag !== 'canvapps-else'));
+        const alternate = elseElem ? elseElem.children : undefined;
+
+        const ifBlock: ASTIfBlock = {
+          type: 'if-block',
+          condition,
+          consequent,
+          alternate,
+        };
+        return ifBlock;
       }
 
       // Element open tag
@@ -162,7 +201,192 @@ export class CVSParser {
   }
 
   /**
-   * Helper to parse *for="item in items" or *for="(item, index) in items"
+   * Preprocesses conditional syntax like:
+   * - @if (condition) { ... } else { ... }
+   * - @if condition { ... } @else { ... }
+   * - {#if condition} ... {:else} ... {/if}
+   */
+  private static preprocessConditions(src: string): string {
+    // 1. Svelte-style: {#if cond} ... {:else} ... {/if}
+    let result = src.replace(
+      /\{#if\s+([\s\S]*?)\}([\s\S]*?)(?:\{:else\}([\s\S]*?))?\{\/if\}/g,
+      (_match, cond, thenPart, elsePart) => {
+        const cleanCond = cond.trim().replace(/"/g, '&quot;');
+        return `<canvapps-if condition="${cleanCond}"><canvapps-then>${thenPart}</canvapps-then>${
+          elsePart !== undefined ? `<canvapps-else>${elsePart}</canvapps-else>` : ''
+        }</canvapps-if>`;
+      }
+    );
+
+    // 2. Block-style @if ... { ... } else { ... }
+    result = this.transformIfBlocks(result);
+
+    return result;
+  }
+
+  /**
+   * Scans and transforms @if (...) { ... } else { ... } blocks.
+   */
+  private static transformIfBlocks(src: string): string {
+    let index = 0;
+
+    while (index < src.length) {
+      const ifMatch = src.indexOf('@if', index);
+      if (ifMatch === -1) {
+        break;
+      }
+
+      // Check boundary so we don't match @iframe or similar
+      const nextChar = src[ifMatch + 3];
+      if (nextChar && /[a-zA-Z0-9_]/.test(nextChar)) {
+        index = ifMatch + 3;
+        continue;
+      }
+
+      // Check if this @if is an attribute (e.g. @if="cond" or @if='cond')
+      const afterIf = src.slice(ifMatch + 3);
+      if (/^\s*=/.test(afterIf)) {
+        index = ifMatch + 3;
+        continue;
+      }
+
+      let condition = '';
+      let openBrace = -1;
+
+      const trimmedAfter = afterIf.trimStart();
+      if (trimmedAfter.startsWith('(')) {
+        // Parenthesized condition: @if (cycleCount.value > 50) { ... }
+        const openParen = src.indexOf('(', ifMatch + 3);
+        const closeParen = this.findMatchingParen(src, openParen);
+        if (closeParen === -1) {
+          index = ifMatch + 3;
+          continue;
+        }
+
+        condition = src.slice(openParen + 1, closeParen).trim();
+        openBrace = src.indexOf('{', closeParen + 1);
+        if (openBrace === -1) {
+          index = ifMatch + 3;
+          continue;
+        }
+      } else {
+        // Non-parenthesized condition: @if cycleCount.value > 50 { ... }
+        openBrace = src.indexOf('{', ifMatch + 3);
+        if (openBrace === -1) {
+          index = ifMatch + 3;
+          continue;
+        }
+
+        const condSub = src.slice(ifMatch + 3, openBrace).trim();
+        // Skip if there is an HTML opening/closing tag before '{'
+        if (/<[a-zA-Z/]/.test(condSub)) {
+          index = ifMatch + 3;
+          continue;
+        }
+        condition = condSub;
+      }
+
+      if (!condition) {
+        index = ifMatch + 3;
+        continue;
+      }
+
+      // Find matching closing '}' for the then block
+      const closeBrace = this.findMatchingBrace(src, openBrace);
+      if (closeBrace === -1) {
+        index = openBrace + 1;
+        continue;
+      }
+
+      const thenContent = src.slice(openBrace + 1, closeBrace);
+      let totalEnd = closeBrace + 1;
+
+      // Check if followed by else / @else
+      const afterThen = src.slice(totalEnd);
+      const elseMatch = afterThen.match(/^\s*(?:@?else\s*\{|@?else\s+if\b)/);
+
+      let elseContent: string | null = null;
+      if (elseMatch) {
+        const elseStartInAfter = elseMatch.index ?? 0;
+        const elseOpenBrace = afterThen.indexOf('{', elseStartInAfter);
+        if (elseOpenBrace !== -1) {
+          const absElseOpen = totalEnd + elseOpenBrace;
+          const elseCloseBrace = this.findMatchingBrace(src, absElseOpen);
+          if (elseCloseBrace !== -1) {
+            elseContent = src.slice(absElseOpen + 1, elseCloseBrace);
+            totalEnd = elseCloseBrace + 1;
+          }
+        }
+      }
+
+      const safeCond = condition.replace(/"/g, '&quot;');
+      const replacement = `<canvapps-if condition="${safeCond}"><canvapps-then>${thenContent}</canvapps-then>${
+        elseContent !== null ? `<canvapps-else>${elseContent}</canvapps-else>` : ''
+      }</canvapps-if>`;
+
+      src = src.slice(0, ifMatch) + replacement + src.slice(totalEnd);
+      index = ifMatch + replacement.length;
+    }
+
+    return src;
+  }
+
+  private static findMatchingParen(src: string, openIndex: number): number {
+    let depth = 0;
+    let inQuotes = false;
+    let quoteChar = '';
+
+    for (let i = openIndex; i < src.length; i++) {
+      const char = src[i];
+      if ((char === '"' || char === "'") && depth > 0) {
+        if (!inQuotes) {
+          inQuotes = true;
+          quoteChar = char;
+        } else if (char === quoteChar) {
+          inQuotes = false;
+          quoteChar = '';
+        }
+      } else if (char === '(' && !inQuotes) {
+        depth++;
+      } else if (char === ')' && !inQuotes) {
+        depth--;
+        if (depth === 0) {
+          return i;
+        }
+      }
+    }
+    return -1;
+  }
+
+  private static findMatchingBrace(src: string, openIndex: number): number {
+    let depth = 0;
+    let inQuotes = false;
+    let quoteChar = '';
+
+    for (let i = openIndex; i < src.length; i++) {
+      const char = src[i];
+      if ((char === '"' || char === "'") && depth > 0) {
+        if (!inQuotes) {
+          inQuotes = true;
+          quoteChar = char;
+        } else if (char === quoteChar) {
+          inQuotes = false;
+          quoteChar = '';
+        }
+      } else if (char === '{' && !inQuotes) {
+        depth++;
+      } else if (char === '}' && !inQuotes) {
+        depth--;
+        if (depth === 0) {
+          return i;
+        }
+      }
+    }
+    return -1;
+  }
+
+  /**
+   * Helper to parse *for="item in items" or @each="items as item, index"
    */
   private static parseForDirective(value: string): { item: string; index?: string; iterable: string } {
     // 1. Support Svelte-style "iterable as item" or "iterable as item, index" or "iterable as (item, index)"
@@ -287,19 +511,27 @@ export class CVSParser {
     let current = '';
     let inQuotes = false;
     let quoteChar = '';
+    let braceDepth = 0;
 
     for (let i = 0; i < tagContent.length; i++) {
       const char = tagContent[i];
 
-      if ((char === '"' || char === "'") && !inQuotes) {
-        inQuotes = true;
-        quoteChar = char;
+      if ((char === '"' || char === "'") && braceDepth === 0) {
+        if (!inQuotes) {
+          inQuotes = true;
+          quoteChar = char;
+        } else if (char === quoteChar) {
+          inQuotes = false;
+          quoteChar = '';
+        }
         current += char;
-      } else if (char === quoteChar && inQuotes) {
-        inQuotes = false;
-        quoteChar = '';
+      } else if (char === '{' && !inQuotes) {
+        braceDepth++;
         current += char;
-      } else if (/\s/.test(char) && !inQuotes) {
+      } else if (char === '}' && !inQuotes && braceDepth > 0) {
+        braceDepth--;
+        current += char;
+      } else if (/\s/.test(char) && !inQuotes && braceDepth === 0) {
         if (current.trim()) {
           tokens.push(current.trim());
           current = '';
@@ -318,12 +550,12 @@ export class CVSParser {
 
   private static parseAttributes(attrString: string): Array<{ name: string; value: string }> {
     const attrs: Array<{ name: string; value: string }> = [];
-    const regex = /([@:*A-Za-z0-9_-]+)(?:=(?:"([^"]*)"|'([^']*)'|([^>\s]+)))?/g;
+    const regex = /([@:*A-Za-z0-9_-]+)(?:=(?:"([^"]*)"|'([^']*)'|\{([\s\S]*?)\}|([^>\s]+)))?/g;
     let match: RegExpExecArray | null;
 
     while ((match = regex.exec(attrString)) !== null) {
       const name = match[1];
-      const value = match[2] ?? match[3] ?? match[4] ?? 'true';
+      const value = match[2] ?? match[3] ?? match[4] ?? match[5] ?? 'true';
       attrs.push({ name, value });
     }
 
@@ -333,15 +565,22 @@ export class CVSParser {
   private static findTagEnd(src: string, start: number): number {
     let inQuotes = false;
     let quoteChar = '';
+    let braceDepth = 0;
     for (let i = start; i < src.length; i++) {
       const char = src[i];
-      if ((char === '"' || char === "'") && !inQuotes) {
-        inQuotes = true;
-        quoteChar = char;
-      } else if (char === quoteChar && inQuotes) {
-        inQuotes = false;
-        quoteChar = '';
-      } else if (char === '>' && !inQuotes) {
+      if ((char === '"' || char === "'") && braceDepth === 0) {
+        if (!inQuotes) {
+          inQuotes = true;
+          quoteChar = char;
+        } else if (char === quoteChar) {
+          inQuotes = false;
+          quoteChar = '';
+        }
+      } else if (char === '{' && !inQuotes) {
+        braceDepth++;
+      } else if (char === '}' && !inQuotes && braceDepth > 0) {
+        braceDepth--;
+      } else if (char === '>' && !inQuotes && braceDepth === 0) {
         return i;
       }
     }

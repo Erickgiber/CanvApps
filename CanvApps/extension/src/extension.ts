@@ -108,6 +108,7 @@ export function activate(context: vscode.ExtensionContext): void {
             { name: 'borderColor', doc: 'Dynamic border color binding.' },
             { name: 'borderWidth', doc: 'Dynamic border width binding.' },
             { name: 'opacity', doc: 'Dynamic opacity binding (0.0 to 1.0).' },
+            { name: 'selectable', doc: 'Controls whether text can be selected and copied (boolean).' },
           ];
 
           for (const prop of dynamicProps) {
@@ -125,7 +126,7 @@ export function activate(context: vscode.ExtensionContext): void {
           'width', 'height', 'flexDirection', 'alignItems', 'justifyContent', 'flexGrow',
           'padding', 'gap', 'backgroundColor', 'borderRadius', 'borderWidth', 'borderColor',
           'fontSize', 'fontWeight', 'color', 'placeholder', 'placeholderColor', 'focusBorderColor',
-          'cursor', 'label', 'labelColor', 'hoverBackgroundColor', 'activeBackgroundColor'
+          'cursor', 'label', 'labelColor', 'hoverBackgroundColor', 'activeBackgroundColor', 'selectable'
         ];
 
         for (const p of staticProps) {

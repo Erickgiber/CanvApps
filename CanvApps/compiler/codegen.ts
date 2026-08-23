@@ -231,6 +231,8 @@ ${itemCode}
       if (inLoop) {
         if (element.tag === 'input' && dyn.name === 'value') {
           codeLines.push(`  ${elVar}.setValue(String(${dyn.value} ?? ''));`);
+        } else if (element.tag === 'input' && dyn.name === 'placeholder') {
+          codeLines.push(`  ${elVar}.setPlaceholder(String(${dyn.value} ?? ''));`);
         } else if (element.tag === 'text' && dyn.name === 'text') {
           codeLines.push(`  ${elVar}.setText(String(${dyn.value} ?? ''));`);
         } else if (element.tag === 'text' && dyn.name === 'selectable') {
@@ -245,6 +247,11 @@ ${itemCode}
           codeLines.push(`
   effect(() => {
     ${elVar}.setValue(String(${dyn.value} ?? ''));
+  });`);
+        } else if (element.tag === 'input' && dyn.name === 'placeholder') {
+          codeLines.push(`
+  effect(() => {
+    ${elVar}.setPlaceholder(String(${dyn.value} ?? ''));
   });`);
         } else if (element.tag === 'text' && dyn.name === 'text') {
           codeLines.push(`

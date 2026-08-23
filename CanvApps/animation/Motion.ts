@@ -1,16 +1,38 @@
 import { UIElement } from '../core/UIElement';
 import { Easings, animate } from './Tween';
 
+export type MotionEnterType =
+  | 'scale'
+  | 'scale-in'
+  | 'zoom-in'
+  | 'fade'
+  | 'fade-in'
+  | 'slide-left'
+  | 'slide-right'
+  | 'slide-up'
+  | 'slide-down'
+  | 'elastic'
+  | 'blur-reveal';
+
+export type MotionExitType =
+  | 'scale'
+  | 'zoom-out'
+  | 'fade'
+  | 'slide-left'
+  | 'slide-right'
+  | 'slide-up'
+  | 'slide-down';
+
 /**
  * Options for multi-phase cinematic splash screen animations.
  */
 export interface SplashSequenceOptions {
-  entranceDuration?: number; // default 720ms
-  holdDuration?: number;     // default 500ms
-  exitDuration?: number;     // default 340ms
-  initialSpacing?: number;   // default 24px
-  initialScale?: number;     // default 0.55
-  exitScale?: number;        // default 0.68
+  entranceDuration?: number; // default 1100ms
+  holdDuration?: number;     // default 800ms
+  exitDuration?: number;     // default 450ms
+  initialSpacing?: number;   // default 26px
+  initialScale?: number;     // default 0.5
+  exitScale?: number;        // default 0.65
   onUpdate?: (state: {
     scale: number;
     opacity: number;
@@ -24,15 +46,19 @@ export interface SplashSequenceOptions {
  * Options for element entrance and exit scene transitions.
  */
 export interface TransitionOptions {
-  type?: 'fade' | 'scale' | 'zoom-in' | 'slide-up' | 'slide-down' | 'elastic';
+  type?: MotionEnterType | MotionExitType | string;
   duration?: number;
   delay?: number;
   fromScale?: number;
   toScale?: number;
   fromOpacity?: number;
   toOpacity?: number;
+  fromTranslateX?: number;
+  toTranslateX?: number;
+  fromTranslateY?: number;
+  toTranslateY?: number;
   easing?: (t: number) => number;
-  onUpdate?: (value: number) => void;
+  onUpdate?: (progress: number) => void;
   onComplete?: () => void;
 }
 
@@ -146,23 +172,54 @@ export class Motion {
       delay = 0,
       fromOpacity = 0.0,
       toOpacity = 1.0,
-      easing = Easings.easeOutCubic,
       onComplete,
     } = options;
 
-    const defaultFromScale = type === 'fade' ? 1.0 : type === 'zoom-in' ? 0.8 : 0.94;
+    const isSlideLeft = type === 'slide-left';
+    const isSlideRight = type === 'slide-right';
+    const isSlideUp = type === 'slide-up';
+    const isSlideDown = type === 'slide-down';
+    const isElastic = type === 'elastic';
+
+    const defaultFromScale = (type === 'fade' || type === 'fade-in' || isSlideLeft || isSlideRight)
+      ? 1.0
+      : type === 'zoom-in'
+      ? 0.78
+      : isElastic
+      ? 0.65
+      : 0.94;
+
     const fromScale = options.fromScale ?? defaultFromScale;
     const toScale = options.toScale ?? 1.0;
 
+    const fromTranslateX = options.fromTranslateX ?? (isSlideLeft ? 80 : isSlideRight ? -80 : 0);
+    const toTranslateX = options.toTranslateX ?? 0;
+    const fromTranslateY = options.fromTranslateY ?? (isSlideUp ? 60 : isSlideDown ? -60 : 0);
+    const toTranslateY = options.toTranslateY ?? 0;
+
+    const easing = options.easing ?? (isElastic ? Easings.easeOutBack : Easings.easeOutCubic);
+
     if (typeof window === 'undefined') {
-      element.setStyle({ opacity: toOpacity, scale: toScale, display: 'flex' });
+      element.setStyle({
+        opacity: toOpacity,
+        scale: toScale,
+        translateX: toTranslateX,
+        translateY: toTranslateY,
+        display: 'flex',
+      });
       element.visible = true;
       onComplete?.();
       return () => {};
     }
 
     // Set initial pre-animation state
-    element.setStyle({ opacity: fromOpacity, scale: fromScale, display: 'flex' });
+    element.setStyle({
+      opacity: fromOpacity,
+      scale: fromScale,
+      translateX: fromTranslateX,
+      translateY: fromTranslateY,
+      display: 'flex',
+    });
     element.visible = true;
 
     let cancelTimer: any = null;
@@ -177,10 +234,23 @@ export class Motion {
         onUpdate: (progress) => {
           const currentOpacity = fromOpacity + (toOpacity - fromOpacity) * progress;
           const currentScale = fromScale + (toScale - fromScale) * progress;
-          element.setStyle({ opacity: currentOpacity, scale: currentScale });
+          const currentTranslateX = fromTranslateX + (toTranslateX - fromTranslateX) * progress;
+          const currentTranslateY = fromTranslateY + (toTranslateY - fromTranslateY) * progress;
+
+          element.setStyle({
+            opacity: currentOpacity,
+            scale: currentScale,
+            translateX: currentTranslateX,
+            translateY: currentTranslateY,
+          });
         },
         onComplete: () => {
-          element.setStyle({ opacity: toOpacity, scale: toScale });
+          element.setStyle({
+            opacity: toOpacity,
+            scale: toScale,
+            translateX: toTranslateX,
+            translateY: toTranslateY,
+          });
           onComplete?.();
         },
       });
@@ -205,17 +275,39 @@ export class Motion {
     const {
       type = 'scale',
       duration = 320,
-      fromScale = 1.0,
       fromOpacity = 1.0,
       toOpacity = 0.0,
-      easing = Easings.easeInOutCubic,
+      easing = Easings.easeInCubic,
       onComplete,
     } = options;
 
-    const toScale = options.toScale ?? (type === 'fade' ? 1.0 : 0.92);
+    const isSlideLeft = type === 'slide-left';
+    const isSlideRight = type === 'slide-right';
+    const isSlideUp = type === 'slide-up';
+    const isSlideDown = type === 'slide-down';
+
+    const defaultToScale = (type === 'fade' || isSlideLeft || isSlideRight)
+      ? 1.0
+      : type === 'zoom-out'
+      ? 0.75
+      : 0.92;
+
+    const fromScale = options.fromScale ?? 1.0;
+    const toScale = options.toScale ?? defaultToScale;
+
+    const fromTranslateX = options.fromTranslateX ?? 0;
+    const toTranslateX = options.toTranslateX ?? (isSlideLeft ? -80 : isSlideRight ? 80 : 0);
+    const fromTranslateY = options.fromTranslateY ?? 0;
+    const toTranslateY = options.toTranslateY ?? (isSlideUp ? -60 : isSlideDown ? 60 : 0);
 
     if (typeof window === 'undefined') {
-      element.setStyle({ opacity: toOpacity, scale: toScale, display: 'none' });
+      element.setStyle({
+        opacity: toOpacity,
+        scale: toScale,
+        translateX: toTranslateX,
+        translateY: toTranslateY,
+        display: 'none',
+      });
       element.visible = false;
       onComplete?.();
       return () => {};
@@ -229,10 +321,24 @@ export class Motion {
       onUpdate: (progress) => {
         const currentOpacity = fromOpacity + (toOpacity - fromOpacity) * progress;
         const currentScale = fromScale + (toScale - fromScale) * progress;
-        element.setStyle({ opacity: currentOpacity, scale: currentScale });
+        const currentTranslateX = fromTranslateX + (toTranslateX - fromTranslateX) * progress;
+        const currentTranslateY = fromTranslateY + (toTranslateY - fromTranslateY) * progress;
+
+        element.setStyle({
+          opacity: currentOpacity,
+          scale: currentScale,
+          translateX: currentTranslateX,
+          translateY: currentTranslateY,
+        });
       },
       onComplete: () => {
-        element.setStyle({ opacity: toOpacity, scale: toScale, display: 'none' });
+        element.setStyle({
+          opacity: toOpacity,
+          scale: toScale,
+          translateX: toTranslateX,
+          translateY: toTranslateY,
+          display: 'none',
+        });
         element.visible = false;
         onComplete?.();
       },

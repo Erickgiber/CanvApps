@@ -273,6 +273,19 @@ export class FlexLayout {
       crossOffset += line.crossSizeMax + crossGap;
     }
 
+    // Calculate scrollable bounds
+    let maxContentX = 0;
+    let maxContentY = 0;
+    for (const child of element.children) {
+      if (!child.visible || child.styles.display === 'none') continue;
+      const childRight = child.layoutRect.x + child.layoutRect.width;
+      const childBottom = child.layoutRect.y + child.layoutRect.height;
+      if (childRight > maxContentX) maxContentX = childRight;
+      if (childBottom > maxContentY) maxContentY = childBottom;
+    }
+    element.maxScrollLeft = Math.max(0, maxContentX + padding.right - availableWidth);
+    element.maxScrollTop = Math.max(0, maxContentY + padding.bottom - availableHeight);
+
     element.isLayoutDirty = false;
   }
 

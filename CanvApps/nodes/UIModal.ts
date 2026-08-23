@@ -223,19 +223,15 @@ export class UIModal extends UIElement {
     const blurRadius = this.styles.blurRadius ?? 8;
     const animType = this.getAnimationType();
 
-    // Calculate global full canvas dimensions to eliminate any parent padding margin
+    // Calculate global full canvas dimensions to cover 100% of viewport edge-to-edge
     const dpr = typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1;
     const fullCanvasWidth = ctx.canvas ? ctx.canvas.width / dpr : (typeof window !== 'undefined' ? window.innerWidth : width);
     const fullCanvasHeight = ctx.canvas ? ctx.canvas.height / dpr : (typeof window !== 'undefined' ? window.innerHeight : height);
-    
-    const offsetX = -this.worldRect.x;
-    const offsetY = -this.worldRect.y;
 
     // 1. Real Frosted Glass Backdrop Blur (if enabled)
     if (isBlur && ctx.canvas && typeof (ctx as any).filter === 'string') {
       try {
         ctx.save();
-        ctx.translate(offsetX, offsetY);
         ctx.filter = `blur(${blurRadius}px)`;
         ctx.globalAlpha = Math.max(0, Math.min(1, this.animProgress));
         ctx.drawImage(ctx.canvas, 0, 0, fullCanvasWidth, fullCanvasHeight);
@@ -247,7 +243,6 @@ export class UIModal extends UIElement {
 
     // 2. Draw Fullscreen Backdrop Overlay (covers 100% of viewport edge-to-edge)
     ctx.save();
-    ctx.translate(offsetX, offsetY);
     if (isGradient) {
       const grad = ctx.createRadialGradient(
         fullCanvasWidth / 2,

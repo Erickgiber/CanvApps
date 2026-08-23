@@ -3,7 +3,7 @@
   const { isMobile } = useBreakpoints();
 </script>
 
-<motion animation="cinematic-splash" :duration="1100" :hold="800" :exitDuration="450" @finish="(props as any)?.onFinish">
+<motion animation="cinematic-splash" width="100%" height="100%" :duration="1100" :hold="800" :exitDuration="450" @finish="(props as any)?.onFinish">
   <view width="100%" height="100%" backgroundColor="#090d16" flexDirection="column" alignItems="center" justifyContent="center" padding="[20, 20]">
 
     <!-- Centered Content Card -->

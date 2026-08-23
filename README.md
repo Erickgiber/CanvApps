@@ -306,7 +306,31 @@ Import any `.cvs` Single-File Component in `<script lang="ts">` and invoke it di
 </view>
 ```
 
-#### 5. Reactive Router & View Management (`createRouter`, `useRouter`)
+#### 5. Persistent Master Layouts (`AppLayout.cvs`) & Reusable Headers
+CanvApps enables building **Persistent Master Layouts** that keep static UI elements (Headers, Sidebars, Toasts, Modals) mounted in memory while dynamic scene content transitions smoothly inside child slots:
+
+```html
+<!-- src/layouts/AppLayout.cvs -->
+<script lang="ts">
+  import AppHeader from '../components/AppHeader.cvs';
+
+  function onNavigate(target: string) {
+    props.onNavigate?.(target);
+  }
+</script>
+
+<view width="100%" height="100%" flexDirection="column" backgroundColor="#f8fafc" padding="[16, 24]" gap="14">
+  <!-- Persistent Header with dynamic route switcher & theme toggling -->
+  <AppHeader :activeRoute="props.activeRoute" @navigate="onNavigate" />
+
+  <!-- Dynamic Content Slot -->
+  <view width="100%" flexGrow="1" position="relative">
+    <slot />
+  </view>
+</view>
+```
+
+#### 6. Reactive Router & View Management (`createRouter`, `useRouter`)
 CanvApps provides a fine-grained, signal-powered router for Single-Page and Multi-View Applications with zero DOM overhead:
 ```ts
 <script lang="ts">
@@ -357,13 +381,15 @@ Wrap any view or element in `<motion>` to automate 60/120 FPS Retina transitions
 ##### B. Supported `<motion>` Animation Presets & Props
 | Prop / Attribute | Type | Description |
 | :--- | :--- | :--- |
-| `animation` | `'scale-in' \| 'fade-in' \| 'zoom-in' \| 'slide-up' \| 'slide-down' \| 'cinematic-splash'` | Transition preset |
+| `animation` / `enter` | `'slide-left' \| 'slide-right' \| 'slide-up' \| 'slide-down' \| 'elastic' \| 'scale-in' \| 'zoom-in' \| 'fade-in' \| 'cinematic-splash'` | Entrance transition preset |
+| `exit` | `'slide-left' \| 'slide-right' \| 'slide-up' \| 'slide-down' \| 'scale' \| 'zoom-out' \| 'fade'` | Exit transition preset |
 | `duration` | `number` (ms) | Main animation / entrance duration |
 | `hold` | `number` (ms) | Hold duration before exit transition |
 | `exitDuration` | `number` (ms) | Exit transition duration |
 | `delay` | `number` (ms) | Initial delay before starting |
 | `autoPlay` | `boolean` | Defaults to `true` |
-| `@finish` | `(e) => void` | Event emitted upon animation completion |
+| `@finish` | `(e) => void` | Event emitted upon entrance completion |
+| `@exitFinish` | `(e) => void` | Event emitted upon exit completion |
 | `@update` | `(state) => void` | Continuous 60/120 FPS frame callback |
 
 ##### C. Kinetic Flight Tokens & Particle Bursts (`KineticFX`)

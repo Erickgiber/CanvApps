@@ -97,6 +97,14 @@ export abstract class UIElement {
   }
 
   /**
+   * Scroll offsets and scroll range for overflow containers.
+   */
+  public scrollTop = 0;
+  public scrollLeft = 0;
+  public maxScrollTop = 0;
+  public maxScrollLeft = 0;
+
+  /**
    * Creates a new UIElement instance.
    *
    * @param initialStyles Optional initial visual and layout styles.
@@ -418,9 +426,12 @@ export abstract class UIElement {
     this.worldRect.width = this.layoutRect.width;
     this.worldRect.height = this.layoutRect.height;
 
+    const childOffsetX = this.worldRect.x - this.scrollLeft;
+    const childOffsetY = this.worldRect.y - this.scrollTop;
+
     for (const child of this.children) {
       if (child.visible && child.styles.display !== 'none') {
-        child.updateWorldTransform(this.worldRect.x, this.worldRect.y);
+        child.updateWorldTransform(childOffsetX, childOffsetY);
       }
     }
   }
@@ -446,48 +457,40 @@ export abstract class UIElement {
   }
 
   /**
-   * Performs hit-testing against this node and its children in reverse rendering order
-   * (topmost visually rendered child is evaluated first).
+   * Performs recursive spatial hit-testing returning the topmost element at coordinates.
    *
    * @param worldX World X coordinate.
    * @param worldY World Y coordinate.
-   * @returns The hit UIElement or null.
+   * @returns The topmost hit UIElement or null.
    */
   public hitTest(worldX: number, worldY: number): UIElement | null {
     if (!this.visible || this.styles.display === 'none') {
       return null;
     }
 
-    // If overflow is hidden and point is outside this container, ignore subtree
-    if (this.styles.overflow === 'hidden' && !this.containsPoint(worldX, worldY)) {
+    if (!this.containsPoint(worldX, worldY)) {
       return null;
     }
 
-    // Traverse children in reverse order (topmost first)
+    // Traverse children in reverse paint order (topmost first)
     for (let i = this.children.length - 1; i >= 0; i--) {
-      const child = this.children[i];
-      const hit = child.hitTest(worldX, worldY);
-      if (hit) {
-        return hit;
+      const hitChild = this.children[i].hitTest(worldX, worldY);
+      if (hitChild) {
+        return hitChild;
       }
     }
 
-    if (this.containsPoint(worldX, worldY)) {
-      return this;
-    }
-
-    return null;
+    return this;
   }
 
   // ---------------------------------------------------------------------------
-  // Rendering Pipeline
+  // Rendering
   // ---------------------------------------------------------------------------
 
   /**
-   * Orchestrates the Canvas 2D rendering pipeline: handles transforms, clipping,
-   * opacity, delegates to abstract `draw()`, and recursively renders children.
+   * Main recursive rendering entry point with hardware transform & alpha application.
    *
-   * @param ctx The Canvas 2D rendering context.
+   * @param ctx Active 2D Canvas rendering context.
    */
   public render(ctx: CanvasRenderingContext2D): void {
     if (!this.visible || this.styles.display === 'none') {
@@ -499,6 +502,13 @@ export abstract class UIElement {
     // Apply composite opacity
     if (typeof this.styles.opacity === 'number' && this.styles.opacity < 1) {
       ctx.globalAlpha *= Math.max(0, Math.min(1, this.styles.opacity));
+    }
+
+    // Apply translate offset (translateX / translateY)
+    if (typeof this.styles.translateX === 'number' || typeof this.styles.translateY === 'number') {
+      const tx = this.styles.translateX ?? 0;
+      const ty = this.styles.translateY ?? 0;
+      ctx.translate(tx, ty);
     }
 
     // Apply composite scale transform around element center
@@ -516,8 +526,14 @@ export abstract class UIElement {
     this.draw(ctx);
     ctx.restore();
 
-    // Clip child hierarchy if container specifies overflow hidden
-    if (this.styles.overflow === 'hidden') {
+    // Clip child hierarchy if container specifies overflow hidden or is actively overflowing
+    const isClipped =
+      this.styles.overflow === 'hidden' ||
+      ((this.styles.overflow === 'scroll' || this.styles.overflow === 'auto') &&
+        (this.maxScrollTop > 0 || this.maxScrollLeft > 0));
+
+    if (isClipped) {
+      ctx.save();
       ctx.beginPath();
       this.applyPath(
         ctx,
@@ -530,11 +546,15 @@ export abstract class UIElement {
       ctx.clip();
     }
 
-    // Recursively render child elements
+    // Recursively render child elements (drawn at their absolute worldRect)
     for (const child of this.children) {
       if (child.visible && child.styles.display !== 'none') {
         child.render(ctx);
       }
+    }
+
+    if (isClipped) {
+      ctx.restore();
     }
 
     ctx.restore();

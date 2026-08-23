@@ -32,10 +32,20 @@
       display: flex;
       -webkit-tap-highlight-color: transparent;
       -webkit-touch-callout: none;
+      -webkit-user-select: none;
+      user-select: none;
+      -webkit-user-drag: none;
+    }
+    canvas {
+      -webkit-touch-callout: none;
+      -webkit-user-select: none;
+      user-select: none;
+      -webkit-user-drag: none;
+      outline: none;
     }
   </style>
 </head>
-<body>
+<body oncontextmenu="return false;">
   <div id="app-container"></div>
   <script type="module" src="/src/main.ts"></script>
 </body>

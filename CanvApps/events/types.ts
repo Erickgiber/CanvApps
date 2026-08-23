@@ -26,7 +26,8 @@ export type UIEventType =
   | 'submit'
   | 'close'
   | 'update'
-  | 'finish';
+  | 'finish'
+  | 'exitFinish';
 
 /**
  * Event object passed to CanvApps pointer event listeners.

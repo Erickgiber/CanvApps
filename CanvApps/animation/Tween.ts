@@ -3,7 +3,9 @@
  */
 export const Easings = {
   linear: (t: number): number => t,
+  easeInQuad: (t: number): number => t * t,
   easeOutQuad: (t: number): number => 1 - (1 - t) * (1 - t),
+  easeInCubic: (t: number): number => t * t * t,
   easeOutCubic: (t: number): number => 1 - Math.pow(1 - t, 3),
   easeInOutCubic: (t: number): number =>
     t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2,

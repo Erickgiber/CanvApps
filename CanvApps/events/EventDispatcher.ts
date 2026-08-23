@@ -240,10 +240,30 @@ export class EventDispatcher {
 
   private handleWheel(e: WheelEvent): void {
     const { x, y } = this.clientToCanvas(e.clientX, e.clientY);
-    const target = this.hitTest(x, y);
+    const target = this.hitTest(x, y) || this.getRoot();
     if (target) {
       const wheelEvent = new CanvasPointerEvent('wheel', target, e, x, y);
       target.emit('wheel', wheelEvent);
+
+      // Bubble up to find nearest scrollable ancestor or root
+      let curr: UIElement | null = target;
+      let scrolled = false;
+      while (curr) {
+        if (curr.maxScrollTop > 0 || curr.styles.overflow === 'scroll' || curr.styles.overflow === 'auto') {
+          const prevScroll = curr.scrollTop;
+          curr.scrollTop = Math.max(0, Math.min(curr.maxScrollTop, curr.scrollTop + e.deltaY));
+          if (curr.scrollTop !== prevScroll) {
+            curr.markRenderDirty();
+            scrolled = true;
+            break;
+          }
+        }
+        curr = curr.parent;
+      }
+
+      if (scrolled) {
+        e.preventDefault();
+      }
       this.invalidate();
     }
   }

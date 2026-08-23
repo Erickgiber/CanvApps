@@ -124,14 +124,22 @@ export class Store<T extends Record<string, any>> {
 
   /**
    * Retrieves the reactive store state object.
-   * Accessing properties inside an effect() tracks fine-grained reactivity.
+   * Accessing individual properties inside an effect() tracks fine-grained reactivity.
    */
   public get state(): T {
-    const current = this.signal.value;
-    // Proxy to enable fine-grained access and tracking
-    return new Proxy(current, {
-      get: (target, prop: string) => {
-        return (target as any)[prop];
+    return new Proxy({} as T, {
+      get: (_target, prop: string | symbol) => {
+        if (typeof prop === 'symbol' || prop === 'toJSON') {
+          return (this.signal.peek() as any)[prop];
+        }
+        return this.select(prop as keyof T).value;
+      },
+      set: (_target, prop: string | symbol, val: any) => {
+        if (typeof prop === 'string') {
+          this.set({ [prop]: val } as Partial<T>);
+          return true;
+        }
+        return false;
       },
     });
   }

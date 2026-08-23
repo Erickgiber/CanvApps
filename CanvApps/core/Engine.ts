@@ -77,7 +77,7 @@ export class Engine {
       this.canvas = document.createElement('canvas');
     }
 
-    // Configure touch-safe styles on canvas to eliminate mobile browser blue tap highlights and callouts
+    // Configure touch-safe styles on canvas to eliminate mobile browser blue tap highlights, context menus, and image copying
     this.canvas.style.display = 'block';
     (this.canvas.style as any).webkitTapHighlightColor = 'transparent';
     (this.canvas.style as any).tapHighlightColor = 'transparent';
@@ -85,7 +85,12 @@ export class Engine {
     (this.canvas.style as any).webkitTouchCallout = 'none';
     this.canvas.style.userSelect = 'none';
     (this.canvas.style as any).webkitUserSelect = 'none';
+    (this.canvas.style as any).webkitUserDrag = 'none';
     this.canvas.style.outline = 'none';
+
+    // Prevent default context menu (copy image, inspect, save image) and dragging
+    this.canvas.addEventListener('contextmenu', (e) => e.preventDefault());
+    this.canvas.addEventListener('dragstart', (e) => e.preventDefault());
 
     // Inject global mobile tap-highlight reset stylesheet
     if (typeof document !== 'undefined' && !document.getElementById('canvapps-global-touch-styles')) {
@@ -95,6 +100,9 @@ export class Engine {
         canvas, [data-canvapps-root], #canvapps-ghost-dom-overlay {
           -webkit-tap-highlight-color: transparent !important;
           -webkit-touch-callout: none !important;
+          -webkit-user-select: none !important;
+          user-select: none !important;
+          -webkit-user-drag: none !important;
         }
       `;
       document.head.appendChild(style);
@@ -284,6 +292,8 @@ export class Engine {
     if (needsLayout) {
       FlexLayout.calculateLayout(this.root, this.width, this.height);
       this.syncGhostDOM(this.root);
+    } else {
+      this.root.updateWorldTransform(0, 0);
     }
 
     // 2. Clear canvas with retina scaling

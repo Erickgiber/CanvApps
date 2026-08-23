@@ -14,37 +14,49 @@ export interface UserSessionState {
   theme: 'dark' | 'light';
   streakCount: number;
   lastLogin: string | null;
+  activeRoute: 'dashboard' | 'auth';
 }
 
 /**
- * Initial Default Session State
+ * Initial Default Session State with a handsome fictional test user
  */
 const initialSessionState: UserSessionState = {
   user: {
-    name: 'Meliodas',
-    email: 'meliodas@canvapps.dev',
-    role: 'Sinner',
-    avatar: '👨‍💻',
+    name: 'Julian Vance',
+    email: 'julian.vance@canvapps.dev',
+    role: 'Principal Engineer',
+    avatar: '👨‍💼',
   },
   isAuthenticated: true,
-  theme: 'dark',
+  theme: 'light',
   streakCount: 10,
   lastLogin: new Date().toISOString(),
+  activeRoute: 'dashboard',
 };
 
 /**
- * Global Reactive Session Store with Auto-Persistence.
- * Can be imported and used across multiple .cvs Single-File Components and .ts files.
+ * Global In-Memory Reactive Session Store.
+ * Holds active runtime state across components without saving to localStorage.
  */
 export const sessionStore = createStore<UserSessionState>(initialSessionState, {
   name: 'user_session',
-  persist: true,
+  persist: false,
 });
 
 /**
  * Computed signal derived from the global store
  */
 export const isUserLoggedIn = computed(() => sessionStore.state.isAuthenticated);
+
+/**
+ * Store Action: Navigates between active routes
+ */
+export function navigateRoute(route: 'dashboard' | 'auth'): void {
+  sessionStore.update((prev) => ({
+    ...prev,
+    activeRoute: route,
+  }));
+}
 
 /**
  * Store Action: Updates the active user profile
@@ -72,5 +84,14 @@ export function logoutSession(): void {
 export function incrementSessionStreak(): void {
   sessionStore.update((prev) => ({
     streakCount: prev.streakCount + 1,
+  }));
+}
+
+/**
+ * Store Action: Toggles the application global theme (light / dark)
+ */
+export function toggleTheme(): void {
+  sessionStore.update((prev) => ({
+    theme: prev.theme === 'light' ? 'dark' : 'light',
   }));
 }

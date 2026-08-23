@@ -647,20 +647,22 @@ export abstract class UIElement {
    * @param type The event type.
    * @param event The event payload.
    */
-  public emit(type: UIEventType, event: CanvasPointerEvent): void {
-    event.currentTarget = this;
+  public emit(type: UIEventType, event: CanvasPointerEvent | any = {}): void {
+    if (event) {
+      event.currentTarget = this;
+    }
     const set = this.listeners.get(type);
     if (set) {
       for (const listener of set) {
         listener(event);
-        if (event.isPropagationStopped) {
+        if (event?.isPropagationStopped) {
           return;
         }
       }
     }
 
     // Bubble up to parent if not stopped
-    if (this.parent && !event.isPropagationStopped) {
+    if (this.parent && !event?.isPropagationStopped) {
       this.parent.emit(type, event);
     }
   }

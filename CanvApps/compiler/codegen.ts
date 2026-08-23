@@ -1,4 +1,4 @@
-import { ASTElement, ASTNode, ASTProp, CVSComponentAST } from './types';
+import { ASTElement, ASTNode, ASTProp, ASTTextNode, CVSComponentAST } from './types';
 
 /**
  * Generates executable TypeScript code from a CVSComponentAST.
@@ -39,7 +39,7 @@ export class CVSCodeGenerator {
     }
 
     return `
-import { UIView, UIText, UIButton, UIInput, UIModal, UIElement, KineticFX, Motion, createRouter, useRouter, effect, signal, useBreakpoints, useMediaQuery } from '@canvapps';
+import { UIView, UIText, UIButton, UIInput, UIModal, UIMotion, UIElement, KineticFX, Motion, createRouter, useRouter, effect, signal, useBreakpoints, useMediaQuery } from '@canvapps';
 ${importLines.join('\n')}
 
 export function createComponent(props: Record<string, any> = {}): UIElement {
@@ -61,11 +61,12 @@ export default createComponent;
   private generateNode(node: ASTNode, inLoop = false): { code: string; rootVar: string } {
     // 1. Text node
     if (node.type === 'text') {
-      const textVar = this.nextId('textNode');
-      if (node.isDynamic) {
+      const textVar = this.nextId('text');
+      const textNode = node as ASTTextNode;
+      if (textNode.isDynamic) {
         if (inLoop) {
           return {
-            code: `  const ${textVar} = new UIText(String(${node.content}));\n`,
+            code: `  const ${textVar} = new UIText(String(${textNode.content}));`,
             rootVar: textVar,
           };
         } else {
@@ -73,7 +74,7 @@ export default createComponent;
             code: `
   const ${textVar} = new UIText('');
   effect(() => {
-    ${textVar}.setText(String(${node.content}));
+    ${textVar}.setText(String(${textNode.content}));
   });
 `,
             rootVar: textVar,
@@ -81,7 +82,7 @@ export default createComponent;
         }
       } else {
         return {
-          code: `  const ${textVar} = new UIText(${JSON.stringify(node.content)});\n`,
+          code: `  const ${textVar} = new UIText(${JSON.stringify(textNode.content)}, {});`,
           rootVar: textVar,
         };
       }
@@ -157,7 +158,7 @@ ${itemCodeLines.join('\n')}
       };
     }
 
-    // 4. Element node (<view>, <text>, <button>, <input>, <modal>, or Custom Component <SplashView />)
+    // 4. Element node (<view>, <text>, <button>, <input>, <modal>, <motion>, or Custom Component <SplashView />)
     const element = node as ASTElement;
     if (element.tag === 'template') {
       const fragmentVar = this.nextId('fragment');
@@ -223,26 +224,47 @@ ${itemCodeLines.join('\n')}
 
       codeLines.push(`  const ${elVar} = ${element.tag}(${propsArg});`);
     } else if (element.tag === 'text') {
-      const textChild = element.children.find((c) => c.type === 'text');
-      const label = textChild ? textChild.content : '';
+      const textChild = element.children.find((c) => c.type === 'text') as ASTTextNode | undefined;
+      const content = textChild ? textChild.content : '';
       const isDynamic = textChild?.isDynamic;
 
-      codeLines.push(`  const ${elVar} = new UIText(${isDynamic ? "''" : JSON.stringify(label)}, ${JSON.stringify(staticStyles)});`);
       if (isDynamic && textChild) {
+        codeLines.push(`  const ${elVar} = new UIText('', ${JSON.stringify(staticStyles)});`);
         if (inLoop) {
-          codeLines.push(`  ${elVar}.setText(String(${textChild.content}));`);
+          codeLines.push(`  ${elVar}.setText(String(${content}));`);
         } else {
-          codeLines.push(`  effect(() => { ${elVar}.setText(String(${textChild.content})); });`);
+          codeLines.push(`
+  effect(() => {
+    ${elVar}.setText(String(${content}));
+  });`);
         }
+      } else {
+        codeLines.push(`  const ${elVar} = new UIText(${JSON.stringify(content)}, ${JSON.stringify(staticStyles)});`);
       }
     } else if (element.tag === 'button') {
-      const textChild = element.children.find((c) => c.type === 'text');
+      const textChild = element.children.find((c) => c.type === 'text') as ASTTextNode | undefined;
       const label = textChild ? textChild.content : staticStyles.label ?? '';
-      codeLines.push(`  const ${elVar} = new UIButton(${JSON.stringify(label)}, ${JSON.stringify(staticStyles)});`);
+      const isDynamic = textChild?.isDynamic;
+
+      if (isDynamic && textChild) {
+        codeLines.push(`  const ${elVar} = new UIButton('', ${JSON.stringify(staticStyles)});`);
+        if (inLoop) {
+          codeLines.push(`  ${elVar}.setLabel(String(${label}));`);
+        } else {
+          codeLines.push(`
+  effect(() => {
+    ${elVar}.setLabel(String(${label}));
+  });`);
+        }
+      } else {
+        codeLines.push(`  const ${elVar} = new UIButton(${JSON.stringify(label)}, ${JSON.stringify(staticStyles)});`);
+      }
     } else if (element.tag === 'input') {
       codeLines.push(`  const ${elVar} = new UIInput(${JSON.stringify(staticStyles)});`);
     } else if (element.tag === 'modal') {
       codeLines.push(`  const ${elVar} = new UIModal(${JSON.stringify(staticStyles)});`);
+    } else if (element.tag === 'motion' || element.tag === 'Motion') {
+      codeLines.push(`  const ${elVar} = new UIMotion(${JSON.stringify(staticStyles)});`);
     } else {
       // Default to UIView container
       codeLines.push(`  const ${elVar} = new UIView(${JSON.stringify(staticStyles)});`);

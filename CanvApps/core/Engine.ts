@@ -75,7 +75,29 @@ export class Engine {
       this.canvas = options.canvas;
     } else {
       this.canvas = document.createElement('canvas');
-      this.canvas.style.display = 'block';
+    }
+
+    // Configure touch-safe styles on canvas to eliminate mobile browser blue tap highlights and callouts
+    this.canvas.style.display = 'block';
+    (this.canvas.style as any).webkitTapHighlightColor = 'transparent';
+    (this.canvas.style as any).tapHighlightColor = 'transparent';
+    this.canvas.style.touchAction = 'none';
+    (this.canvas.style as any).webkitTouchCallout = 'none';
+    this.canvas.style.userSelect = 'none';
+    (this.canvas.style as any).webkitUserSelect = 'none';
+    this.canvas.style.outline = 'none';
+
+    // Inject global mobile tap-highlight reset stylesheet
+    if (typeof document !== 'undefined' && !document.getElementById('canvapps-global-touch-styles')) {
+      const style = document.createElement('style');
+      style.id = 'canvapps-global-touch-styles';
+      style.textContent = `
+        canvas, [data-canvapps-root], #canvapps-ghost-dom-overlay {
+          -webkit-tap-highlight-color: transparent !important;
+          -webkit-touch-callout: none !important;
+        }
+      `;
+      document.head.appendChild(style);
     }
 
     // 2. Initialize 2D rendering context with alpha channel enabled
@@ -98,6 +120,10 @@ export class Engine {
       if (parent instanceof HTMLElement) {
         mountParent = parent;
         parent.style.position = 'relative'; // Ensure absolute GhostDOM overlays properly
+        (parent.style as any).webkitTapHighlightColor = 'transparent';
+        (parent.style as any).tapHighlightColor = 'transparent';
+        parent.style.touchAction = 'none';
+        (parent.style as any).webkitTouchCallout = 'none';
         parent.appendChild(this.canvas);
       }
     }

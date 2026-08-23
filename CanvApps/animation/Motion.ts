@@ -58,12 +58,12 @@ export class Motion {
     }
 
     const {
-      entranceDuration = 720,
-      holdDuration = 500,
-      exitDuration = 340,
-      initialSpacing = 24,
-      initialScale = 0.55,
-      exitScale = 0.68,
+      entranceDuration = 1100,
+      holdDuration = 800,
+      exitDuration = 450,
+      initialSpacing = 26,
+      initialScale = 0.5,
+      exitScale = 0.65,
       onUpdate,
       onFinish,
     } = options;
@@ -79,16 +79,17 @@ export class Motion {
       const elapsed = now - startTime;
 
       if (elapsed <= entranceDuration) {
-        // Phase 1: Sub-pixel letter convergence, scale entrance, and opacity fade-in
+        // Phase 1: Sub-pixel letter convergence, elastic scale entrance, and opacity fade-in
         const t = Math.min(1, elapsed / entranceDuration);
         
-        // Elastic Ease-Out Scale
-        const c4 = (2 * Math.PI) / 3;
-        const easedScale = t === 0 ? 0 : t === 1 ? 1 : Math.pow(2, -10 * t) * Math.sin((t * 10 - 0.75) * c4) + 1;
-        const scale = initialScale + (1.0 - initialScale) * Math.min(1.04, Math.max(0, easedScale));
+        // Elastic Ease-Out Scale (0.5 -> 1.0)
+        const c1 = 1.6;
+        const c3 = c1 + 1;
+        const easedScale = 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2);
+        const scale = initialScale + (1.0 - initialScale) * Math.min(1.05, Math.max(0, easedScale));
 
         // Opacity: 0 -> 1
-        const opacity = Math.min(1, t * 1.6);
+        const opacity = Math.min(1, t * 1.5);
 
         // Sub-pixel Continuous Letter Convergence: initialSpacing -> 0px (60/120 FPS float)
         const easedSpacing = 1 - Math.pow(1 - t, 3);
@@ -96,7 +97,7 @@ export class Motion {
         const letterSpacing = Number(continuousSpacing.toFixed(2));
 
         // Subtitle Fade-in halfway through
-        const subtitleOpacity = t > 0.45 ? Math.min(1, (t - 0.45) / 0.55) : 0;
+        const subtitleOpacity = t > 0.55 ? Math.min(1, (t - 0.55) / 0.45) : 0;
 
         onUpdate?.({ scale, opacity, letterSpacing, subtitleOpacity });
         rafId = requestAnimationFrame(frame);
@@ -113,7 +114,7 @@ export class Motion {
         const exitEased = t * t * t;
         const scale = Math.max(exitScale, 1.0 - (1.0 - exitScale) * exitEased);
         const opacity = Math.max(0, 1.0 - exitEased);
-        const subtitleOpacity = Math.max(0, 1.0 - exitEased * 1.2);
+        const subtitleOpacity = Math.max(0, 1.0 - exitEased * 1.3);
 
         onUpdate?.({ scale, opacity, letterSpacing: 0, subtitleOpacity });
         rafId = requestAnimationFrame(frame);

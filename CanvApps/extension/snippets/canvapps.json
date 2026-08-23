@@ -1,0 +1,75 @@
+{
+  "CanvApps Component Template": {
+    "prefix": "cvs-component",
+    "body": [
+      "<script lang=\"ts\">",
+      "  const ${1:count} = signal(${2:0});",
+      "</script>",
+      "",
+      "<view width=\"100%\" height=\"100%\" flexDirection=\"column\" alignItems=\"center\" justifyContent=\"center\" padding=\"24\">",
+      "  <view width=\"500\" backgroundColor=\"#1e293b\" borderRadius=\"16\" padding=\"24\" flexDirection=\"column\" gap=\"16\">",
+      "    <text fontSize=\"22\" fontWeight=\"bold\" color=\"#38bdf8\">${3:Title}</text>",
+      "    $0",
+      "  </view>",
+      "</view>"
+    ],
+    "description": "Create a boilerplate CanvApps Single File Component"
+  },
+  "Conditional Block": {
+    "prefix": "cvs-if",
+    "body": [
+      "@if (${1:condition}) {",
+      "  $0",
+      "} else {",
+      "  ",
+      "}"
+    ],
+    "description": "Create a reactive @if block"
+  },
+  "Iteration Block": {
+    "prefix": "cvs-each",
+    "body": [
+      "@each ${1:items.value} as ${2:item}, ${3:index} {",
+      "  $0",
+      "}"
+    ],
+    "description": "Create a reactive @each iteration block"
+  },
+  "View Container": {
+    "prefix": "cvs-view",
+    "body": [
+      "<view width=\"${1:100%}\" backgroundColor=\"${2:#1e293b}\" borderRadius=\"${3:12}\" padding=\"${4:16}\" flexDirection=\"${5|column,row|}\" gap=\"${6:12}\">",
+      "  $0",
+      "</view>"
+    ],
+    "description": "Create a UIView container"
+  },
+  "Text Node": {
+    "prefix": "cvs-text",
+    "body": [
+      "<text fontSize=\"${1:14}\" color=\"${2:#f8fafc}\"${3: fontWeight=\"bold\"}>${4:Text content}</text>"
+    ],
+    "description": "Create a UIText element"
+  },
+  "Button Element": {
+    "prefix": "cvs-button",
+    "body": [
+      "<button label=\"${1:Click Me}\" backgroundColor=\"${2:#0284c7}\" hoverBackgroundColor=\"${3:#0369a1}\" @click=\"${4:handleClick}\" />"
+    ],
+    "description": "Create a UIButton element"
+  },
+  "Input Element": {
+    "prefix": "cvs-input",
+    "body": [
+      "<input placeholder=\"${1:Enter text...}\" :value=\"${2:textSignal.value}\" @input=\"${3:handleInput}\" />"
+    ],
+    "description": "Create a UIInput element"
+  },
+  "Signal Declaration": {
+    "prefix": "cvs-signal",
+    "body": [
+      "const ${1:state} = signal<${2:string}>(${3:''});"
+    ],
+    "description": "Create a reactive signal"
+  }
+}

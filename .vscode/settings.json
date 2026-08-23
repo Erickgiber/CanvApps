@@ -1,0 +1,19 @@
+{
+  "files.associations": {
+    "*.cvs": "canvapps"
+  },
+  "emmet.includeLanguages": {
+    "canvapps": "html",
+    "cvs": "html"
+  },
+  "material-icon-theme.files.associations": {
+    "*.cvs": "svelte"
+  },
+  "vsicons.associations.files": [
+    {
+      "icon": "svelte",
+      "extensions": ["cvs"],
+      "format": "svg"
+    }
+  ]
+}

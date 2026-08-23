@@ -1,0 +1,32 @@
+# Azure Pipelines Configuration for CanvApps
+# Builds CanvApps Framework & Application to dist-app for universal hosting
+
+trigger:
+  branches:
+    include:
+      - main
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+steps:
+- task: NodeTool@0
+  inputs:
+    versionSpec: '20.x'
+  displayName: 'Install Node.js 20.x'
+
+- script: |
+    npm install
+  displayName: 'Install Dependencies'
+
+- script: |
+    npm run build:lib
+    npm run build:app
+  displayName: 'Build CanvApps Framework & App (dist-app)'
+
+- task: PublishPipelineArtifact@1
+  inputs:
+    targetPath: '$(System.DefaultWorkingDirectory)/dist-app'
+    artifact: 'canvapps-build'
+    publishLocation: 'pipeline'
+  displayName: 'Publish dist-app Production Artifact'

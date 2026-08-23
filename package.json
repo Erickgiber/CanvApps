@@ -1,0 +1,64 @@
+{
+  "name": "canvapps",
+  "version": "0.1.0",
+  "description": "High-performance 100% Canvas-based UI Framework for SPA, PWA, and Native Mobile via Capacitor",
+  "type": "module",
+  "main": "./dist/canvapps.umd.cjs",
+  "module": "./dist/canvapps.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/canvapps.js",
+      "require": "./dist/canvapps.umd.cjs"
+    },
+    "./core": {
+      "types": "./dist/core/index.d.ts",
+      "import": "./dist/core/index.js"
+    },
+    "./nodes": {
+      "types": "./dist/nodes/index.d.ts",
+      "import": "./dist/nodes/index.js"
+    },
+    "./layout": {
+      "types": "./dist/layout/index.d.ts",
+      "import": "./dist/layout/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "CanvApps",
+    "logo.svg",
+    "README.md"
+  ],
+  "bin": {
+    "canvapps": "./CanvApps/cli/bin.ts"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "npm run build:lib",
+    "build:lib": "tsc --noEmit && vite build",
+    "build:app": "tsx CanvApps/cli/bin.ts build",
+    "build:preview-code": "tsx CanvApps/cli/bin.ts preview-code",
+    "preview": "vite preview --outDir dist-app",
+    "preview:app": "vite preview --outDir dist-app"
+  },
+  "keywords": [
+    "canvas",
+    "ui-framework",
+    "graphics-engine",
+    "typescript",
+    "pwa",
+    "capacitor",
+    "canvas-ui"
+  ],
+  "author": "Erick Giber",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^22.13.5",
+    "tsx": "^4.23.12",
+    "typescript": "^5.7.3",
+    "vite": "^6.2.0",
+    "vite-plugin-dts": "^4.5.0"
+  }
+}

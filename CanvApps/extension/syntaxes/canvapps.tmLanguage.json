@@ -1,0 +1,222 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "CanvApps Single-File Component",
+  "scopeName": "source.canvapps",
+  "patterns": [
+    {
+      "include": "#script-block"
+    },
+    {
+      "include": "#template-block"
+    }
+  ],
+  "repository": {
+    "script-block": {
+      "name": "meta.script.canvapps",
+      "begin": "(<)(script)(\\s+lang=(\"|')ts(\"|'))?(>)",
+      "beginCaptures": {
+        "1": { "name": "punctuation.definition.tag.begin.html" },
+        "2": { "name": "entity.name.tag.html" },
+        "3": { "name": "meta.attribute.lang.html" },
+        "6": { "name": "punctuation.definition.tag.end.html" }
+      },
+      "end": "(</)(script)(>)",
+      "endCaptures": {
+        "1": { "name": "punctuation.definition.tag.begin.html" },
+        "2": { "name": "entity.name.tag.html" },
+        "3": { "name": "punctuation.definition.tag.end.html" }
+      },
+      "patterns": [
+        {
+          "include": "source.ts"
+        },
+        {
+          "include": "#ts-embedded"
+        }
+      ]
+    },
+    "template-block": {
+      "patterns": [
+        {
+          "include": "#comments"
+        },
+        {
+          "include": "#control-blocks"
+        },
+        {
+          "include": "#interpolations"
+        },
+        {
+          "include": "#tags"
+        }
+      ]
+    },
+    "comments": {
+      "name": "comment.block.html",
+      "begin": "<!--",
+      "end": "-->"
+    },
+    "control-blocks": {
+      "patterns": [
+        {
+          "name": "keyword.control.directive.canvapps",
+          "match": "(@if|@else\\s+if|@else|else\\s+if|else|@each|\\{#if|\\{:else\\}|\\{/if\\}|\\{#each|\\{/each\\})"
+        }
+      ]
+    },
+    "interpolations": {
+      "name": "meta.interpolation.canvapps",
+      "begin": "\\{\\{",
+      "beginCaptures": {
+        "0": { "name": "punctuation.definition.interpolation.begin.canvapps" }
+      },
+      "end": "\\}\\}",
+      "endCaptures": {
+        "0": { "name": "punctuation.definition.interpolation.end.canvapps" }
+      },
+      "patterns": [
+        {
+          "include": "source.ts"
+        },
+        {
+          "include": "#ts-embedded"
+        }
+      ]
+    },
+    "tags": {
+      "patterns": [
+        {
+          "name": "meta.tag.canvapps",
+          "begin": "(<)(/)?([a-zA-Z0-9_-]+)",
+          "beginCaptures": {
+            "1": { "name": "punctuation.definition.tag.begin.html" },
+            "2": { "name": "punctuation.definition.tag.begin.html" },
+            "3": {
+              "name": "entity.name.tag.canvapps"
+            }
+          },
+          "end": "(/?>)",
+          "endCaptures": {
+            "1": { "name": "punctuation.definition.tag.end.html" }
+          },
+          "patterns": [
+            {
+              "include": "#tag-attributes"
+            }
+          ]
+        }
+      ]
+    },
+    "tag-attributes": {
+      "patterns": [
+        {
+          "name": "meta.directive.canvapps",
+          "match": "([*@](?:if|for|each)|each)\\s*(=)\\s*(\"[^\"]*\"|'[^']*'|\\{[^}]*\\})",
+          "captures": {
+            "1": { "name": "keyword.control.directive.canvapps" },
+            "2": { "name": "punctuation.separator.key-value.html" },
+            "3": { "name": "string.quoted.directive.canvapps", "patterns": [{ "include": "source.ts" }, { "include": "#ts-embedded" }] }
+          }
+        },
+        {
+          "name": "meta.event-binding.canvapps",
+          "match": "(@[a-zA-Z0-9_-]+)\\s*(=)\\s*(\"[^\"]*\"|'[^']*'|\\{[^}]*\\})",
+          "captures": {
+            "1": { "name": "entity.other.attribute-name.event.canvapps" },
+            "2": { "name": "punctuation.separator.key-value.html" },
+            "3": { "name": "string.quoted.event.canvapps" }
+          }
+        },
+        {
+          "name": "meta.dynamic-binding.canvapps",
+          "match": "(:[a-zA-Z0-9_-]+)\\s*(=)\\s*(\"[^\"]*\"|'[^']*'|\\{[^}]*\\})",
+          "captures": {
+            "1": { "name": "entity.other.attribute-name.binding.canvapps" },
+            "2": { "name": "punctuation.separator.key-value.html" },
+            "3": { "name": "string.quoted.binding.canvapps", "patterns": [{ "include": "source.ts" }, { "include": "#ts-embedded" }] }
+          }
+        },
+        {
+          "name": "meta.attribute.standard.canvapps",
+          "match": "([a-zA-Z0-9_-]+)\\s*(?:(=)\\s*(\"[^\"]*\"|'[^']*'|\\{[^}]*\\}|[^\\s>]+))?",
+          "captures": {
+            "1": { "name": "entity.other.attribute-name.html" },
+            "2": { "name": "punctuation.separator.key-value.html" },
+            "3": { "name": "string.quoted.double.html" }
+          }
+        }
+      ]
+    },
+    "ts-embedded": {
+      "patterns": [
+        {
+          "name": "comment.line.double-slash.ts",
+          "match": "//.*$"
+        },
+        {
+          "name": "comment.block.ts",
+          "begin": "/\\*",
+          "end": "\\*/"
+        },
+        {
+          "name": "string.quoted.single.ts",
+          "begin": "'",
+          "end": "'",
+          "patterns": [{ "name": "constant.character.escape.ts", "match": "\\\\." }]
+        },
+        {
+          "name": "string.quoted.double.ts",
+          "begin": "\"",
+          "end": "\"",
+          "patterns": [{ "name": "constant.character.escape.ts", "match": "\\\\." }]
+        },
+        {
+          "name": "string.template.ts",
+          "begin": "`",
+          "end": "`",
+          "patterns": [
+            { "name": "constant.character.escape.ts", "match": "\\\\." },
+            {
+              "name": "meta.template.expression.ts",
+              "begin": "\\$\\{",
+              "end": "\\}",
+              "patterns": [{ "include": "source.ts" }, { "include": "#ts-embedded" }]
+            }
+          ]
+        },
+        {
+          "name": "keyword.control.ts",
+          "match": "\\b(import|from|export|default|return|if|else|for|while|do|switch|case|break|continue|try|catch|finally|throw|new|async|await|yield)\\b"
+        },
+        {
+          "name": "storage.type.ts",
+          "match": "\\b(const|let|var|function|class|interface|type|enum|namespace|declare)\\b"
+        },
+        {
+          "name": "storage.modifier.ts",
+          "match": "\\b(public|private|protected|readonly|static|abstract|override|implements|extends)\\b"
+        },
+        {
+          "name": "support.type.primitive.ts",
+          "match": "\\b(string|number|boolean|symbol|any|void|never|unknown|object|Record|Array|Promise)\\b"
+        },
+        {
+          "name": "support.function.canvapps.ts",
+          "match": "\\b(signal|computed|effect|batch|useBreakpoints|useMediaQuery|bindSignal|defineConfig|createState)\\b"
+        },
+        {
+          "name": "constant.language.boolean.ts",
+          "match": "\\b(true|false|null|undefined|NaN|Infinity)\\b"
+        },
+        {
+          "name": "constant.numeric.ts",
+          "match": "\\b([0-9]+(?:\\.[0-9]+)?)\\b"
+        },
+        {
+          "name": "entity.name.function.ts",
+          "match": "\\b([a-zA-Z_$][a-zA-Z0-9_$]*)\\s*(?=\\()"
+        }
+      ]
+    }
+  }
+}

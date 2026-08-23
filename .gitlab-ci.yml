@@ -1,0 +1,16 @@
+# GitLab CI/CD Configuration for CanvApps
+image: node:20
+
+pages:
+  stage: deploy
+  script:
+    - npm install
+    - npm run build:lib
+    - npm run build:app
+    - rm -rf public
+    - mv dist-app public
+  artifacts:
+    paths:
+      - public
+  only:
+    - main

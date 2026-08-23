@@ -1,0 +1,71 @@
+{
+  "name": "canvapps-vscode",
+  "displayName": "CanvApps - Canvas UI Support",
+  "description": "Language support, syntax highlighting, go-to-definition, and autocompletion for CanvApps .cvs Single-File Components",
+  "version": "0.1.0",
+  "publisher": "canvapps",
+  "license": "MIT",
+  "icon": "icon.png",
+  "main": "./dist/extension.js",
+  "activationEvents": [
+    "onLanguage:canvapps"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Erickgiber/CanvApps"
+  },
+  "engines": {
+    "vscode": "^1.75.0"
+  },
+  "scripts": {
+    "build": "esbuild src/extension.ts --bundle --outfile=dist/extension.js --external:vscode --format=cjs --platform=node"
+  },
+  "categories": [
+    "Programming Languages",
+    "Snippets"
+  ],
+  "keywords": [
+    "canvapps",
+    "canvas",
+    "cvs",
+    "ui-framework",
+    "syntax-highlighting"
+  ],
+  "contributes": {
+    "languages": [
+      {
+        "id": "canvapps",
+        "aliases": [
+          "CanvApps",
+          "canvapps",
+          "cvs"
+        ],
+        "extensions": [
+          ".cvs"
+        ],
+        "icon": {
+          "light": "./icons/canvapps-file.svg",
+          "dark": "./icons/canvapps-file.svg"
+        },
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "canvapps",
+        "scopeName": "source.canvapps",
+        "path": "./syntaxes/canvapps.tmLanguage.json",
+        "embeddedLanguages": {
+          "source.ts": "typescript",
+          "text.html": "html"
+        }
+      }
+    ],
+    "snippets": [
+      {
+        "language": "canvapps",
+        "path": "./snippets/canvapps.json"
+      }
+    ]
+  }
+}

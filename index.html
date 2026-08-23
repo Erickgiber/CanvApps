@@ -1,22 +1,33 @@
 <!DOCTYPE html>
-<html lang="es">
-
+<html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description"
-        content="TODO App construida con arquitectura híbrida WebGL para gráficos acelerados por GPU y Canvas 2D para tipografía nítida.">
-    <title>TODO App - Arquitectura Híbrida (WebGL + Canvas2D)</title>
-    <link rel="stylesheet" href="./css/styles.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <title>CanvApps - Canvas UI Framework</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <link rel="alternate icon" type="image/svg+xml" href="/icon.svg" />
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background-color: #f8fafc;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+    #app-container {
+      width: 100%;
+      height: 100%;
+      display: flex;
+    }
+  </style>
 </head>
-
 <body>
-    <main class="canvas-container" role="main">
-        <canvas id="glCanvas" aria-hidden="true"></canvas>
-        <canvas id="textCanvas" aria-label="Aplicación de lista de tareas"></canvas>
-    </main>
-
-    <script type="module" src="./js/main.js"></script>
+  <div id="app-container"></div>
+  <script type="module" src="/src/main.ts"></script>
 </body>
-
 </html>

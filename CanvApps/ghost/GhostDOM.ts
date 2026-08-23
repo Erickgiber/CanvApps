@@ -111,6 +111,20 @@ export class GhostDOM {
   }
 
   /**
+   * Focuses the native ghost input associated with a target element.
+   */
+  public focusGhost(targetId: string): void {
+    const el = this.ghostElements.get(targetId);
+    if (el && typeof el.focus === 'function' && typeof document !== 'undefined' && document.activeElement !== el) {
+      try {
+        el.focus();
+      } catch {
+        // ignore
+      }
+    }
+  }
+
+  /**
    * Registers or updates a ghost target node in the overlay.
    */
   public register(target: GhostTarget): HTMLElement {
@@ -167,7 +181,8 @@ export class GhostDOM {
           padding: '0',
           margin: '0',
           resize: 'none',
-          zIndex: '-1',
+          cursor: 'text',
+          zIndex: '1',
         });
       }
 
@@ -198,6 +213,7 @@ export class GhostDOM {
         top: `${y}px`,
         width: `${Math.max(1, width)}px`,
         height: `${Math.max(1, height)}px`,
+        cursor: 'text',
         display: isVisible ? 'block' : 'none',
       });
 
@@ -285,12 +301,18 @@ export class GhostDOM {
       }) as EventListener);
 
       ghost.addEventListener('blur', () => {
+        if (target.isFocused) {
+          target.blur();
+        }
         if (target.onNativeBlur) {
           target.onNativeBlur();
         }
       });
 
       ghost.addEventListener('focus', () => {
+        if (!target.isFocused) {
+          target.focus();
+        }
         if (target.onNativeFocus) {
           target.onNativeFocus();
         }

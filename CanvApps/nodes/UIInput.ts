@@ -161,13 +161,21 @@ export class UIInput extends UIElement implements GhostTarget {
     }
   }
 
-  public getPlaceholder(): string {
-    return this.placeholder;
-  }
-
   public setPlaceholder(text: string): this {
     this.placeholder = text;
+    this.styles.placeholder = text;
     this.markRenderDirty();
+    return this;
+  }
+
+  public override setStyle(styles: Partial<InputStyles>): this {
+    super.setStyle(styles);
+    if (styles.placeholder !== undefined) {
+      this.placeholder = styles.placeholder;
+    }
+    if (styles.value !== undefined && styles.value !== this.value) {
+      this.setValue(styles.value);
+    }
     return this;
   }
 

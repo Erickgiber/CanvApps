@@ -1,4 +1,4 @@
-import { CVSComponentAST, ASTElement, ASTNode, ASTProp, ASTDirectives, ASTIfBlock } from './types';
+import { CVSComponentAST, ASTElement, ASTNode, ASTProp, ASTDirectives, ASTIfBlock, ASTEachBlock } from './types';
 
 /**
  * High-performance Parser converting .cvs Single File Component markup into an AST.
@@ -40,8 +40,8 @@ export class CVSParser {
       return null;
     }
 
-    // Preprocess conditional blocks: @if (cond) { ... } else { ... }
-    const preprocessed = this.preprocessConditions(trimmed);
+    // Preprocess control blocks: @if and @each blocks
+    const preprocessed = this.preprocessControlBlocks(trimmed);
 
     const tokens = this.tokenize(preprocessed);
     let index = 0;
@@ -112,6 +112,40 @@ export class CVSParser {
           alternate,
         };
         return ifBlock;
+      }
+
+      // Iteration block token: <canvapps-each>
+      if (token.type === 'tag-open' && token.tagName === 'canvapps-each') {
+        index++;
+        const iterableAttr = token.attributes?.find((a) => a.name === 'iterable');
+        const itemAttr = token.attributes?.find((a) => a.name === 'item');
+        const indexAttr = token.attributes?.find((a) => a.name === 'index');
+
+        const iterable = iterableAttr ? iterableAttr.value.replace(/&quot;/g, '"') : '[]';
+        const item = itemAttr ? itemAttr.value : 'item';
+        const itemIndex = indexAttr && indexAttr.value !== '' && indexAttr.value !== 'undefined' ? indexAttr.value : undefined;
+
+        const body: ASTNode[] = [];
+        while (index < tokens.length) {
+          const next = tokens[index];
+          if (next.type === 'tag-close' && next.tagName === 'canvapps-each') {
+            index++;
+            break;
+          }
+          const child = parseNode();
+          if (child) {
+            body.push(child);
+          }
+        }
+
+        const eachBlock: ASTEachBlock = {
+          type: 'each-block',
+          iterable,
+          item,
+          index: itemIndex,
+          body,
+        };
+        return eachBlock;
       }
 
       // Element open tag
@@ -201,12 +235,13 @@ export class CVSParser {
   }
 
   /**
-   * Preprocesses conditional syntax like:
+   * Preprocesses conditional and iteration blocks:
    * - @if (condition) { ... } else { ... }
-   * - @if condition { ... } @else { ... }
+   * - @each rows as row { ... }
    * - {#if condition} ... {:else} ... {/if}
+   * - {#each items as item} ... {/each}
    */
-  private static preprocessConditions(src: string): string {
+  private static preprocessControlBlocks(src: string): string {
     // 1. Svelte-style: {#if cond} ... {:else} ... {/if}
     let result = src.replace(
       /\{#if\s+([\s\S]*?)\}([\s\S]*?)(?:\{:else\}([\s\S]*?))?\{\/if\}/g,
@@ -218,14 +253,118 @@ export class CVSParser {
       }
     );
 
-    // 2. Block-style @if ... { ... } else { ... }
+    // 2. Svelte-style: {#each iterable as item, index} ... {/each}
+    result = result.replace(
+      /\{#each\s+([\s\S]*?)\}([\s\S]*?)\{\/each\}/g,
+      (_match, expr, body) => {
+        const parsed = this.parseForDirective(expr);
+        const safeIterable = parsed.iterable.trim().replace(/"/g, '&quot;');
+        return `<canvapps-each iterable="${safeIterable}" item="${parsed.item}" index="${parsed.index || ''}">${body}</canvapps-each>`;
+      }
+    );
+
+    // 3. Block-style @if ... { ... } else { ... }
     result = this.transformIfBlocks(result);
+
+    // 4. Block-style @each ... as ... { ... }
+    result = this.transformEachBlocks(result);
 
     return result;
   }
 
   /**
-   * Scans and transforms @if (...) { ... } else { ... } blocks.
+   * Scans and transforms @each rows as row { ... } blocks into <canvapps-each>.
+   */
+  private static transformEachBlocks(src: string): string {
+    let index = 0;
+
+    while (index < src.length) {
+      const eachMatch = src.indexOf('@each', index);
+      if (eachMatch === -1) {
+        break;
+      }
+
+      // Check boundary so we don't match @each_xyz
+      const nextChar = src[eachMatch + 5];
+      if (nextChar && /[a-zA-Z0-9_]/.test(nextChar)) {
+        index = eachMatch + 5;
+        continue;
+      }
+
+      // Check if this @each is an attribute (e.g. @each="..." or @each='...')
+      const afterEach = src.slice(eachMatch + 5);
+      if (/^\s*=/.test(afterEach)) {
+        index = eachMatch + 5;
+        continue;
+      }
+
+      let expr = '';
+      let openBrace = -1;
+
+      const trimmedAfter = afterEach.trimStart();
+      if (trimmedAfter.startsWith('(')) {
+        // Parenthesized expression: @each (milestones.value as item, index) { ... }
+        const openParen = src.indexOf('(', eachMatch + 5);
+        const closeParen = this.findMatchingParen(src, openParen);
+        if (closeParen === -1) {
+          index = eachMatch + 5;
+          continue;
+        }
+
+        expr = src.slice(openParen + 1, closeParen).trim();
+        openBrace = src.indexOf('{', closeParen + 1);
+        if (openBrace === -1) {
+          index = eachMatch + 5;
+          continue;
+        }
+      } else {
+        // Non-parenthesized expression: @each milestones.value as item, index { ... }
+        openBrace = src.indexOf('{', eachMatch + 5);
+        if (openBrace === -1) {
+          index = eachMatch + 5;
+          continue;
+        }
+
+        const exprSub = src.slice(eachMatch + 5, openBrace).trim();
+        // Skip if there is an HTML tag opening before '{'
+        if (/<[a-zA-Z/]/.test(exprSub)) {
+          index = eachMatch + 5;
+          continue;
+        }
+        expr = exprSub;
+      }
+
+      if (!expr) {
+        index = eachMatch + 5;
+        continue;
+      }
+
+      // Find matching closing '}' for the body block
+      const closeBrace = this.findMatchingBrace(src, openBrace);
+      if (closeBrace === -1) {
+        index = openBrace + 1;
+        continue;
+      }
+
+      const bodyContent = src.slice(openBrace + 1, closeBrace);
+      const totalEnd = closeBrace + 1;
+
+      const parsedLoop = this.parseForDirective(expr);
+      const safeIterable = parsedLoop.iterable.replace(/"/g, '&quot;');
+      const safeItem = parsedLoop.item;
+      const safeIndex = parsedLoop.index || '';
+
+      const replacement = `<canvapps-each iterable="${safeIterable}" item="${safeItem}" index="${safeIndex}">${bodyContent}</canvapps-each>`;
+
+      src = src.slice(0, eachMatch) + replacement + src.slice(totalEnd);
+      index = eachMatch + replacement.length;
+    }
+
+    return src;
+  }
+
+  /**
+   * Scans and transforms @if (...) { ... } else { ... } blocks into <canvapps-if>.
    */
   private static transformIfBlocks(src: string): string {
     let index = 0;

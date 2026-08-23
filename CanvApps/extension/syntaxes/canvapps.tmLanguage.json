@@ -60,7 +60,7 @@
       "patterns": [
         {
           "name": "keyword.control.directive.canvapps",
-          "match": "(@if|@else\\s+if|@else|else\\s+if|else|\\{#if|\\{:else\\}|\\{/if\\})"
+          "match": "(@if|@else\\s+if|@else|else\\s+if|else|@each|\\{#if|\\{:else\\}|\\{/if\\}|\\{#each|\\{/each\\})"
         }
       ]
     },

@@ -40,6 +40,17 @@ export interface ASTIfBlock {
 }
 
 /**
+ * Iteration block node (@each rows as row { ... } or @each (items as item, index) { ... }).
+ */
+export interface ASTEachBlock {
+  type: 'each-block';
+  iterable: string;
+  item: string;
+  index?: string;
+  body: ASTNode[];
+}
+
+/**
  * Element node inside a template tree.
  */
 export interface ASTElement {
@@ -50,7 +61,7 @@ export interface ASTElement {
   children: ASTNode[];
 }
 
-export type ASTNode = ASTElement | ASTTextNode | ASTIfBlock;
+export type ASTNode = ASTElement | ASTTextNode | ASTIfBlock | ASTEachBlock;
 
 /**
  * Complete Abstract Syntax Tree for a .cvs Single File Component.

@@ -9,7 +9,7 @@
   const { isMobile } = useBreakpoints();
 
   // 2. Core Application Reactive State (Signals)
-  const cycleCount = signal(42);
+  const cycleCount = signal(0);
   const taskInput = signal('');
 
   const milestones = signal<MilestoneItem[]>([
@@ -86,7 +86,7 @@
 
     <!-- Header Status with @if ... else condition -->
     <view flexDirection="row" alignItems="center" gap="8">
-      @if (cycleCount.value > 50) {
+      @if (cycleCount.value > 10) {
         <view padding="[3, 8]" backgroundColor="#ecfdf5" borderRadius="8">
           <text fontSize="11" fontWeight="600" color="#047857">🔥 High Activity ({{ cycleCount.value }})</text>
         </view>
@@ -124,11 +124,11 @@
     </view>
   </view>
 
-  <!-- 3. Ghost DOM & Svelte-style Iteration Container -->
+  <!-- 3. Ghost DOM & Iteration Container -->
   <view width="100%" flexGrow="1" backgroundColor="#ffffff" borderRadius="16" borderWidth="1" borderColor="#e2e8f0" :padding={isMobile.value ? 14 : 18} flexDirection="column" gap="10">
     <view flexDirection="column" gap="2">
-      <text fontSize="14" fontWeight="bold" color="#0f172a">📱 Ghost DOM & Svelte-Style Iteration</text>
-      <text fontSize="11" color="#64748b">Reactive @if conditional branching and @each list streaming</text>
+      <text fontSize="14" fontWeight="bold" color="#0f172a">📱 Ghost DOM & Block-Level Iteration</text>
+      <text fontSize="11" color="#64748b">Reactive @if conditional branching and @each block streaming</text>
     </view>
 
     <!-- Task Input Form (Responsive Column on Mobile, Row on Desktop) -->
@@ -137,17 +137,19 @@
       <button label="+ Add Milestone" backgroundColor="#059669" hoverBackgroundColor="#047857" labelColor="#ffffff" :padding={isMobile.value ? [9, 14] : [9, 18]} fontSize="13" @click="addMilestone" />
     </view>
 
-    <!-- Milestone Stream List with @if ... else condition -->
+    <!-- Milestone Stream List with @if ... else and @each rows as row { ... } -->
     <view width="100%" flexDirection="column" gap="6" flexGrow="1">
       @if (milestones.value.length === 0) {
         <view width="100%" backgroundColor="#f8fafc" borderRadius="8" padding="16" borderWidth="1" borderColor="#e2e8f0" alignItems="center" justifyContent="center">
           <text fontSize="12" color="#94a3b8">No milestones in list. Type a new milestone above and press Enter!</text>
         </view>
       } else {
-        <view @each="milestones.value as item, index" width="100%" backgroundColor="#f8fafc" borderRadius="8" :padding={isMobile.value ? [8, 10] : [9, 14]} borderWidth="1" borderColor="#e2e8f0" flexDirection="row" alignItems="center" justifyContent="space-between" gap="8">
-          <text fontSize="12" color="#1e293b" flexGrow="1" wordWrap="true">• {{ item.text }}</text>
-          <button label="✕" backgroundColor="#fee2e2" hoverBackgroundColor="#fecaca" labelColor="#dc2626" width="28" height="28" borderRadius="14" fontSize="12" @click="() => removeMilestone(item.id)" />
-        </view>
+        @each milestones.value as item, index {
+          <view width="100%" backgroundColor="#f8fafc" borderRadius="8" :padding={isMobile.value ? [8, 10] : [9, 14]} borderWidth="1" borderColor="#e2e8f0" flexDirection="row" alignItems="center" justifyContent="space-between" gap="8">
+            <text fontSize="12" color="#1e293b" flexGrow="1" wordWrap="true">• {{ item.text }}</text>
+            <button label="✕" backgroundColor="#fee2e2" hoverBackgroundColor="#fecaca" labelColor="#dc2626" width="28" height="28" borderRadius="14" fontSize="12" @click="() => removeMilestone(item.id)" />
+          </view>
+        }
       }
     </view>
   </view>

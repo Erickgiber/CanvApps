@@ -275,14 +275,17 @@ Conditionally render Canvas subtrees reactively without boilerplate:
 ```
 *Also supports Svelte-style blocks (`{#if cond} ... {:else} ... {/if}`) and inline directives (`<view @if="cond">`).*
 
-#### 3. Reactive List Iteration (`@each`)
-Iterate signals with sub-millisecond updates:
+#### 3. Reactive List Iteration Blocks (`@each`)
+Iterate signals with sub-millisecond updates directly as blocks:
 ```html
-<view @each="tasks.value as item, index">
-  <text fontSize="13">• {{ item.title }}</text>
-  <button label="✕" @click="() => removeTask(item.id)" />
-</view>
+@each tasks.value as item, index {
+  <view width="100%" flexDirection="row" justifyContent="space-between" padding="12">
+    <text fontSize="13">• {{ item.title }}</text>
+    <button label="✕" @click="() => removeTask(item.id)" />
+  </view>
+}
 ```
+*Also supports Svelte-style iteration (`{#each tasks.value as item} ... {/each}`).*
 
 #### 4. Responsive Viewport Hooks
 ```ts

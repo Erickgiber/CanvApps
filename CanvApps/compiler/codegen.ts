@@ -100,7 +100,35 @@ ${consequentLines.join('\n')}
       };
     }
 
-    // 3. Element node
+    // 3. Iteration block node (@each rows as row { ... })
+    if (node.type === 'each-block') {
+      const listContainer = this.nextId('forContainer');
+      const childrenCode: string[] = [];
+
+      for (const child of node.body) {
+        const { code: cCode, rootVar: cVar } = this.generateNode(child, true);
+        childrenCode.push(cCode);
+        childrenCode.push(`        ${listContainer}.addChild(${cVar});`);
+      }
+
+      return {
+        code: `
+  const ${listContainer} = new UIView({ width: '100%', flexDirection: 'column', gap: 6 });
+  effect(() => {
+    ${listContainer}.removeAllChildren();
+    const list = ${node.iterable};
+    if (Array.isArray(list)) {
+      list.forEach((${node.item}, ${node.index || 'index'}) => {
+${childrenCode.join('\n')}
+      });
+    }
+  });
+`,
+        rootVar: listContainer,
+      };
+    }
+
+    // 4. Element node
     const element = node as ASTElement;
 
     // Handle Directives (*for / @each) BEFORE generating local element code

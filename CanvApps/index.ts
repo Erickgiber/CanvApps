@@ -12,6 +12,7 @@ export * from './events';
 export * from './ghost';
 export * from './reactivity';
 export * from './animation';
+export * from './router';
 export * from './compiler/types';
 export { CVSParser } from './compiler/parser';
 export { CVSCodeGenerator } from './compiler/codegen';

@@ -287,7 +287,109 @@ Iterate signals with sub-millisecond updates directly as blocks:
 ```
 *Also supports Svelte-style iteration (`{#each tasks.value as item} ... {/each}`).*
 
-#### 4. Responsive Viewport Hooks
+#### 4. Custom Component Imports & Composition
+Import any `.cvs` Single-File Component in `<script lang="ts">` and invoke it directly in templates using standard PascalCase tags:
+```html
+<script lang="ts">
+  import SplashView from './views/SplashView.cvs';
+  import DashboardView from './views/DashboardView.cvs';
+
+  const showSplash = signal(true);
+</script>
+
+<view width="100%" height="100%">
+  @if (showSplash.value) {
+    <SplashView @finish="() => showSplash.value = false" />
+  } else {
+    <DashboardView />
+  }
+</view>
+```
+
+#### 5. Reactive Router & View Management (`createRouter`, `useRouter`)
+CanvApps provides a fine-grained, signal-powered router for Single-Page and Multi-View Applications with zero DOM overhead:
+```ts
+<script lang="ts">
+  import { createRouter, useRouter } from 'canvapps';
+  import HomeView from './views/HomeView.cvs';
+  import SettingsView from './views/SettingsView.cvs';
+
+  const router = createRouter({
+    initialRoute: '/home',
+    routes: [
+      { path: '/home', component: HomeView },
+      { path: '/settings', component: SettingsView },
+    ],
+  });
+</script>
+
+<view width="100%" height="100%">
+  @if (router.currentPath.value === '/home') {
+    <HomeView />
+  }
+  @if (router.currentPath.value === '/settings') {
+    <SettingsView />
+  }
+</view>
+```
+
+#### 6. Canvas Animations & Intelligent Motion Engine (`Motion` & `KineticFX`)
+CanvApps includes a built-in 60/120 FPS hardware-timed Motion Engine and KineticFX system for declarative and imperative scene animations:
+
+##### A. Declarative Transition Attributes (`enter="scale"`, `enter="fade"`, `enter="zoom-in"`)
+Simply declare the entrance transition on any view or element:
+```html
+<!-- Automatically animates scale (0.94 -> 1.0) and opacity (0 -> 1) upon mounting -->
+<view width="100%" height="100%" enter="scale">
+  <DashboardContent />
+</view>
+```
+
+##### B. Cinematic Multi-Phase Sequences (`Motion.splashSequence`)
+Run multi-phase intros with letter convergence, elastic scale-in, and negative-scale exit directly via the engine:
+```ts
+<script lang="ts">
+  const scale = signal(0.55);
+  const opacity = signal(0.0);
+  const letterSpacing = signal(24);
+
+  Motion.splashSequence({
+    entranceDuration: 720,
+    holdDuration: 500,
+    exitDuration: 340,
+    onUpdate: (state) => {
+      scale.value = state.scale;
+      opacity.value = state.opacity;
+      letterSpacing.value = state.letterSpacing;
+    },
+    onFinish: () => console.log('Splash completed!'),
+  });
+</script>
+```
+
+##### C. Kinetic Flight Tokens & Particle Bursts (`KineticFX`)
+```ts
+// Parabolic token flying to target badge in pure Canvas coordinates
+KineticFX.flyToken({
+  from: { x: startX, y: startY },
+  to: '#counter-badge',
+  text: '+1',
+  color: '#1d4ed8',
+  backgroundColor: '#dbeafe',
+  duration: 440,
+  onHit: () => counter.value++,
+});
+
+// Stardust particle explosion
+KineticFX.burst({
+  x: clickX,
+  y: clickY,
+  colors: ['#059669', '#34d399', '#6ee7b7'],
+  count: 16,
+});
+```
+
+#### 7. Responsive Viewport Hooks
 ```ts
 <script lang="ts">
   const { isMobile, isTablet, isDesktop, width } = useBreakpoints();
@@ -295,7 +397,7 @@ Iterate signals with sub-millisecond updates directly as blocks:
 </script>
 ```
 
-#### 5. Native Text Selection & Clipboard (`selectable`)
+#### 8. Native Text Selection & Clipboard (`selectable`)
 By default, `<text>` nodes rendered on Canvas 2D are selectable with a visible highlight and copyable via Ghost DOM. You can customize text selection per component:
 ```html
 <text fontSize="14" color="#0f172a" selectable="true">
@@ -309,6 +411,22 @@ By default, `<text>` nodes rendered on Canvas 2D are selectable with a visible h
 <text :selectable="isSelectable.value">
   Dynamic selection signal.
 </text>
+```
+
+### 💅 Prettier & IDE Code Formatting
+Format `.cvs` files automatically on save with Prettier using Svelte parser integration:
+```json
+// .prettierrc
+{
+  "overrides": [
+    {
+      "files": "*.cvs",
+      "options": {
+        "parser": "svelte"
+      }
+    }
+  ]
+}
 ```
 
 ### Vite Plugin Setup (`vite.config.ts`)

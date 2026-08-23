@@ -1,0 +1,50 @@
+<script lang="ts">
+  // 1. Reactive Animation Signals
+  const splashScale = signal(0.55);
+  const splashOpacity = signal(0.0);
+  const splashSpacing = signal(24);
+  const subtitleOpacity = signal(0.0);
+
+  // 2. Viewport Responsive Signals
+  const { isMobile } = useBreakpoints();
+
+  // 3. Delegate multi-phase 60/120 FPS sequence directly to CanvApps Motion Engine
+  Motion.splashSequence({
+    entranceDuration: Number((props as any)?.entranceDuration ?? (props as any)?.duration ?? 720),
+    holdDuration: Number((props as any)?.holdDuration ?? (props as any)?.hold ?? 500),
+    exitDuration: Number((props as any)?.exitDuration ?? 340),
+    onUpdate: (state) => {
+      splashScale.value = state.scale;
+      splashOpacity.value = state.opacity;
+      splashSpacing.value = state.letterSpacing;
+      subtitleOpacity.value = state.subtitleOpacity;
+    },
+    onFinish: (props as any)?.onFinish,
+  });
+</script>
+
+<view width="100%" height="100%" backgroundColor="#090d16" flexDirection="column" alignItems="center" justifyContent="center" padding="[20, 20]">
+
+  <!-- Centered Scaled Content Card -->
+  <view flexDirection="column" alignItems="center" justifyContent="center" gap="14" :opacity="splashOpacity.value" :scale="splashScale.value">
+    
+    <!-- Main Title with Letter-Convergence and Dynamic Scale -->
+    <view flexDirection="row" alignItems="center" justifyContent="center">
+      <text :fontSize={isMobile.value ? 36 : 56} fontWeight="bold" color="#ffffff" :letterSpacing="splashSpacing.value" textAlign="center">
+        CanvApps
+      </text>
+    </view>
+
+    <!-- Subtitle Tech Pill with Opacity Animation -->
+    <view :opacity="subtitleOpacity.value" flexDirection="column" alignItems="center" gap="4">
+      <text :fontSize={isMobile.value ? 12 : 14} color="#94a3b8" textAlign="center">
+        Sub-millisecond Reactivity • Zero DOM Diffing
+      </text>
+      <text fontSize="11" color="#64748b" textAlign="center">
+        Loading Retina Canvas Engine...
+      </text>
+    </view>
+
+  </view>
+
+</view>

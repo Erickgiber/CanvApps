@@ -228,6 +228,9 @@ export class UIText extends UIElement implements GhostTarget {
     ctx.font = this.getFontString();
     ctx.fillStyle = this.styles.color ?? '#000000';
     ctx.textBaseline = 'middle';
+    if (typeof this.styles.letterSpacing === 'number' && 'letterSpacing' in ctx) {
+      (ctx as any).letterSpacing = `${this.styles.letterSpacing}px`;
+    }
 
     let x = padding.left;
     if (textAlign === 'center') {

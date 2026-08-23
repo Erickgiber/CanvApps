@@ -1,4 +1,4 @@
-name: Deploy CanvApps Preview to GitHub Pages
+name: Deploy CanvApps Production App to GitHub Pages
 
 on:
   push:
@@ -34,10 +34,10 @@ jobs:
       - name: Install dependencies
         run: npm ci || npm install
 
-      - name: Build CanvApps Framework & Preview Bundle
+      - name: Build Compiled Framework & Production Minified App
         run: |
           npm run build:lib
-          npm run build:preview-code
+          npm run build:app
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
@@ -45,7 +45,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: 'preview-code/bundle'
+          path: 'dist-app'
 
       - name: Deploy to GitHub Pages
         id: deployment

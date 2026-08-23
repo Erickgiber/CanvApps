@@ -23,7 +23,8 @@ function libraryMinifierPlugin(): Plugin {
 }
 
 export default defineConfig(({ mode }) => {
-  const isLibBuild = mode === 'production';
+  const isUnminified = mode === 'unminified';
+  const isLibBuild = mode === 'production' || isUnminified;
 
   return {
     resolve: {
@@ -36,7 +37,14 @@ export default defineConfig(({ mode }) => {
           lib: {
             entry: path.resolve(__dirname, 'CanvApps/index.ts'),
             name: 'CanvApps',
-            fileName: (format) => (format === 'es' ? 'canvapps.js' : 'canvapps.umd.cjs'),
+            fileName: (format) =>
+              isUnminified
+                ? format === 'es'
+                  ? 'canvapps.unminified.js'
+                  : 'canvapps.unminified.umd.cjs'
+                : format === 'es'
+                ? 'canvapps.js'
+                : 'canvapps.umd.cjs',
             formats: ['es', 'umd'],
           },
           rollupOptions: {
@@ -48,30 +56,34 @@ export default defineConfig(({ mode }) => {
             },
           },
           target: 'es2020',
-          minify: 'esbuild',
+          minify: isUnminified ? false : 'esbuild',
           sourcemap: true,
-          emptyOutDir: true,
+          emptyOutDir: !isUnminified,
         }
       : {
           // Development / Playground build
           outDir: 'dist-demo',
         },
-    esbuild: {
-      minifyWhitespace: true,
-      minifyIdentifiers: true,
-      minifySyntax: true,
-      legalComments: 'none',
-    },
+    esbuild: isUnminified
+      ? {
+          legalComments: 'inline',
+        }
+      : {
+          minifyWhitespace: true,
+          minifyIdentifiers: true,
+          minifySyntax: true,
+          legalComments: 'none',
+        },
     plugins: [
       canvappsPlugin(),
-      libraryMinifierPlugin(),
+      !isUnminified ? libraryMinifierPlugin() : null,
       dts({
         tsconfigPath: './tsconfig.json',
         include: ['CanvApps/**/*'],
         rollupTypes: true,
         insertTypesEntry: true,
       }),
-    ],
+    ].filter(Boolean) as Plugin[],
     server: {
       port: 3000,
       open: true,

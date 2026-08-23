@@ -1,4 +1,4 @@
-import { createStore, computed } from '../../CanvApps';
+import { createStore, computed } from '@canvapps';
 
 /**
  * User Profile & Session State Model

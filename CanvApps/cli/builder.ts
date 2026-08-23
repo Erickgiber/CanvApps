@@ -68,6 +68,9 @@ export class CLIBuilder {
         break;
     }
 
+    // Touch .nojekyll so GitHub Pages serves assets directly without Jekyll filtering
+    fs.writeFileSync(path.resolve(outputDir, '.nojekyll'), '', 'utf-8');
+
     console.log(`\n✨ [CanvApps Build Completed Successfully for Target: ${target}] 🎉\n`);
   }
 
@@ -118,6 +121,7 @@ export class CLIBuilder {
     await viteBuild({
       configFile: false,
       root: cwd,
+      base: './',
       plugins: [canvappsPlugin()],
       build: {
         outDir: bundleDir,
@@ -138,6 +142,9 @@ export class CLIBuilder {
         },
       },
     });
+
+    // Touch .nojekyll so GitHub Pages serves assets directly without Jekyll filtering
+    fs.writeFileSync(path.resolve(bundleDir, '.nojekyll'), '', 'utf-8');
     console.log(`  ✓ Unminified bundle generated in: preview-code/bundle/`);
 
     // 3. Generate Inspection README Documentation

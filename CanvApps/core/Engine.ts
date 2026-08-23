@@ -31,6 +31,11 @@ export interface EngineOptions {
    * Whether to automatically listen for window/container resize events.
    */
   autoResize?: boolean;
+
+  /**
+   * Global text selection strategy. If false (default), non-selectable texts do not generate Ghost DOM nodes.
+   */
+  selectable?: boolean;
 }
 
 /**
@@ -55,6 +60,10 @@ export class Engine {
   private isDirty = true;
 
   constructor(options: EngineOptions = {}) {
+    if (options.selectable !== undefined) {
+      UIElement.defaultSelectable = options.selectable;
+    }
+
     // 1. Resolve canvas instance
     if (typeof options.canvas === 'string') {
       const el = document.querySelector(options.canvas);
@@ -283,8 +292,14 @@ export class Engine {
 
       if ('getGhostType' in element) {
         const target = element as unknown as GhostTarget;
-        activeIds.add(target.id);
-        this.ghost.register(target);
+        const type = target.getGhostType();
+        const isSelectableText = type === 'text' && target.isSelectable && target.isSelectable();
+        const isInteractiveControl = type !== 'text';
+
+        if (isSelectableText || isInteractiveControl) {
+          activeIds.add(target.id);
+          this.ghost.register(target);
+        }
       }
 
       for (const child of element.children) {

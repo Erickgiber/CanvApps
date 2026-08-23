@@ -244,15 +244,18 @@ export class FlexLayout {
         // Cross axis alignment (alignSelf or alignItems)
         const align = item.element.styles.alignSelf ?? element.styles.alignItems ?? 'flex-start';
         let crossItemSize = item.crossSize;
+        const effectiveLineCross = isWrap
+          ? line.crossSizeMax
+          : Math.max(containerInnerCross, line.crossSizeMax);
         let itemCrossPos = crossOffset + item.crossMarginStart;
 
         if (align === 'stretch' && item.element.styles[isRow ? 'height' : 'width'] === undefined) {
-          crossItemSize = Math.max(0, line.crossSizeMax - item.crossMarginStart - item.crossMarginEnd);
+          crossItemSize = Math.max(0, effectiveLineCross - item.crossMarginStart - item.crossMarginEnd);
         } else if (align === 'center') {
-          const availableCross = line.crossSizeMax - item.crossMarginStart - item.crossMarginEnd;
+          const availableCross = effectiveLineCross - item.crossMarginStart - item.crossMarginEnd;
           itemCrossPos += (availableCross - crossItemSize) / 2;
         } else if (align === 'flex-end') {
-          const availableCross = line.crossSizeMax - item.crossMarginStart - item.crossMarginEnd;
+          const availableCross = effectiveLineCross - item.crossMarginStart - item.crossMarginEnd;
           itemCrossPos += availableCross - crossItemSize;
         }
 

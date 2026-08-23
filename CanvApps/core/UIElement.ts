@@ -65,6 +65,36 @@ export abstract class UIElement {
 
   private listeners: Map<UIEventType, Set<CanvasEventListener>> = new Map();
   private static idCounter = 0;
+  private static elementRegistry: Map<string, UIElement> = new Map();
+
+  /**
+   * Global default text selection flag.
+   */
+  public static defaultSelectable = false;
+
+  /**
+   * Registers an element into the global ID lookup registry.
+   */
+  public static registerElement(id: string, element: UIElement): void {
+    const cleanId = id.startsWith('#') ? id.slice(1) : id;
+    this.elementRegistry.set(cleanId, element);
+  }
+
+  /**
+   * Unregisters an element from the global lookup registry.
+   */
+  public static unregisterElement(id: string): void {
+    const cleanId = id.startsWith('#') ? id.slice(1) : id;
+    this.elementRegistry.delete(cleanId);
+  }
+
+  /**
+   * Retrieves a UIElement by its unique or custom ID.
+   */
+  public static getElementById(id: string): UIElement | null {
+    const cleanId = id.startsWith('#') ? id.slice(1) : id;
+    return this.elementRegistry.get(cleanId) ?? this.elementRegistry.get(id) ?? null;
+  }
 
   /**
    * Creates a new UIElement instance.
@@ -72,8 +102,12 @@ export abstract class UIElement {
    * @param initialStyles Optional initial visual and layout styles.
    */
   constructor(initialStyles: VisualStyles = {}) {
-    this.id = `ui_element_${++UIElement.idCounter}`;
+    this.id = initialStyles.id || `ui_element_${++UIElement.idCounter}`;
     this.styles = { ...initialStyles };
+    UIElement.registerElement(this.id, this);
+    if (initialStyles.id) {
+      UIElement.registerElement(initialStyles.id, this);
+    }
   }
 
   // ---------------------------------------------------------------------------

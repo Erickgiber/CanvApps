@@ -48,7 +48,7 @@ export class UIText extends UIElement implements GhostTarget {
   }
 
   public isSelectable(): boolean {
-    return this.styles.selectable !== false;
+    return this.styles.selectable ?? UIElement.defaultSelectable ?? false;
   }
 
   /**

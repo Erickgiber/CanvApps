@@ -6,6 +6,7 @@ import { GhostTarget } from '../ghost/GhostDOM';
  * Styling options specific to UIInput elements.
  */
 export interface InputStyles extends VisualStyles {
+  name?: string;
   value?: string;
   placeholder?: string;
   placeholderColor?: string;
@@ -445,6 +446,19 @@ export class UIInput extends UIElement implements GhostTarget {
     }
 
     ctx.restore();
+  }
+
+  public getName(): string {
+    return this.styles.name ?? this.id;
+  }
+
+  public setName(name: string): this {
+    this.styles.name = name;
+    return this;
+  }
+
+  public getId(): string {
+    return this.id;
   }
 
   private isDarkBackground(colorStr?: string): boolean {

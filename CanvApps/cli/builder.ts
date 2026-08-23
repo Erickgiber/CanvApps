@@ -37,6 +37,7 @@ export class CLIBuilder {
     await viteBuild({
       configFile: false,
       root: cwd,
+      base: './',
       plugins: [canvappsPlugin()],
       build: {
         outDir: outputDir,

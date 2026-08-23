@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - library-integration
   workflow_dispatch:
 
 permissions:

@@ -75,9 +75,9 @@ export class PWATargetBuilder {
           purpose: 'any',
         },
         {
-          src: './icon.png',
-          sizes: '256x256',
-          type: 'image/png',
+          src: './icon.svg',
+          sizes: 'any',
+          type: 'image/svg+xml',
           purpose: 'any maskable',
         },
       ],

@@ -23,5 +23,3 @@ if (typeof window !== 'undefined') {
     engine.setRoot(nextRoot);
   };
 }
-
-console.log('✨ CanvApps Phase 3 .cvs SFC compiler running!');

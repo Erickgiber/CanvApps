@@ -15,5 +15,10 @@
       "extensions": ["cvs"],
       "format": "svg"
     }
-  ]
+  ],
+  "[canvapps]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.formatOnSave": true,
+    "editor.tabSize": 2
+  }
 }

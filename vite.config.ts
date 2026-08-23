@@ -1,7 +1,26 @@
-import { defineConfig } from 'vite';
+import { defineConfig, type Plugin } from 'vite';
 import path from 'path';
 import dts from 'vite-plugin-dts';
+import { transformSync } from 'esbuild';
 import { canvappsPlugin } from './CanvApps/compiler/vitePlugin';
+
+function libraryMinifierPlugin(): Plugin {
+  return {
+    name: 'canvapps-library-minifier',
+    renderChunk(code) {
+      const result = transformSync(code, {
+        minify: true,
+        minifyWhitespace: true,
+        minifyIdentifiers: true,
+        minifySyntax: true,
+        legalComments: 'none',
+      });
+      return {
+        code: result.code,
+      };
+    },
+  };
+}
 
 export default defineConfig(({ mode }) => {
   const isLibBuild = mode === 'production';
@@ -28,6 +47,7 @@ export default defineConfig(({ mode }) => {
               exports: 'named',
             },
           },
+          target: 'es2020',
           minify: 'esbuild',
           sourcemap: true,
           emptyOutDir: true,
@@ -37,10 +57,14 @@ export default defineConfig(({ mode }) => {
           outDir: 'dist-demo',
         },
     esbuild: {
-      legalComments: 'none', // Strips all comments for clean, production-grade output
+      minifyWhitespace: true,
+      minifyIdentifiers: true,
+      minifySyntax: true,
+      legalComments: 'none',
     },
     plugins: [
       canvappsPlugin(),
+      libraryMinifierPlugin(),
       dts({
         tsconfigPath: './tsconfig.json',
         include: ['CanvApps/**/*'],

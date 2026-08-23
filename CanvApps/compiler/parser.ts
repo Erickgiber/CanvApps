@@ -501,10 +501,20 @@ export class CVSParser {
     let depth = 0;
     let inQuotes = false;
     let quoteChar = '';
+    let inTag = false;
 
     for (let i = openIndex; i < src.length; i++) {
       const char = src[i];
-      if ((char === '"' || char === "'") && depth > 0) {
+
+      if (char === '<') {
+        inTag = true;
+      } else if (char === '>') {
+        inTag = false;
+        inQuotes = false;
+      }
+
+      // Quotes only toggle inside tags (attributes) or inside nested JS expressions (depth > 1)
+      if ((char === '"' || char === "'") && (inTag || depth > 1)) {
         if (!inQuotes) {
           inQuotes = true;
           quoteChar = char;

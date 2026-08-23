@@ -19,7 +19,7 @@ export class CVSCodeGenerator {
     const { code: templateCode, rootVar } = this.generateNode(template);
 
     return `
-import { UIView, UIText, UIButton, UIInput, UIElement, effect, signal, useBreakpoints, useMediaQuery } from '@canvapps';
+import { UIView, UIText, UIButton, UIInput, UIModal, UIElement, effect, signal, useBreakpoints, useMediaQuery } from '@canvapps';
 
 ${script}
 
@@ -71,6 +71,7 @@ export default createComponent;
       const ifContainer = this.nextId('ifContainer');
       const consequentLines: string[] = [];
       const alternateLines: string[] = [];
+      const hasModal = node.consequent.some((c) => c.type === 'element' && (c as ASTElement).tag === 'modal');
 
       for (const child of node.consequent) {
         const { code: cCode, rootVar: cVar } = this.generateNode(child, inLoop);
@@ -86,9 +87,13 @@ export default createComponent;
         }
       }
 
+      const initialStyles = hasModal
+        ? `{ position: 'absolute', left: 0, top: 0, width: '100%', height: '100%' }`
+        : `{}`;
+
       return {
         code: `
-  const ${ifContainer} = new UIView({});
+  const ${ifContainer} = new UIView(${initialStyles});
   effect(() => {
     ${ifContainer}.removeAllChildren();
     if (${node.condition}) {
@@ -209,12 +214,14 @@ ${itemCode}
       codeLines.push(`  const ${elVar} = new UIButton(${JSON.stringify(label)}, ${JSON.stringify(staticStyles)});`);
     } else if (element.tag === 'input') {
       codeLines.push(`  const ${elVar} = new UIInput(${JSON.stringify(staticStyles)});`);
+    } else if (element.tag === 'modal') {
+      codeLines.push(`  const ${elVar} = new UIModal(${JSON.stringify(staticStyles)});`);
     } else {
       // Default to UIView container
       codeLines.push(`  const ${elVar} = new UIView(${JSON.stringify(staticStyles)});`);
     }
 
-    // 2. Attach Event Handlers (@click, @pointerdown, @submit, etc.)
+    // 2. Attach Event Handlers (@click, @pointerdown, @submit, @close, etc.)
     for (const evt of events) {
       const val = evt.value.trim();
       if (val.includes('=>')) {
@@ -233,6 +240,8 @@ ${itemCode}
           codeLines.push(`  ${elVar}.setValue(String(${dyn.value} ?? ''));`);
         } else if (element.tag === 'input' && dyn.name === 'placeholder') {
           codeLines.push(`  ${elVar}.setPlaceholder(String(${dyn.value} ?? ''));`);
+        } else if (element.tag === 'modal' && dyn.name === 'open') {
+          codeLines.push(`  ${elVar}.setOpen(Boolean(${dyn.value}));`);
         } else if (element.tag === 'text' && dyn.name === 'text') {
           codeLines.push(`  ${elVar}.setText(String(${dyn.value} ?? ''));`);
         } else if (element.tag === 'text' && dyn.name === 'selectable') {
@@ -252,6 +261,11 @@ ${itemCode}
           codeLines.push(`
   effect(() => {
     ${elVar}.setPlaceholder(String(${dyn.value} ?? ''));
+  });`);
+        } else if (element.tag === 'modal' && dyn.name === 'open') {
+          codeLines.push(`
+  effect(() => {
+    ${elVar}.setOpen(Boolean(${dyn.value}));
   });`);
         } else if (element.tag === 'text' && dyn.name === 'text') {
           codeLines.push(`

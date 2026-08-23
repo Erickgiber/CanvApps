@@ -31,6 +31,8 @@
   // 2. Core Application Reactive State (Signals)
   const counter = signal(0);
   const taskInput = signal('');
+  const showStreakModal = signal(false);
+  const hasShownStreak = signal(false);
 
   const milestones = signal<MilestoneItem[]>([
     { id: 1, text: 'Pure Flexbox Math Solver (Zero DOM)' },
@@ -186,9 +188,16 @@
     triggerFXLoop();
   }
 
-  // 5. Counter Actions with Kinetic FX
+  // 5. Counter Actions with Kinetic FX & 10-Streak Milestone Trigger
   function incrementCounter(e: any) {
-    counter.update((n) => n + 1);
+    counter.update((n) => {
+      const next = n + 1;
+      if (next >= 10 && !hasShownStreak.value) {
+        showStreakModal.value = true;
+        hasShownStreak.value = true;
+      }
+      return next;
+    });
     emitBurst(e, ['#2563eb', '#38bdf8', '#60a5fa']);
   }
 
@@ -199,7 +208,13 @@
 
   function resetCounter(e: any) {
     counter.value = 0;
+    hasShownStreak.value = false;
+    showStreakModal.value = false;
     emitBurst(e, ['#ef4444', '#f87171', '#fca5a5']);
+  }
+
+  function closeStreakModal() {
+    showStreakModal.value = false;
   }
 
   // 6. Milestone Actions with Kinetic FX
@@ -297,7 +312,7 @@
     <!-- Task Input Row (Adaptive Inline on Mobile & Desktop) -->
     <view width="100%" flexDirection="row" :gap={isMobile.value ? 6 : 8} alignItems="center">
       <input :placeholder={isMobile.value ? 'Add milestone...' : 'Add feature milestone...'} flexGrow="1" backgroundColor="#f8fafc" color="#0f172a" placeholderColor="#94a3b8" borderColor="#cbd5e1" focusBorderColor="#2563eb" :padding={isMobile.value ? [9, 12] : [11, 14]} :fontSize={isMobile.value ? 12 : 13} borderRadius="8" :value="taskInput.value" @input="onInput" @keydown="handleKeyDown" @submit="addMilestone" />
-      <button label='+ Add' backgroundColor="#059669" hoverBackgroundColor="#047857" labelColor="#ffffff" :padding={isMobile.value ? [9, 14] : [11, 18]} :fontSize={isMobile.value ? 12 : 13} fontWeight="bold" borderRadius="8" @click="addMilestone" />
+      <button :label={isMobile.value ? '+ Deploy' : '+ Deploy Milestone'} backgroundColor="#059669" hoverBackgroundColor="#047857" labelColor="#ffffff" :padding={isMobile.value ? [9, 14] : [11, 18]} :fontSize={isMobile.value ? 12 : 13} fontWeight="bold" borderRadius="8" @click="addMilestone" />
     </view>
 
     <!-- Milestone Stream List with @if ... else and @each rows as row { ... } -->
@@ -322,5 +337,27 @@
     <text fontSize="10" color="#94a3b8" textAlign="center">CanvApps Engine • Zero DOM Overhead • 120 FPS Retina UI</text>
     <text fontSize="10" color="#94a3b8" textAlign="center">Single-File Component (.cvs) Pipeline</text>
   </view>
+
+  <!-- 5. Streak Celebration Modal (CanvApps UIModal Component) -->
+  @if (showStreakModal.value) {
+    <modal @close="closeStreakModal">
+      <view :width={isMobile.value ? 300 : 380} backgroundColor="#ffffff" borderRadius="20" borderWidth="1" borderColor="#e2e8f0" :padding={isMobile.value ? [22, 20] : [28, 26]} flexDirection="column" alignItems="center" gap="16">
+        
+        <!-- Centered Glowing Fire Badge -->
+        <view width="56" height="56" borderRadius="28" backgroundColor="#ecfdf5" borderWidth="1" borderColor="#a7f3d0" alignItems="center" justifyContent="center">
+          <text fontSize="28" textAlign="center" :lineHeight="1">🔥</text>
+        </view>
+
+        <!-- Title & Copy -->
+        <view flexDirection="column" alignItems="center" gap="4">
+          <text :fontSize={isMobile.value ? 18 : 20} fontWeight="bold" color="#0f172a" textAlign="center">Awesome! 10-Streak!</text>
+          <text fontSize="12" color="#64748b" textAlign="center">You reached a 10-count streak with zero VDOM overhead.</text>
+        </view>
+
+        <!-- Action Button -->
+        <button label="Keep Going 🚀" backgroundColor="#2563eb" hoverBackgroundColor="#1d4ed8" labelColor="#ffffff" width="100%" :padding={isMobile.value ? [11, 14] : [12, 18]} fontSize="13" fontWeight="bold" borderRadius="10" @click="closeStreakModal" />
+      </view>
+    </modal>
+  }
 
 </view>

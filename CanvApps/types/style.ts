@@ -121,6 +121,8 @@ export interface LayoutStyles {
 export interface VisualStyles extends LayoutStyles {
   backgroundColor?: string;
   opacity?: number;
+  scale?: number;
+  letterSpacing?: number;
   borderRadius?: BorderRadius;
   border?: Border;
   borderColor?: string;

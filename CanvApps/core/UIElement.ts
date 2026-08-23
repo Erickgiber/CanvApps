@@ -501,6 +501,15 @@ export abstract class UIElement {
       ctx.globalAlpha *= Math.max(0, Math.min(1, this.styles.opacity));
     }
 
+    // Apply composite scale transform around element center
+    if (typeof this.styles.scale === 'number' && this.styles.scale !== 1) {
+      const centerX = this.worldRect.x + this.worldRect.width / 2;
+      const centerY = this.worldRect.y + this.worldRect.height / 2;
+      ctx.translate(centerX, centerY);
+      ctx.scale(this.styles.scale, this.styles.scale);
+      ctx.translate(-centerX, -centerY);
+    }
+
     // Draw current element translated to its world coordinates
     ctx.save();
     ctx.translate(this.worldRect.x, this.worldRect.y);

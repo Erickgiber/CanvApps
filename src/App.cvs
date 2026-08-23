@@ -36,11 +36,10 @@
       }
 
     </AppLayout>
+  } else {
+    <!-- 2. Cinematic Intro Splash Screen (Full-Screen Overlay) -->
+    <view width="100%" height="100%" position="absolute" left="0" top="0">
+      <SplashView @finish="onSplashFinish" />
+    </view>
   }
-
-  <!-- 2. Cinematic Intro Splash Screen (Full-Screen Overlay) -->
-  <view width="100%" height="100%" position="absolute" left="0" top="0" @if="isSplashActive.value">
-    <SplashView @finish="onSplashFinish" />
-  </view>
-
 </view>

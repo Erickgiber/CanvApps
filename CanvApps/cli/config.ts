@@ -72,6 +72,12 @@ export interface CanvAppsConfig {
   outDir?: string;
 
   /**
+   * Global text selection strategy. If true, all text nodes are selectable by default.
+   * Defaults to false (only nodes with selectable="true" are mounted in Ghost DOM).
+   */
+  selectable?: boolean;
+
+  /**
    * PWA metadata and service worker generation options.
    */
   pwa?: PWAConfig;

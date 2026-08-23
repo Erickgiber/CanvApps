@@ -19,7 +19,7 @@ export class CVSCodeGenerator {
     const { code: templateCode, rootVar } = this.generateNode(template);
 
     return `
-import { UIView, UIText, UIButton, UIInput, UIModal, UIElement, effect, signal, useBreakpoints, useMediaQuery } from '@canvapps';
+import { UIView, UIText, UIButton, UIInput, UIModal, UIElement, KineticFX, effect, signal, useBreakpoints, useMediaQuery } from '@canvapps';
 
 ${script}
 

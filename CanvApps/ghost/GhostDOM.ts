@@ -4,7 +4,9 @@ import { UIElement } from '../core/UIElement';
  * Interface representing a Canvas element that participates in the Ghost DOM layer.
  */
 export interface GhostTarget extends UIElement {
-  getGhostType(): 'input' | 'textarea' | 'button' | 'text' | 'accessible';
+  getGhostType(): 'input' | 'textarea' | 'select' | 'button' | 'text' | 'accessible';
+  getId?(): string;
+  getName?(): string;
   getValue?(): string;
   setValue?(val: string): void;
   getText?(): string;
@@ -127,30 +129,53 @@ export class GhostDOM {
   /**
    * Registers or updates a ghost target node in the overlay.
    */
-  public register(target: GhostTarget): HTMLElement {
+  public register(target: GhostTarget): HTMLElement | null {
+    const type = target.getGhostType();
+    const selectable = target.isSelectable ? target.isSelectable() : false;
+
+    // If text is not selectable, do NOT create or keep any DOM elements!
+    if (type === 'text' && !selectable) {
+      if (this.ghostElements.has(target.id)) {
+        this.unregister(target.id);
+      }
+      return null;
+    }
+
     let ghost = this.ghostElements.get(target.id);
 
     if (!ghost) {
-      const type = target.getGhostType();
+      const elId = target.getId ? target.getId() : target.id;
+      const elName = target.getName ? target.getName() : (target.styles as any)?.name || target.id;
+
       if (type === 'textarea') {
-        ghost = document.createElement('textarea');
+        const textarea = document.createElement('textarea');
+        textarea.id = elId;
+        textarea.name = elName;
+        ghost = textarea;
       } else if (type === 'input') {
         const input = document.createElement('input');
+        input.id = elId;
+        input.name = elName;
         input.type = target.getInputType ? target.getInputType() : 'text';
         ghost = input;
+      } else if (type === 'select') {
+        const select = document.createElement('select');
+        select.id = elId;
+        select.name = elName;
+        ghost = select;
       } else if (type === 'text') {
         const span = document.createElement('span');
+        span.id = elId;
         span.className = 'canvapps-ghost-text';
         span.textContent = target.getText ? target.getText() : '';
-        const selectable = target.isSelectable ? target.isSelectable() : true;
 
         Object.assign(span.style, {
           position: 'absolute',
           opacity: '1',
-          pointerEvents: selectable ? 'auto' : 'none',
-          userSelect: selectable ? 'text' : 'none',
-          WebkitUserSelect: selectable ? 'text' : 'none',
-          cursor: selectable ? 'text' : 'default',
+          pointerEvents: 'auto',
+          userSelect: 'text',
+          WebkitUserSelect: 'text',
+          cursor: 'text',
           border: 'none',
           outline: 'none',
           background: 'transparent',
@@ -165,8 +190,13 @@ export class GhostDOM {
         ghost = span;
       } else {
         ghost = document.createElement('div');
+        ghost.id = elId;
         ghost.tabIndex = 0;
       }
+
+      ghost.id = elId;
+      ghost.setAttribute('name', elName);
+      ghost.setAttribute('data-canvapps-id', elId);
 
       if (type !== 'text') {
         // Invisible input/interactive
@@ -201,6 +231,13 @@ export class GhostDOM {
   public updatePosition(target: GhostTarget): void {
     const ghost = this.ghostElements.get(target.id);
     if (!ghost) {
+      return;
+    }
+
+    const type = target.getGhostType();
+    const selectable = target.isSelectable ? target.isSelectable() : false;
+    if (type === 'text' && !selectable) {
+      this.unregister(target.id);
       return;
     }
 
@@ -245,7 +282,7 @@ export class GhostDOM {
       const fontWeight = styles.fontWeight ?? 'normal';
       const fontFamily = styles.fontFamily ?? 'system-ui, -apple-system, sans-serif';
       const textAlign = styles.textAlign ?? 'left';
-      const selectable = target.isSelectable ? target.isSelectable() : true;
+      const selectable = target.isSelectable ? target.isSelectable() : false;
       const currentText = target.getText ? target.getText() ?? '' : '';
       const lineHeightMultiplier = styles.lineHeight ?? 1.2;
       const computedLineHeight = fontSize * lineHeightMultiplier;

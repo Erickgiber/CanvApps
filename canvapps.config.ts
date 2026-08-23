@@ -2,10 +2,12 @@ import { defineConfig } from './CanvApps';
 
 export default defineConfig({
   // Deployment Target: 'SPA' (Clean Standard Web) | 'PWA' (Offline PWA) | 'CAPACITOR' (Native Mobile)
-  // If set to 'SPA' (or omitted), it generates a clean index.html with no PWA or Capacitor data.
   target: 'SPA',
   title: 'CanvApps Application',
   outDir: 'dist-app',
+
+  // Global Text Selection Strategy (false = zero Ghost DOM overhead; developers opt-in per component)
+  selectable: false,
 
   // Optional: Uncomment to configure Progressive Web App (target: 'PWA')
   // pwa: {

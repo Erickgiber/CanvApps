@@ -5,26 +5,6 @@
     isNew?: boolean;
   }
 
-  interface Particle {
-    x: number;
-    y: number;
-    vx: number;
-    vy: number;
-    radius: number;
-    color: string;
-    alpha: number;
-    decay: number;
-  }
-
-  interface Shockwave {
-    x: number;
-    y: number;
-    radius: number;
-    maxRadius: number;
-    color: string;
-    alpha: number;
-  }
-
   // 1. Responsive Viewport Signals
   const { isMobile } = useBreakpoints();
 
@@ -48,176 +28,75 @@
     }
   }
 
-  // 4. Kinetic Canvas Animation System (Particles & Shockwaves)
-  let fxCanvas: HTMLCanvasElement | null = null;
-  let fxCtx: CanvasRenderingContext2D | null = null;
-  const particles: Particle[] = [];
-  const shockwaves: Shockwave[] = [];
-  let isFxRunning = false;
-
-  function initFX() {
-    if (typeof document === 'undefined' || fxCanvas) return;
-    fxCanvas = document.createElement('canvas');
-    fxCanvas.id = 'canvapps-fx-canvas';
-    Object.assign(fxCanvas.style, {
-      position: 'fixed',
-      top: '0',
-      left: '0',
-      width: '100vw',
-      height: '100vh',
-      pointerEvents: 'none',
-      zIndex: '99',
-    });
-    document.body.appendChild(fxCanvas);
-    fxCtx = fxCanvas.getContext('2d');
-
-    const resize = () => {
-      if (!fxCanvas) return;
-      const dpr = window.devicePixelRatio || 1;
-      fxCanvas.width = Math.round(window.innerWidth * dpr);
-      fxCanvas.height = Math.round(window.innerHeight * dpr);
-      if (fxCtx) {
-        fxCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      }
-    };
-    window.addEventListener('resize', resize);
-    resize();
-  }
-
-  function triggerFXLoop() {
-    if (isFxRunning) return;
-    isFxRunning = true;
-
-    const render = () => {
-      if (!fxCtx || !fxCanvas) {
-        isFxRunning = false;
-        return;
-      }
-      fxCtx.clearRect(0, 0, window.innerWidth, window.innerHeight);
-
-      // 1. Draw and update shockwaves
-      for (let i = shockwaves.length - 1; i >= 0; i--) {
-        const sw = shockwaves[i];
-        sw.radius += (sw.maxRadius - sw.radius) * 0.16 + 1.2;
-        sw.alpha *= 0.91;
-
-        if (sw.alpha < 0.02 || sw.radius >= sw.maxRadius) {
-          shockwaves.splice(i, 1);
-          continue;
-        }
-
-        fxCtx.save();
-        fxCtx.beginPath();
-        fxCtx.arc(sw.x, sw.y, sw.radius, 0, Math.PI * 2);
-        fxCtx.strokeStyle = sw.color;
-        fxCtx.lineWidth = 2 * sw.alpha;
-        fxCtx.globalAlpha = sw.alpha;
-        fxCtx.stroke();
-        fxCtx.restore();
-      }
-
-      // 2. Draw and update particles
-      for (let i = particles.length - 1; i >= 0; i--) {
-        const p = particles[i];
-        p.x += p.vx;
-        p.y += p.vy;
-        p.vy += 0.12; // soft gravity
-        p.vx *= 0.96; // air resistance
-        p.alpha -= p.decay;
-
-        if (p.alpha <= 0.01) {
-          particles.splice(i, 1);
-          continue;
-        }
-
-        fxCtx.save();
-        fxCtx.beginPath();
-        fxCtx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
-        fxCtx.fillStyle = p.color;
-        fxCtx.globalAlpha = p.alpha;
-        fxCtx.shadowColor = p.color;
-        fxCtx.shadowBlur = 6;
-        fxCtx.fill();
-        fxCtx.restore();
-      }
-
-      if (particles.length > 0 || shockwaves.length > 0) {
-        requestAnimationFrame(render);
-      } else {
-        isFxRunning = false;
-        fxCtx.clearRect(0, 0, window.innerWidth, window.innerHeight);
-      }
-    };
-
-    requestAnimationFrame(render);
-  }
-
-  function emitBurst(e: any, colors = ['#38bdf8', '#34d399', '#818cf8']) {
-    initFX();
-    const x = e?.clientX ?? e?.x ?? (typeof window !== 'undefined' ? window.innerWidth / 2 : 200);
-    const y = e?.clientY ?? e?.y ?? (typeof window !== 'undefined' ? window.innerHeight / 2 : 200);
-
-    // Shockwave ring
-    shockwaves.push({
-      x,
-      y,
-      radius: 4,
-      maxRadius: 48,
-      color: colors[0],
-      alpha: 0.8,
-    });
-
-    // 14 kinetic burst particles
-    for (let i = 0; i < 14; i++) {
-      const angle = (Math.PI * 2 * i) / 14 + (Math.random() - 0.5) * 0.4;
-      const speed = Math.random() * 4.5 + 2.5;
-      const color = colors[Math.floor(Math.random() * colors.length)];
-
-      particles.push({
-        x,
-        y,
-        vx: Math.cos(angle) * speed,
-        vy: Math.sin(angle) * speed - 1.2,
-        radius: Math.random() * 2.5 + 2,
-        color,
-        alpha: 1,
-        decay: Math.random() * 0.025 + 0.02,
-      });
-    }
-
-    triggerFXLoop();
-  }
-
-  // 5. Counter Actions with Kinetic FX & 10-Streak Milestone Trigger
+  // 4. Counter Actions with Intelligent Kinetic Token Flights
   function incrementCounter(e: any) {
-    counter.update((n) => {
-      const next = n + 1;
-      if (next >= 10 && !hasShownStreak.value) {
-        showStreakModal.value = true;
-        hasShownStreak.value = true;
-      }
-      return next;
+    const startX = e?.clientX ?? e?.x ?? (typeof window !== 'undefined' ? window.innerWidth / 2 : 200);
+    const startY = e?.clientY ?? e?.y ?? (typeof window !== 'undefined' ? window.innerHeight / 2 : 200);
+
+    KineticFX.flyToken({
+      from: { x: startX, y: startY },
+      to: '#counter-badge',
+      text: '+1',
+      color: '#1d4ed8',
+      backgroundColor: '#dbeafe',
+      borderColor: '#93c5fd',
+      duration: 440,
+      onHit: () => {
+        counter.update((n) => {
+          const next = n + 1;
+          if (next >= 10 && !hasShownStreak.value) {
+            showStreakModal.value = true;
+            hasShownStreak.value = true;
+          }
+          return next;
+        });
+      },
     });
-    emitBurst(e, ['#2563eb', '#38bdf8', '#60a5fa']);
   }
 
   function decrementCounter(e: any) {
-    counter.update((n) => Math.max(0, n - 1));
-    emitBurst(e, ['#64748b', '#94a3b8', '#cbd5e1']);
+    const startX = e?.clientX ?? e?.x ?? (typeof window !== 'undefined' ? window.innerWidth / 2 : 200);
+    const startY = e?.clientY ?? e?.y ?? (typeof window !== 'undefined' ? window.innerHeight / 2 : 200);
+
+    KineticFX.flyToken({
+      from: { x: startX, y: startY },
+      to: '#counter-badge',
+      text: '−1',
+      color: '#475569',
+      backgroundColor: '#f1f5f9',
+      borderColor: '#cbd5e1',
+      duration: 440,
+      onHit: () => {
+        counter.update((n) => Math.max(0, n - 1));
+      },
+    });
   }
 
   function resetCounter(e: any) {
-    counter.value = 0;
-    hasShownStreak.value = false;
-    showStreakModal.value = false;
-    emitBurst(e, ['#ef4444', '#f87171', '#fca5a5']);
+    const startX = e?.clientX ?? e?.x ?? (typeof window !== 'undefined' ? window.innerWidth / 2 : 200);
+    const startY = e?.clientY ?? e?.y ?? (typeof window !== 'undefined' ? window.innerHeight / 2 : 200);
+
+    KineticFX.flyToken({
+      from: { x: startX, y: startY },
+      to: '#counter-badge',
+      text: '↺ 0',
+      color: '#dc2626',
+      backgroundColor: '#fee2e2',
+      borderColor: '#fca5a5',
+      duration: 460,
+      onHit: () => {
+        counter.value = 0;
+        hasShownStreak.value = false;
+        showStreakModal.value = false;
+      },
+    });
   }
 
   function closeStreakModal() {
     showStreakModal.value = false;
   }
 
-  // 6. Milestone Actions with Kinetic FX
+  // 5. Milestone Actions with Kinetic FX
   function onInput(e: any) {
     taskInput.value = e?.target?.value ?? e?.value ?? '';
   }
@@ -241,7 +120,16 @@
     };
 
     milestones.update((list) => [newItem, ...list]);
-    emitBurst(e, ['#059669', '#34d399', '#6ee7b7']);
+
+    const x = e?.clientX ?? e?.x ?? (typeof window !== 'undefined' ? window.innerWidth / 2 : 200);
+    const y = e?.clientY ?? e?.y ?? (typeof window !== 'undefined' ? window.innerHeight / 2 : 200);
+
+    KineticFX.burst({
+      x,
+      y,
+      colors: ['#059669', '#34d399', '#6ee7b7'],
+      count: 14,
+    });
 
     setTimeout(() => {
       milestones.update((list) =>
@@ -252,7 +140,16 @@
 
   function removeMilestone(id: number, e: any) {
     milestones.update((list) => list.filter((m) => m.id !== id));
-    emitBurst(e, ['#dc2626', '#f87171']);
+
+    const x = e?.clientX ?? e?.x ?? (typeof window !== 'undefined' ? window.innerWidth / 2 : 200);
+    const y = e?.clientY ?? e?.y ?? (typeof window !== 'undefined' ? window.innerHeight / 2 : 200);
+
+    KineticFX.burst({
+      x,
+      y,
+      colors: ['#dc2626', '#f87171'],
+      count: 10,
+    });
   }
 </script>
 
@@ -283,17 +180,17 @@
     <!-- Counter Box (Responsive Layout with Comfortable Spacing) -->
     <view width="100%" backgroundColor="#f8fafc" borderRadius="12" borderWidth="1" borderColor="#e2e8f0" :padding={isMobile.value ? [10, 12] : [12, 18]} :flexDirection={isMobile.value ? 'column' : 'row'} :alignItems={isMobile.value ? 'stretch' : 'center'} :justifyContent={isMobile.value ? 'flex-start' : 'space-between'} :gap={isMobile.value ? 10 : 16}>
       
-      <!-- Counter Stat Row with generous gap -->
+      <!-- Counter Stat Row with generous gap and identifier for flying tokens -->
       <view flexDirection="row" alignItems="center" :justifyContent={isMobile.value ? 'space-between' : 'flex-start'} :gap={isMobile.value ? 10 : 16}>
         <text fontSize="11" fontWeight="bold" color="#64748b">COUNTER</text>
-        <view padding="[4, 14]" backgroundColor="#dbeafe" borderRadius="8">
+        <view id="counter-badge" padding="[4, 14]" backgroundColor="#dbeafe" borderRadius="8">
           <text :fontSize={isMobile.value ? 14 : 16} fontWeight="bold" color="#1d4ed8">
             {{ counter.value }}
           </text>
         </view>
       </view>
 
-      <!-- Action Buttons Row with Kinetic FX -->
+      <!-- Action Buttons Row with Kinetic Flight Triggers -->
       <view flexDirection="row" :gap={isMobile.value ? 6 : 8}>
         <button label="− 1" backgroundColor="#ffffff" hoverBackgroundColor="#f1f5f9" labelColor="#334155" borderWidth="1" borderColor="#cbd5e1" :padding={isMobile.value ? [8, 10] : [9, 16]} :flexGrow={1} fontSize="12" fontWeight="bold" borderRadius="8" @click="decrementCounter" />
         <button label="+ 1" backgroundColor="#2563eb" hoverBackgroundColor="#1d4ed8" labelColor="#ffffff" :padding={isMobile.value ? [8, 12] : [9, 18]} :flexGrow={1} fontSize="12" fontWeight="bold" borderRadius="8" @click="incrementCounter" />
@@ -311,7 +208,7 @@
 
     <!-- Task Input Row (Adaptive Inline on Mobile & Desktop) -->
     <view width="100%" flexDirection="row" :gap={isMobile.value ? 6 : 8} alignItems="center">
-      <input :placeholder={isMobile.value ? 'Add milestone...' : 'Add feature milestone...'} flexGrow="1" backgroundColor="#f8fafc" color="#0f172a" placeholderColor="#94a3b8" borderColor="#cbd5e1" focusBorderColor="#2563eb" :padding={isMobile.value ? [9, 12] : [11, 14]} :fontSize={isMobile.value ? 12 : 13} borderRadius="8" :value="taskInput.value" @input="onInput" @keydown="handleKeyDown" @submit="addMilestone" />
+      <input id="milestone-input" name="milestone_input" :placeholder={isMobile.value ? 'Add milestone...' : 'Add feature milestone...'} flexGrow="1" backgroundColor="#f8fafc" color="#0f172a" placeholderColor="#94a3b8" borderColor="#cbd5e1" focusBorderColor="#2563eb" :padding={isMobile.value ? [9, 12] : [11, 14]} :fontSize={isMobile.value ? 12 : 13} borderRadius="8" :value="taskInput.value" @input="onInput" @keydown="handleKeyDown" @submit="addMilestone" />
       <button :label={isMobile.value ? '+ Deploy' : '+ Deploy Milestone'} backgroundColor="#059669" hoverBackgroundColor="#047857" labelColor="#ffffff" :padding={isMobile.value ? [9, 14] : [11, 18]} :fontSize={isMobile.value ? 12 : 13} fontWeight="bold" borderRadius="8" @click="addMilestone" />
     </view>
 

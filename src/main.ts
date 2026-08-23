@@ -1,11 +1,13 @@
 import { Engine } from './../CanvApps';
+import config from '../canvapps.config';
 import createApp from './App.cvs';
 
-// 1. Initialize CanvApps Engine
+// 1. Initialize CanvApps Engine with project configuration
 const engine = new Engine({
   container: '#app-container',
   backgroundColor: '#f8fafc',
   autoResize: true,
+  selectable: config.selectable ?? false,
 });
 
 // 2. Instantiate and mount compiled .cvs component

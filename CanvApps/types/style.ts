@@ -73,6 +73,7 @@ export type BorderRadius = number | [number, number, number, number];
  * Layout and box-model style properties handled by the layout engine.
  */
 export interface LayoutStyles {
+  id?: string;
   display?: DisplayMode;
   position?: PositionType;
   top?: number;

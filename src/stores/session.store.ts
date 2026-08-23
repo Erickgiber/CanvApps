@@ -18,6 +18,23 @@ export interface UserSessionState {
 }
 
 /**
+ * Retrieves the persisted theme preference from localStorage.
+ */
+function getInitialTheme(): 'dark' | 'light' {
+  if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
+    try {
+      const saved = localStorage.getItem('canvapps_theme');
+      if (saved === 'dark' || saved === 'light') {
+        return saved;
+      }
+    } catch {
+      // Fallback on restricted storage environments
+    }
+  }
+  return 'light';
+}
+
+/**
  * Initial Default Session State with a handsome fictional test user
  */
 const initialSessionState: UserSessionState = {
@@ -28,7 +45,7 @@ const initialSessionState: UserSessionState = {
     avatar: '👨‍💼',
   },
   isAuthenticated: true,
-  theme: 'light',
+  theme: getInitialTheme(),
   streakCount: 10,
   lastLogin: new Date().toISOString(),
   activeRoute: 'dashboard',
@@ -36,12 +53,23 @@ const initialSessionState: UserSessionState = {
 
 /**
  * Global In-Memory Reactive Session Store.
- * Holds active runtime state across components without saving to localStorage.
+ * Holds active runtime state across components in memory.
  */
 export const sessionStore = createStore<UserSessionState>(initialSessionState, {
   name: 'user_session',
   persist: false,
 });
+
+// Automatically persist theme changes to localStorage whenever theme updates
+if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
+  sessionStore.select('theme').subscribe(() => {
+    try {
+      localStorage.setItem('canvapps_theme', sessionStore.state.theme);
+    } catch {
+      // Ignore quota errors
+    }
+  });
+}
 
 /**
  * Computed signal derived from the global store
@@ -63,6 +91,7 @@ export function navigateRoute(route: 'dashboard' | 'auth'): void {
  */
 export function updateProfile(name: string, email: string): void {
   sessionStore.update((prev) => ({
+    ...prev,
     user: prev.user ? { ...prev.user, name, email } : null,
   }));
 }
@@ -83,6 +112,7 @@ export function logoutSession(): void {
  */
 export function incrementSessionStreak(): void {
   sessionStore.update((prev) => ({
+    ...prev,
     streakCount: prev.streakCount + 1,
   }));
 }
@@ -92,6 +122,17 @@ export function incrementSessionStreak(): void {
  */
 export function toggleTheme(): void {
   sessionStore.update((prev) => ({
+    ...prev,
     theme: prev.theme === 'light' ? 'dark' : 'light',
+  }));
+}
+
+/**
+ * Store Action: Explicitly sets application global theme
+ */
+export function setTheme(theme: 'dark' | 'light'): void {
+  sessionStore.update((prev) => ({
+    ...prev,
+    theme,
   }));
 }

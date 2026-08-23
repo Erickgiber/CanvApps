@@ -10,14 +10,14 @@ export default defineConfig({
   selectable: false,
 
   // Optional: Uncomment to configure Progressive Web App (target: 'PWA')
-  // pwa: {
-  //   name: 'CanvApps Canvas Application',
-  //   shortName: 'CanvApps',
-  //   description: 'High performance 100% Canvas UI Framework application',
-  //   themeColor: '#090d16',
-  //   backgroundColor: '#090d16',
-  //   display: 'standalone',
-  // },
+  pwa: {
+    name: 'CanvApps Canvas Application',
+    shortName: 'CanvApps',
+    description: 'High performance 100% Canvas UI Framework application',
+    themeColor: '#090d16',
+    backgroundColor: '#090d16',
+    display: 'standalone',
+  },
 
   // Optional: Uncomment to configure Capacitor Native Container (target: 'CAPACITOR')
   // capacitor: {

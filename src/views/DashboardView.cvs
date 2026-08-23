@@ -153,7 +153,8 @@
   }
 </script>
 
-<view width="100%" height="100%" enter="scale" flexDirection="column" backgroundColor="#f8fafc" :padding={isMobile.value ? [12, 14] : [18, 28]} :gap={isMobile.value ? 10 : 14}>
+<motion animation="scale-in" :duration="450">
+  <view width="100%" height="100%" flexDirection="column" backgroundColor="#f8fafc" :padding={isMobile.value ? [12, 14] : [18, 28]} :gap={isMobile.value ? 10 : 14}>
   
   <!-- 1. Top Navbar Header -->
   <view width="100%" flexDirection="row" alignItems="center" justifyContent="space-between" :padding={isMobile.value ? [10, 14] : [14, 22]} backgroundColor="#ffffff" borderRadius="14" borderWidth="1" borderColor="#e2e8f0">
@@ -235,9 +236,9 @@
     <text fontSize="10" color="#94a3b8" textAlign="center">Single-File Component (.cvs) Pipeline</text>
   </view>
 
-  <!-- 5. Streak Celebration Modal (CanvApps UIModal Component) -->
+  <!-- 5. Streak Celebration Modal (CanvApps UIModal Component with configurable animation, blur & gradient) -->
   @if (showStreakModal.value) {
-    <modal @close="closeStreakModal">
+    <modal animation="scale-in" :blur="true" :gradient="true" :duration="320" @close="closeStreakModal">
       <view :width={isMobile.value ? 300 : 380} backgroundColor="#ffffff" borderRadius="20" borderWidth="1" borderColor="#e2e8f0" :padding={isMobile.value ? [22, 20] : [28, 26]} flexDirection="column" alignItems="center" gap="16">
         
         <!-- Centered Glowing Fire Badge -->
@@ -257,4 +258,5 @@
     </modal>
   }
 
-</view>
+  </view>
+</motion>

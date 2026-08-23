@@ -130,4 +130,27 @@ export interface VisualStyles extends LayoutStyles {
   boxShadow?: BoxShadow;
   overflow?: 'visible' | 'hidden';
   cursor?: string;
+
+  // Animation & Motion Properties
+  animation?: string;
+  enter?: 'scale' | 'fade' | 'zoom-in' | 'slide-up' | 'slide-down' | 'cinematic-splash';
+  duration?: number;
+  entranceDuration?: number;
+  hold?: number;
+  holdDuration?: number;
+  exitDuration?: number;
+  delay?: number;
+  autoPlay?: boolean;
+  initialSpacing?: number;
+  animated?: boolean;
+
+  // Modal & Overlay Backdrop Properties
+  backdropColor?: string;
+  backdropColors?: [string, string];
+  gradient?: boolean;
+  backdropGradient?: boolean;
+  blur?: boolean;
+  blurBackdrop?: boolean;
+  blurRadius?: number;
+  closeOnBackdropClick?: boolean;
 }

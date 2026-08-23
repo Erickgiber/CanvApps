@@ -57,6 +57,11 @@ export class GhostDOM {
       const style = document.createElement('style');
       style.id = 'canvapps-ghost-dom-styles';
       style.textContent = `
+        #canvapps-ghost-dom-overlay,
+        #canvapps-ghost-dom-overlay * {
+          -webkit-tap-highlight-color: transparent !important;
+          -webkit-touch-callout: none !important;
+        }
         #canvapps-ghost-dom-overlay .canvapps-ghost-text {
           color: transparent !important;
           caret-color: transparent !important;

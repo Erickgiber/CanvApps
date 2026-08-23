@@ -333,39 +333,38 @@ CanvApps provides a fine-grained, signal-powered router for Single-Page and Mult
 </view>
 ```
 
-#### 6. Canvas Animations & Intelligent Motion Engine (`Motion` & `KineticFX`)
-CanvApps includes a built-in 60/120 FPS hardware-timed Motion Engine and KineticFX system for declarative and imperative scene animations:
+#### 6. Canvas Animations & Intelligent Motion Engine (`<motion>` & `KineticFX`)
+CanvApps provides first-class, fully-typed declarative animation primitives directly on Canvas nodes with zero Virtual DOM overhead:
 
-##### A. Declarative Transition Attributes (`enter="scale"`, `enter="fade"`, `enter="zoom-in"`)
-Simply declare the entrance transition on any view or element:
+##### A. Declarative `<motion>` Component
+Wrap any view or element in `<motion>` to automate 60/120 FPS Retina transitions without writing imperative animation loops:
 ```html
-<!-- Automatically animates scale (0.94 -> 1.0) and opacity (0 -> 1) upon mounting -->
-<view width="100%" height="100%" enter="scale">
-  <DashboardContent />
-</view>
+<!-- 1. Cinematic Multi-Phase Splash Screen with Sub-pixel Kerning & Negative Exit -->
+<motion animation="cinematic-splash" :duration="720" :hold="500" :exitDuration="340" @finish="onSplashFinish">
+  <view width="100%" height="100%" backgroundColor="#090d16" flexDirection="column" alignItems="center" justifyContent="center">
+    <text fontSize="56" fontWeight="bold" color="#ffffff">CanvApps</text>
+  </view>
+</motion>
+
+<!-- 2. Smooth Scene Entrance Animation -->
+<motion animation="scale-in" :duration="450">
+  <view width="100%" height="100%" flexDirection="column" backgroundColor="#f8fafc">
+    <DashboardContent />
+  </view>
+</motion>
 ```
 
-##### B. Cinematic Multi-Phase Sequences (`Motion.splashSequence`)
-Run multi-phase intros with letter convergence, elastic scale-in, and negative-scale exit directly via the engine:
-```ts
-<script lang="ts">
-  const scale = signal(0.55);
-  const opacity = signal(0.0);
-  const letterSpacing = signal(24);
-
-  Motion.splashSequence({
-    entranceDuration: 720,
-    holdDuration: 500,
-    exitDuration: 340,
-    onUpdate: (state) => {
-      scale.value = state.scale;
-      opacity.value = state.opacity;
-      letterSpacing.value = state.letterSpacing;
-    },
-    onFinish: () => console.log('Splash completed!'),
-  });
-</script>
-```
+##### B. Supported `<motion>` Animation Presets & Props
+| Prop / Attribute | Type | Description |
+| :--- | :--- | :--- |
+| `animation` | `'scale-in' \| 'fade-in' \| 'zoom-in' \| 'slide-up' \| 'slide-down' \| 'cinematic-splash'` | Transition preset |
+| `duration` | `number` (ms) | Main animation / entrance duration |
+| `hold` | `number` (ms) | Hold duration before exit transition |
+| `exitDuration` | `number` (ms) | Exit transition duration |
+| `delay` | `number` (ms) | Initial delay before starting |
+| `autoPlay` | `boolean` | Defaults to `true` |
+| `@finish` | `(e) => void` | Event emitted upon animation completion |
+| `@update` | `(state) => void` | Continuous 60/120 FPS frame callback |
 
 ##### C. Kinetic Flight Tokens & Particle Bursts (`KineticFX`)
 ```ts
@@ -389,7 +388,41 @@ KineticFX.burst({
 });
 ```
 
-#### 7. Responsive Viewport Hooks
+#### 7. Modal Dialogs & Backdrop Customization (`<modal>`)
+CanvApps includes a high-performance `<modal>` Canvas node with full control over animations, backdrop dimming, gradients, and frosted glass blur:
+
+```html
+<!-- 1. Smooth Scale-in Modal with Radial Gradient and Frosted Glass Blur -->
+<modal animation="scale-in" :blur="true" :gradient="true" :duration="320" @close="closeModal">
+  <view width="380" backgroundColor="#ffffff" borderRadius="20" padding="24" flexDirection="column" gap="16">
+    <text fontSize="18" fontWeight="bold">Custom Modal Title</text>
+    <button label="Dismiss" @click="closeModal" />
+  </view>
+</modal>
+
+<!-- 2. Instant Static Modal without Animation (Solid Dark Overlay) -->
+<modal :animated="false" backdropColor="rgba(0, 0, 0, 0.75)" :gradient="false" @close="closeModal">
+  <view width="360" backgroundColor="#ffffff" borderRadius="16" padding="20">
+    <text>Static dialog content</text>
+  </view>
+</modal>
+```
+
+##### Supported `<modal>` Props:
+| Prop / Attribute | Type | Description |
+| :--- | :--- | :--- |
+| `animation` | `'scale-in' \| 'pixels' \| 'fade' \| 'zoom-in' \| 'slide-up' \| 'none'` | Entrance animation style (default: `'scale-in'`) |
+| `animated` / `:animated` | `boolean` | Enable or disable entrance animation (default: `true`) |
+| `duration` / `:duration` | `number` (ms) | Entrance animation duration (default: `340ms`) |
+| `blur` / `:blur` | `boolean` | Enable frosted glass background blur (default: `false`) |
+| `blurRadius` | `number` (px) | Blur radius in pixels (default: `8px`) |
+| `gradient` / `:gradient` | `boolean` | Use radial gradient backdrop instead of flat color (default: `true`) |
+| `backdropColor` | `string` | Backdrop overlay color or gradient start color |
+| `backdropColors` | `[string, string]` | Two-stop custom radial gradient array |
+| `closeOnBackdropClick` | `boolean` | Dismiss modal on backdrop touch/click (default: `true`) |
+| `@close` | `(e) => void` | Event emitted when backdrop is tapped |
+
+#### 8. Responsive Viewport Hooks
 ```ts
 <script lang="ts">
   const { isMobile, isTablet, isDesktop, width } = useBreakpoints();

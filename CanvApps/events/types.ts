@@ -23,7 +23,10 @@ export type UIEventType =
   | 'keypress'
   | 'input'
   | 'change'
-  | 'submit';
+  | 'submit'
+  | 'close'
+  | 'update'
+  | 'finish';
 
 /**
  * Event object passed to CanvApps pointer event listeners.

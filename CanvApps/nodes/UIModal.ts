@@ -1,14 +1,28 @@
 import { UIElement } from '../core/UIElement';
 import { VisualStyles } from '../types/style';
 
+export type ModalAnimationType = 'pixels' | 'scale-in' | 'fade' | 'zoom-in' | 'slide-up' | 'none';
+
 /**
- * Styling options specific to UIModal dialogs.
+ * Styling and animation options specific to UIModal dialogs.
  */
 export interface ModalStyles extends VisualStyles {
   open?: boolean;
+
+  // Animation configuration
+  animated?: boolean;
+  animation?: ModalAnimationType;
+  duration?: number;
+
+  // Backdrop & Overlay styling
   backdropColor?: string;
-  closeOnBackdropClick?: boolean;
+  backdropColors?: [string, string];
+  gradient?: boolean;
+  backdropGradient?: boolean;
+  blur?: boolean;
   blurBackdrop?: boolean;
+  blurRadius?: number;
+  closeOnBackdropClick?: boolean;
 }
 
 interface DigitalPixel {
@@ -22,8 +36,8 @@ interface DigitalPixel {
 }
 
 /**
- * Animated Modal dialog overlay component with digital pixel-forming entrance
- * and frosted glass backdrop on pure Canvas.
+ * Animated Modal dialog overlay component with customizable entrance animations,
+ * flexible backdrop colors, radial gradients, and frosted glass blur on pure Canvas.
  */
 export class UIModal extends UIElement {
   public declare styles: ModalStyles;
@@ -31,7 +45,6 @@ export class UIModal extends UIElement {
   private animProgress = 1;
   private isAnimating = false;
   private animStartTime = 0;
-  private animDuration = 340; // ms
   private pixels: DigitalPixel[] = [];
 
   constructor(styles: ModalStyles = {}) {
@@ -44,7 +57,7 @@ export class UIModal extends UIElement {
       flexDirection: 'column',
       alignItems: 'center',
       justifyContent: 'center',
-      backgroundColor: styles.backdropColor ?? 'rgba(15, 23, 42, 0.72)',
+      backgroundColor: 'transparent',
       ...styles,
     });
 
@@ -53,7 +66,12 @@ export class UIModal extends UIElement {
     this.styles.display = this.isOpen ? 'flex' : 'none';
 
     if (this.isOpen) {
-      this.startEntranceAnimation();
+      if (this.isAnimationEnabled()) {
+        this.startEntranceAnimation();
+      } else {
+        this.animProgress = 1;
+        this.isAnimating = false;
+      }
     }
 
     // Backdrop click listener to dismiss modal
@@ -61,17 +79,49 @@ export class UIModal extends UIElement {
       // If clicked directly on the modal backdrop overlay (not on dialog card children)
       if (e.target === this) {
         if (this.styles.closeOnBackdropClick !== false) {
-          this.emit('close' as any, { target: this, currentTarget: this } as any);
+          this.emit('close', { target: this, currentTarget: this } as any);
         }
       }
     });
   }
 
+  /**
+   * Determines if entrance animation is enabled based on styles.
+   */
+  private isAnimationEnabled(): boolean {
+    if (this.styles.animated === false) return false;
+    if (this.styles.animation === 'none') return false;
+    return true;
+  }
+
+  /**
+   * Retrieves the active animation type (defaults to 'pixels').
+   */
+  private getAnimationType(): ModalAnimationType {
+    if (!this.isAnimationEnabled()) return 'none';
+    return this.styles.animation ?? 'pixels';
+  }
+
   private startEntranceAnimation(): void {
+    const duration = this.styles.duration ?? 340;
+    const animType = this.getAnimationType();
+
+    if (animType === 'none') {
+      this.animProgress = 1;
+      this.isAnimating = false;
+      this.markRenderDirty();
+      return;
+    }
+
     this.animProgress = 0;
     this.isAnimating = true;
     this.animStartTime = typeof performance !== 'undefined' ? performance.now() : Date.now();
-    this.spawnPixelMatrix();
+
+    if (animType === 'pixels') {
+      this.spawnPixelMatrix();
+    } else {
+      this.pixels = [];
+    }
 
     const tick = (now: number) => {
       if (!this.isOpen) {
@@ -79,7 +129,7 @@ export class UIModal extends UIElement {
         return;
       }
       const elapsed = now - this.animStartTime;
-      const t = Math.min(1, elapsed / this.animDuration);
+      const t = Math.min(1, elapsed / duration);
       // Cubic ease-out
       this.animProgress = 1 - Math.pow(1 - t, 3);
       this.markRenderDirty();
@@ -131,7 +181,13 @@ export class UIModal extends UIElement {
       this.visible = open;
       this.styles.display = open ? 'flex' : 'none';
       if (open) {
-        this.startEntranceAnimation();
+        if (this.isAnimationEnabled()) {
+          this.startEntranceAnimation();
+        } else {
+          this.animProgress = 1;
+          this.isAnimating = false;
+          this.markRenderDirty();
+        }
       }
       this.markLayoutDirty();
     }
@@ -147,36 +203,77 @@ export class UIModal extends UIElement {
   }
 
   /**
-   * Custom rendering pipeline: Frost glass backdrop, converging pixel matrix, and scaled card.
+   * Custom rendering pipeline: Backdrop overlay (solid or gradient), frosted glass blur,
+   * entrance animation (pixels, scale, fade, slide-up), and dialog card children.
    */
   public override render(ctx: CanvasRenderingContext2D): void {
     if (!this.visible || this.styles.display === 'none' || !this.isOpen) {
       return;
     }
 
-    ctx.save();
-
-    // 1. Draw Backdrop Dimming with Radial Frosted Gradient
     const { width, height } = this.layoutRect;
-    if (width > 0 && height > 0) {
-      ctx.save();
-      const grad = ctx.createRadialGradient(
-        width / 2,
-        height / 2,
-        Math.min(width, height) * 0.15,
-        width / 2,
-        height / 2,
-        Math.max(width, height) * 0.75
-      );
-      grad.addColorStop(0, `rgba(15, 23, 42, ${0.65 * this.animProgress})`);
-      grad.addColorStop(1, `rgba(15, 23, 42, ${0.85 * this.animProgress})`);
-      ctx.fillStyle = grad;
-      ctx.fillRect(0, 0, width, height);
-      ctx.restore();
+    if (width <= 0 || height <= 0) {
+      return;
     }
 
-    // 2. Pixel-Forming Matrix Effect during entrance animation
-    if (this.isAnimating && this.pixels.length > 0) {
+    ctx.save();
+
+    const isGradient = this.styles.gradient !== false && this.styles.backdropGradient !== false;
+    const isBlur = this.styles.blur === true || this.styles.blurBackdrop === true;
+    const blurRadius = this.styles.blurRadius ?? 8;
+    const animType = this.getAnimationType();
+
+    // Calculate global full canvas dimensions to eliminate any parent padding margin
+    const dpr = typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1;
+    const fullCanvasWidth = ctx.canvas ? ctx.canvas.width / dpr : (typeof window !== 'undefined' ? window.innerWidth : width);
+    const fullCanvasHeight = ctx.canvas ? ctx.canvas.height / dpr : (typeof window !== 'undefined' ? window.innerHeight : height);
+    
+    const offsetX = -this.worldRect.x;
+    const offsetY = -this.worldRect.y;
+
+    // 1. Real Frosted Glass Backdrop Blur (if enabled)
+    if (isBlur && ctx.canvas && typeof (ctx as any).filter === 'string') {
+      try {
+        ctx.save();
+        ctx.translate(offsetX, offsetY);
+        ctx.filter = `blur(${blurRadius}px)`;
+        ctx.globalAlpha = Math.max(0, Math.min(1, this.animProgress));
+        ctx.drawImage(ctx.canvas, 0, 0, fullCanvasWidth, fullCanvasHeight);
+        ctx.restore();
+      } catch {
+        // Fallback gracefully on environments without ctx.filter or security restrictions
+      }
+    }
+
+    // 2. Draw Fullscreen Backdrop Overlay (covers 100% of viewport edge-to-edge)
+    ctx.save();
+    ctx.translate(offsetX, offsetY);
+    if (isGradient) {
+      const grad = ctx.createRadialGradient(
+        fullCanvasWidth / 2,
+        fullCanvasHeight / 2,
+        Math.min(fullCanvasWidth, fullCanvasHeight) * 0.1,
+        fullCanvasWidth / 2,
+        fullCanvasHeight / 2,
+        Math.max(fullCanvasWidth, fullCanvasHeight) * 0.8
+      );
+
+      const colorStart = this.styles.backdropColors ? this.styles.backdropColors[0] : (this.styles.backdropColor ?? 'rgba(15, 23, 42, 0.65)');
+      const colorEnd = this.styles.backdropColors ? this.styles.backdropColors[1] : 'rgba(15, 23, 42, 0.88)';
+
+      grad.addColorStop(0, colorStart);
+      grad.addColorStop(1, colorEnd);
+      ctx.fillStyle = grad;
+    } else {
+      ctx.fillStyle = this.styles.backdropColor ?? 'rgba(15, 23, 42, 0.72)';
+    }
+
+    ctx.globalAlpha = Math.max(0, Math.min(1, this.animProgress));
+    ctx.fillRect(0, 0, fullCanvasWidth, fullCanvasHeight);
+    ctx.restore();
+
+    // 3. Pixel-Forming Matrix Effect (when animation="pixels")
+    if (animType === 'pixels' && this.isAnimating && this.pixels.length > 0) {
       ctx.save();
       const cx = width / 2;
       const cy = height / 2;
@@ -194,18 +291,43 @@ export class UIModal extends UIElement {
       ctx.restore();
     }
 
-    // 3. Render Modal Dialog Card Children with Elastic Scale-In & Opacity
-    const cardScale = 0.88 + 0.12 * this.animProgress;
-    const cardAlpha = Math.max(0, Math.min(1, this.animProgress));
+    // 4. Calculate Child Transform based on animation preset
+    let cardScale = 1.0;
+    let cardAlpha = 1.0;
+    let childSlideY = 0;
 
+    if (animType === 'pixels') {
+      cardScale = 0.88 + 0.12 * this.animProgress;
+      cardAlpha = Math.max(0, Math.min(1, this.animProgress));
+    } else if (animType === 'scale-in') {
+      cardScale = 0.92 + 0.08 * this.animProgress;
+      cardAlpha = Math.max(0, Math.min(1, this.animProgress));
+    } else if (animType === 'zoom-in') {
+      cardScale = 0.7 + 0.3 * this.animProgress;
+      cardAlpha = Math.max(0, Math.min(1, this.animProgress));
+    } else if (animType === 'slide-up') {
+      childSlideY = (1 - this.animProgress) * 40;
+      cardAlpha = Math.max(0, Math.min(1, this.animProgress));
+    } else if (animType === 'fade') {
+      cardScale = 1.0;
+      cardAlpha = Math.max(0, Math.min(1, this.animProgress));
+    } else {
+      // None
+      cardScale = 1.0;
+      cardAlpha = 1.0;
+    }
+
+    // 5. Render Modal Dialog Card Children
     for (const child of this.children) {
       if (child.visible && child.styles.display !== 'none') {
         ctx.save();
         const childCenterX = child.worldRect.x + child.worldRect.width / 2;
-        const childCenterY = child.worldRect.y + child.worldRect.height / 2;
+        const childCenterY = child.worldRect.y + child.worldRect.height / 2 + childSlideY;
 
         ctx.translate(childCenterX, childCenterY);
-        ctx.scale(cardScale, cardScale);
+        if (cardScale !== 1.0) {
+          ctx.scale(cardScale, cardScale);
+        }
         ctx.translate(-childCenterX, -childCenterY);
         ctx.globalAlpha *= cardAlpha;
 
@@ -219,6 +341,6 @@ export class UIModal extends UIElement {
   }
 
   public draw(_ctx: CanvasRenderingContext2D): void {
-    // Composite rendered in render()
+    // Rendered via composite render() pipeline
   }
 }

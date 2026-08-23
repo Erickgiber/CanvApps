@@ -57,8 +57,9 @@ export interface CapacitorConfig {
 export interface CanvAppsConfig {
   /**
    * Deployment target: Single Page Application (SPA), Progressive Web App (PWA), or Native Mobile (CAPACITOR).
+   * Defaults to 'SPA' (clean standard web build with zero PWA or Capacitor overhead).
    */
-  target: BuildTarget;
+  target?: BuildTarget;
 
   /**
    * Application title displayed in titlebar / browser tab.

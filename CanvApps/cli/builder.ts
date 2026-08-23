@@ -34,8 +34,7 @@ export class CLIBuilder {
 
     // 1. Execute Vite Application Bundling
     console.log(`⚡ [Step 1/2]: Compiling Canvas Application & .cvs Components with Vite...`);
-    const compiledLibPath = path.resolve(cwd, 'dist/canvapps.js');
-    const libEntry = fs.existsSync(compiledLibPath) ? compiledLibPath : path.resolve(cwd, 'CanvApps/index.ts');
+    const canvappsSourcePath = path.resolve(cwd, 'CanvApps');
 
     await viteBuild({
       configFile: false,
@@ -53,11 +52,11 @@ export class CLIBuilder {
       },
       resolve: {
         alias: {
-          '@canvapps': libEntry,
+          '@canvapps': canvappsSourcePath,
         },
       },
     });
-    console.log(`  ✓ Application build succeeded (using compiled framework: ${path.basename(libEntry)})!\n`);
+    console.log(`  ✓ Application build succeeded!\n`);
 
     // 2. Execute Target-Specific Post-Processing
     console.log(`🛠️  [Step 2/2]: Running Post-Processing for Target: ${target}...`);

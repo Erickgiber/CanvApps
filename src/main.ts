@@ -1,4 +1,4 @@
-import { Engine } from './../CanvApps';
+import { Engine } from '@canvapps';
 import config from '../canvapps.config';
 import createApp from './App.cvs';
 

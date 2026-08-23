@@ -5,49 +5,218 @@
     isNew?: boolean;
   }
 
+  interface Particle {
+    x: number;
+    y: number;
+    vx: number;
+    vy: number;
+    radius: number;
+    color: string;
+    alpha: number;
+    decay: number;
+  }
+
+  interface Shockwave {
+    x: number;
+    y: number;
+    radius: number;
+    maxRadius: number;
+    color: string;
+    alpha: number;
+  }
+
   // 1. Responsive Viewport Signals
   const { isMobile } = useBreakpoints();
 
   // 2. Core Application Reactive State (Signals)
-  const cycleCount = signal(0);
+  const counter = signal(0);
   const taskInput = signal('');
 
   const milestones = signal<MilestoneItem[]>([
-    { id: 1, text: 'Pure mathematical Flexbox solver (Zero DOM layout)' },
-    { id: 2, text: 'Ghost DOM integration for native mobile keyboards & selectable text' },
-    { id: 3, text: 'Sub-millisecond fine-grained Signals reactivity' },
-    { id: 4, text: 'Multi-target build orchestrator (SPA, PWA, Capacitor)' },
+    { id: 1, text: 'Pure Flexbox Math Solver (Zero DOM)' },
+    { id: 2, text: 'Ghost DOM Keyboard & Selection Mirroring' },
+    { id: 3, text: 'Direct Memory Signals (Sub-millisecond)' },
+    { id: 4, text: 'Multi-Target Distribution (SPA • PWA)' },
   ]);
 
-  // 3. Counter Actions
-  function incrementCycle() {
-    cycleCount.update((n) => n + 1);
+  // 3. Navigation Link
+  function openPortfolio() {
+    if (typeof window !== 'undefined') {
+      window.open('https://erickgiber.com/', '_blank');
+    }
   }
 
-  function decrementCycle() {
-    cycleCount.update((n) => Math.max(0, n - 1));
+  // 4. Kinetic Canvas Animation System (Particles & Shockwaves)
+  let fxCanvas: HTMLCanvasElement | null = null;
+  let fxCtx: CanvasRenderingContext2D | null = null;
+  const particles: Particle[] = [];
+  const shockwaves: Shockwave[] = [];
+  let isFxRunning = false;
+
+  function initFX() {
+    if (typeof document === 'undefined' || fxCanvas) return;
+    fxCanvas = document.createElement('canvas');
+    fxCanvas.id = 'canvapps-fx-canvas';
+    Object.assign(fxCanvas.style, {
+      position: 'fixed',
+      top: '0',
+      left: '0',
+      width: '100vw',
+      height: '100vh',
+      pointerEvents: 'none',
+      zIndex: '99',
+    });
+    document.body.appendChild(fxCanvas);
+    fxCtx = fxCanvas.getContext('2d');
+
+    const resize = () => {
+      if (!fxCanvas) return;
+      const dpr = window.devicePixelRatio || 1;
+      fxCanvas.width = Math.round(window.innerWidth * dpr);
+      fxCanvas.height = Math.round(window.innerHeight * dpr);
+      if (fxCtx) {
+        fxCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      }
+    };
+    window.addEventListener('resize', resize);
+    resize();
   }
 
-  function resetCycles() {
-    cycleCount.value = 0;
+  function triggerFXLoop() {
+    if (isFxRunning) return;
+    isFxRunning = true;
+
+    const render = () => {
+      if (!fxCtx || !fxCanvas) {
+        isFxRunning = false;
+        return;
+      }
+      fxCtx.clearRect(0, 0, window.innerWidth, window.innerHeight);
+
+      // 1. Draw and update shockwaves
+      for (let i = shockwaves.length - 1; i >= 0; i--) {
+        const sw = shockwaves[i];
+        sw.radius += (sw.maxRadius - sw.radius) * 0.16 + 1.2;
+        sw.alpha *= 0.91;
+
+        if (sw.alpha < 0.02 || sw.radius >= sw.maxRadius) {
+          shockwaves.splice(i, 1);
+          continue;
+        }
+
+        fxCtx.save();
+        fxCtx.beginPath();
+        fxCtx.arc(sw.x, sw.y, sw.radius, 0, Math.PI * 2);
+        fxCtx.strokeStyle = sw.color;
+        fxCtx.lineWidth = 2 * sw.alpha;
+        fxCtx.globalAlpha = sw.alpha;
+        fxCtx.stroke();
+        fxCtx.restore();
+      }
+
+      // 2. Draw and update particles
+      for (let i = particles.length - 1; i >= 0; i--) {
+        const p = particles[i];
+        p.x += p.vx;
+        p.y += p.vy;
+        p.vy += 0.12; // soft gravity
+        p.vx *= 0.96; // air resistance
+        p.alpha -= p.decay;
+
+        if (p.alpha <= 0.01) {
+          particles.splice(i, 1);
+          continue;
+        }
+
+        fxCtx.save();
+        fxCtx.beginPath();
+        fxCtx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+        fxCtx.fillStyle = p.color;
+        fxCtx.globalAlpha = p.alpha;
+        fxCtx.shadowColor = p.color;
+        fxCtx.shadowBlur = 6;
+        fxCtx.fill();
+        fxCtx.restore();
+      }
+
+      if (particles.length > 0 || shockwaves.length > 0) {
+        requestAnimationFrame(render);
+      } else {
+        isFxRunning = false;
+        fxCtx.clearRect(0, 0, window.innerWidth, window.innerHeight);
+      }
+    };
+
+    requestAnimationFrame(render);
   }
 
-  // 4. Milestone Reactive Actions
+  function emitBurst(e: any, colors = ['#38bdf8', '#34d399', '#818cf8']) {
+    initFX();
+    const x = e?.clientX ?? e?.x ?? (typeof window !== 'undefined' ? window.innerWidth / 2 : 200);
+    const y = e?.clientY ?? e?.y ?? (typeof window !== 'undefined' ? window.innerHeight / 2 : 200);
+
+    // Shockwave ring
+    shockwaves.push({
+      x,
+      y,
+      radius: 4,
+      maxRadius: 48,
+      color: colors[0],
+      alpha: 0.8,
+    });
+
+    // 14 kinetic burst particles
+    for (let i = 0; i < 14; i++) {
+      const angle = (Math.PI * 2 * i) / 14 + (Math.random() - 0.5) * 0.4;
+      const speed = Math.random() * 4.5 + 2.5;
+      const color = colors[Math.floor(Math.random() * colors.length)];
+
+      particles.push({
+        x,
+        y,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed - 1.2,
+        radius: Math.random() * 2.5 + 2,
+        color,
+        alpha: 1,
+        decay: Math.random() * 0.025 + 0.02,
+      });
+    }
+
+    triggerFXLoop();
+  }
+
+  // 5. Counter Actions with Kinetic FX
+  function incrementCounter(e: any) {
+    counter.update((n) => n + 1);
+    emitBurst(e, ['#2563eb', '#38bdf8', '#60a5fa']);
+  }
+
+  function decrementCounter(e: any) {
+    counter.update((n) => Math.max(0, n - 1));
+    emitBurst(e, ['#64748b', '#94a3b8', '#cbd5e1']);
+  }
+
+  function resetCounter(e: any) {
+    counter.value = 0;
+    emitBurst(e, ['#ef4444', '#f87171', '#fca5a5']);
+  }
+
+  // 6. Milestone Actions with Kinetic FX
   function onInput(e: any) {
     taskInput.value = e?.target?.value ?? e?.value ?? '';
   }
 
   function handleKeyDown(e: any) {
     if (e.key === 'Enter') {
-      addMilestone();
+      addMilestone(e);
     }
   }
 
-  function addMilestone() {
+  function addMilestone(e: any) {
     const val = taskInput.value.trim();
     if (!val) return;
 
-    // Reactively empty the input state
     taskInput.value = '';
 
     const newItem: MilestoneItem = {
@@ -56,10 +225,9 @@
       isNew: true,
     };
 
-    // Instant insertion with smooth entry state
     milestones.update((list) => [newItem, ...list]);
+    emitBurst(e, ['#059669', '#34d399', '#6ee7b7']);
 
-    // Settle transition
     setTimeout(() => {
       milestones.update((list) =>
         list.map((m) => (m.id === newItem.id ? { ...m, isNew: false } : m))
@@ -67,92 +235,82 @@
     }, 350);
   }
 
-  function removeMilestone(id: number) {
-    // 100% Instant deletion without lag
+  function removeMilestone(id: number, e: any) {
     milestones.update((list) => list.filter((m) => m.id !== id));
+    emitBurst(e, ['#dc2626', '#f87171']);
   }
 </script>
 
-<view width="100%" height="100%" flexDirection="column" backgroundColor="#f8fafc" :padding={isMobile.value ? [10, 12] : [16, 24]} :gap={isMobile.value ? 10 : 12}>
+<view width="100%" height="100%" flexDirection="column" backgroundColor="#f8fafc" :padding={isMobile.value ? [12, 14] : [18, 28]} :gap={isMobile.value ? 10 : 14}>
   
   <!-- 1. Top Navbar Header -->
-  <view width="100%" flexDirection="row" alignItems="center" justifyContent="space-between" :padding={isMobile.value ? [10, 14] : [14, 20]} backgroundColor="#ffffff" borderRadius="14" borderWidth="1" borderColor="#e2e8f0">
+  <view width="100%" flexDirection="row" alignItems="center" justifyContent="space-between" :padding={isMobile.value ? [10, 14] : [14, 22]} backgroundColor="#ffffff" borderRadius="14" borderWidth="1" borderColor="#e2e8f0">
     <view flexDirection="row" alignItems="center" gap="8">
       <text :fontSize={isMobile.value ? 16 : 18} fontWeight="bold" color="#0f172a" :wordWrap="false">🎨 CanvApps</text>
       @if (!isMobile.value) {
         <view padding="[3, 8]" backgroundColor="#eff6ff" borderRadius="6" borderWidth="1" borderColor="#dbeafe">
-          <text fontSize="10" fontWeight="bold" color="#2563eb">100% Canvas UI</text>
+          <text fontSize="10" fontWeight="bold" color="#2563eb">Pure Canvas 2D</text>
         </view>
       }
     </view>
 
-    <!-- Header Status with @if ... else condition -->
-    <view flexDirection="row" alignItems="center">
-      @if (cycleCount.value > 50) {
-        <view :padding={isMobile.value ? [3, 8] : [4, 10]} backgroundColor="#ecfdf5" borderRadius="8" borderWidth="1" borderColor="#d1fae5">
-          <text :fontSize={isMobile.value ? 10 : 11} fontWeight="600" color="#047857">🔥 High ({{ cycleCount.value }})</text>
-        </view>
-      } else {
-        <view :padding={isMobile.value ? [3, 8] : [4, 10]} backgroundColor="#eff6ff" borderRadius="8" borderWidth="1" borderColor="#dbeafe">
-          <text :fontSize={isMobile.value ? 10 : 11} fontWeight="600" color="#2563eb">⚡ Standard ({{ cycleCount.value }})</text>
-        </view>
-      }
-    </view>
+    <!-- Creator Portfolio Link Badge -->
+    <button label="by Erickgiber ↗" backgroundColor="#eff6ff" hoverBackgroundColor="#dbeafe" activeBackgroundColor="#bfdbfe" labelColor="#2563eb" borderWidth="1" borderColor="#dbeafe" borderRadius="8" :padding={isMobile.value ? [5, 10] : [6, 14]} :fontSize={isMobile.value ? 11 : 12} fontWeight="bold" @click="openPortfolio" />
   </view>
 
   <!-- 2. Reactive State & Signals Container -->
-  <view width="100%" backgroundColor="#ffffff" borderRadius="14" borderWidth="1" borderColor="#e2e8f0" :padding={isMobile.value ? [12, 14] : [16, 20]} flexDirection="column" gap="10">
+  <view width="100%" backgroundColor="#ffffff" borderRadius="16" borderWidth="1" borderColor="#e2e8f0" :padding={isMobile.value ? [12, 14] : [16, 22]} flexDirection="column" gap="10">
     <view flexDirection="column" gap="2">
-      <text :fontSize={isMobile.value ? 13 : 14} fontWeight="bold" color="#0f172a">⚡ Reactive Signals</text>
-      <text fontSize="10" color="#64748b">Fine-grained memory signals with zero Virtual DOM diffing</text>
+      <text :fontSize={isMobile.value ? 14 : 15} fontWeight="bold" color="#0f172a">⚡ Zero-VDOM Signals</text>
+      <text fontSize="11" color="#64748b">Sub-millisecond direct memory reactivity</text>
     </view>
 
-    <!-- Counter Box (Responsive Layout) -->
-    <view width="100%" backgroundColor="#f8fafc" borderRadius="10" borderWidth="1" borderColor="#e2e8f0" :padding={isMobile.value ? [10, 12] : [12, 16]} :flexDirection={isMobile.value ? 'column' : 'row'} :alignItems={isMobile.value ? 'stretch' : 'center'} :justifyContent={isMobile.value ? 'flex-start' : 'space-between'} :gap={isMobile.value ? 10 : 12}>
+    <!-- Counter Box (Responsive Layout with Comfortable Spacing) -->
+    <view width="100%" backgroundColor="#f8fafc" borderRadius="12" borderWidth="1" borderColor="#e2e8f0" :padding={isMobile.value ? [10, 12] : [12, 18]} :flexDirection={isMobile.value ? 'column' : 'row'} :alignItems={isMobile.value ? 'stretch' : 'center'} :justifyContent={isMobile.value ? 'flex-start' : 'space-between'} :gap={isMobile.value ? 10 : 16}>
       
-      <!-- Counter Stat Row -->
-      <view flexDirection="row" justifyContent="space-between" alignItems="center">
-        <text fontSize="10" fontWeight="600" color="#64748b">CYCLE COUNTER</text>
-        <view padding="[3, 8]" backgroundColor="#dbeafe" borderRadius="6">
-          <text :fontSize={isMobile.value ? 13 : 15} fontWeight="bold" color="#1d4ed8">
-            {{ cycleCount.value }} Cycles
+      <!-- Counter Stat Row with generous gap -->
+      <view flexDirection="row" alignItems="center" :justifyContent={isMobile.value ? 'space-between' : 'flex-start'} :gap={isMobile.value ? 10 : 16}>
+        <text fontSize="11" fontWeight="bold" color="#64748b">COUNTER</text>
+        <view padding="[4, 14]" backgroundColor="#dbeafe" borderRadius="8">
+          <text :fontSize={isMobile.value ? 14 : 16} fontWeight="bold" color="#1d4ed8">
+            {{ counter.value }}
           </text>
         </view>
       </view>
 
-      <!-- Action Buttons Row -->
+      <!-- Action Buttons Row with Kinetic FX -->
       <view flexDirection="row" :gap={isMobile.value ? 6 : 8}>
-        <button label="− 1" backgroundColor="#ffffff" hoverBackgroundColor="#f1f5f9" labelColor="#334155" borderWidth="1" borderColor="#cbd5e1" :padding={isMobile.value ? [7, 8] : [8, 14]} :flexGrow={1} fontSize="12" borderRadius="8" @click="decrementCycle" />
-        <button label="+ 1" backgroundColor="#2563eb" hoverBackgroundColor="#1d4ed8" labelColor="#ffffff" :padding={isMobile.value ? [7, 8] : [8, 16]} :flexGrow={1} fontSize="12" borderRadius="8" @click="incrementCycle" />
-        <button label="↺ Reset" backgroundColor="#fee2e2" hoverBackgroundColor="#fecaca" labelColor="#dc2626" :padding={isMobile.value ? [7, 8] : [8, 12]} :flexGrow={1} fontSize="12" borderRadius="8" @click="resetCycles" />
+        <button label="− 1" backgroundColor="#ffffff" hoverBackgroundColor="#f1f5f9" labelColor="#334155" borderWidth="1" borderColor="#cbd5e1" :padding={isMobile.value ? [8, 10] : [9, 16]} :flexGrow={1} fontSize="12" fontWeight="bold" borderRadius="8" @click="decrementCounter" />
+        <button label="+ 1" backgroundColor="#2563eb" hoverBackgroundColor="#1d4ed8" labelColor="#ffffff" :padding={isMobile.value ? [8, 12] : [9, 18]} :flexGrow={1} fontSize="12" fontWeight="bold" borderRadius="8" @click="incrementCounter" />
+        <button label="↺ Clear" backgroundColor="#fee2e2" hoverBackgroundColor="#fecaca" labelColor="#dc2626" :padding={isMobile.value ? [8, 10] : [9, 14]} :flexGrow={1} fontSize="12" fontWeight="bold" borderRadius="8" @click="resetCounter" />
       </view>
     </view>
   </view>
 
   <!-- 3. Ghost DOM & Iteration Container -->
-  <view width="100%" flexGrow="1" backgroundColor="#ffffff" borderRadius="14" borderWidth="1" borderColor="#e2e8f0" :padding={isMobile.value ? [12, 14] : [16, 20]} flexDirection="column" gap="10">
+  <view width="100%" flexGrow="1" backgroundColor="#ffffff" borderRadius="16" borderWidth="1" borderColor="#e2e8f0" :padding={isMobile.value ? [12, 14] : [16, 22]} flexDirection="column" gap="10">
     <view flexDirection="column" gap="2">
-      <text :fontSize={isMobile.value ? 13 : 14} fontWeight="bold" color="#0f172a">📱 Ghost DOM & @each Streaming</text>
-      <text fontSize="10" color="#64748b">Selectable Canvas text, native mobile inputs & @each streaming</text>
+      <text :fontSize={isMobile.value ? 14 : 15} fontWeight="bold" color="#0f172a">📱 Ghost DOM & Live Stream</text>
+      <text fontSize="11" color="#64748b">Native touch keyboards & stream rendering</text>
     </view>
 
     <!-- Task Input Row (Adaptive Inline on Mobile & Desktop) -->
     <view width="100%" flexDirection="row" :gap={isMobile.value ? 6 : 8} alignItems="center">
-      <input :placeholder={isMobile.value ? 'Type milestone...' : 'Type a milestone and press Enter...'} flexGrow="1" backgroundColor="#f8fafc" color="#0f172a" placeholderColor="#94a3b8" borderColor="#cbd5e1" focusBorderColor="#2563eb" :padding={isMobile.value ? [8, 10] : [9, 12]} :fontSize={isMobile.value ? 12 : 13} borderRadius="8" :value="taskInput.value" @input="onInput" @keydown="handleKeyDown" @submit="addMilestone" />
-      <button :label={isMobile.value ? '+ Add' : '+ Add Milestone'} backgroundColor="#059669" hoverBackgroundColor="#047857" labelColor="#ffffff" :padding={isMobile.value ? [8, 12] : [9, 16]} :fontSize={isMobile.value ? 12 : 13} borderRadius="8" @click="addMilestone" />
+      <input :placeholder={isMobile.value ? 'Add milestone...' : 'Add feature milestone...'} flexGrow="1" backgroundColor="#f8fafc" color="#0f172a" placeholderColor="#94a3b8" borderColor="#cbd5e1" focusBorderColor="#2563eb" :padding={isMobile.value ? [9, 12] : [11, 14]} :fontSize={isMobile.value ? 12 : 13} borderRadius="8" :value="taskInput.value" @input="onInput" @keydown="handleKeyDown" @submit="addMilestone" />
+      <button label='+ Add' backgroundColor="#059669" hoverBackgroundColor="#047857" labelColor="#ffffff" :padding={isMobile.value ? [9, 14] : [11, 18]} :fontSize={isMobile.value ? 12 : 13} fontWeight="bold" borderRadius="8" @click="addMilestone" />
     </view>
 
     <!-- Milestone Stream List with @if ... else and @each rows as row { ... } -->
     <view width="100%" flexDirection="column" gap="6" flexGrow="1">
       @if (milestones.value.length === 0) {
-        <view width="100%" backgroundColor="#f8fafc" borderRadius="8" :padding={isMobile.value ? 12 : 16} borderWidth="1" borderColor="#e2e8f0" alignItems="center" justifyContent="center">
-          <text fontSize="11" color="#94a3b8">No milestones in list. Type a new milestone above!</text>
+        <view width="100%" backgroundColor="#f8fafc" borderRadius="10" :padding={isMobile.value ? 14 : 18} borderWidth="1" borderColor="#e2e8f0" alignItems="center" justifyContent="center">
+          <text fontSize="11" color="#94a3b8">No milestones in list. Type above to deploy!</text>
         </view>
       } else {
         @each milestones.value as item, index {
-          <view width="100%" backgroundColor="#f8fafc" borderRadius="8" :padding={isMobile.value ? [8, 10] : [10, 14]} borderWidth="1" borderColor="#e2e8f0" flexDirection="row" alignItems="center" justifyContent="space-between" gap="8">
-            <text :fontSize={isMobile.value ? 12 : 13} color="#1e293b" flexGrow="1" wordWrap="true">• {{ item.text }}</text>
-            <button label="✕" backgroundColor="#fee2e2" hoverBackgroundColor="#fecaca" labelColor="#dc2626" width="24" height="24" borderRadius="12" fontSize="11" @click="() => removeMilestone(item.id)" />
+          <view width="100%" backgroundColor="#f8fafc" borderRadius="10" borderWidth="1" borderColor="#e2e8f0" :padding={isMobile.value ? [8, 12] : [10, 16]} flexDirection="row" alignItems="center" justifyContent="space-between" gap="8">
+            <text :fontSize={isMobile.value ? 12 : 13} color="#1e293b" flexGrow="1" wordWrap="true" fontWeight="500">• {{ item.text }}</text>
+            <button label="✕" backgroundColor="#fee2e2" hoverBackgroundColor="#fecaca" labelColor="#dc2626" width="24" height="24" borderRadius="12" fontSize="11" @click="(e) => removeMilestone(item.id, e)" />
           </view>
         }
       }
@@ -161,8 +319,8 @@
 
   <!-- 4. Footer Bar -->
   <view width="100%" :flexDirection={isMobile.value ? 'column' : 'row'} alignItems="center" :justifyContent={isMobile.value ? 'center' : 'space-between'} :gap={isMobile.value ? 2 : 0} padding="[2, 4]">
-    <text fontSize="9" color="#94a3b8" textAlign="center">Single-File Component (.cvs) • Pure Canvas 2D Pipeline</text>
-    <text fontSize="9" color="#94a3b8" textAlign="center">Multi-Target Distribution (SPA • PWA • Capacitor)</text>
+    <text fontSize="10" color="#94a3b8" textAlign="center">CanvApps Engine • Zero DOM Overhead • 120 FPS Retina UI</text>
+    <text fontSize="10" color="#94a3b8" textAlign="center">Single-File Component (.cvs) Pipeline</text>
   </view>
 
 </view>

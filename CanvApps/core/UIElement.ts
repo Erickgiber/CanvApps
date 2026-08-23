@@ -344,9 +344,7 @@ export abstract class UIElement {
         ? this.styles.width
         : typeof this.styles.width === 'string' && this.styles.width.endsWith('%')
         ? (parseFloat(this.styles.width) / 100) * availableWidth
-        : intrinsicW > 0
-        ? intrinsicW + padding.left + padding.right
-        : availableWidth;
+        : intrinsicW + padding.left + padding.right;
 
     const height =
       typeof this.styles.height === 'number'

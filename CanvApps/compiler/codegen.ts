@@ -92,8 +92,10 @@ export default createComponent;
   effect(() => {
     ${ifContainer}.removeAllChildren();
     if (${node.condition}) {
+      ${ifContainer}.visible = true;
+      ${ifContainer}.setStyle({ display: 'flex' });
 ${consequentLines.join('\n')}
-    }${node.alternate && node.alternate.length > 0 ? ` else {\n${alternateLines.join('\n')}\n    }` : ''}
+    }${node.alternate && node.alternate.length > 0 ? ` else {\n      ${ifContainer}.visible = true;\n      ${ifContainer}.setStyle({ display: 'flex' });\n${alternateLines.join('\n')}\n    }` : ` else {\n      ${ifContainer}.visible = false;\n      ${ifContainer}.setStyle({ display: 'none' });\n    }`}
   });
 `,
         rootVar: ifContainer,
@@ -168,8 +170,13 @@ ${itemCode}
   effect(() => {
     ${ifContainer}.removeAllChildren();
     if (${element.directives.ifCondition}) {
+      ${ifContainer}.visible = true;
+      ${ifContainer}.setStyle({ display: 'flex' });
 ${itemCode}
       ${ifContainer}.addChild(${itemRoot});
+    } else {
+      ${ifContainer}.visible = false;
+      ${ifContainer}.setStyle({ display: 'none' });
     }
   });
 `,

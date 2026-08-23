@@ -271,18 +271,29 @@ export class Engine {
   }
 
   /**
-   * Recursively discovers and updates GhostDOM targets across the element hierarchy.
+   * Recursively discovers, updates, and prunes GhostDOM targets across the element hierarchy.
    */
-  private syncGhostDOM(element: UIElement): void {
-    if ('getGhostType' in element) {
-      this.ghost.register(element as unknown as GhostTarget);
-    }
+  private syncGhostDOM(root: UIElement): void {
+    const activeIds = new Set<string>();
 
-    for (const child of element.children) {
-      if (child.visible && child.styles.display !== 'none') {
-        this.syncGhostDOM(child);
+    const traverse = (element: UIElement) => {
+      if (!element.visible || element.styles.display === 'none') {
+        return;
       }
-    }
+
+      if ('getGhostType' in element) {
+        const target = element as unknown as GhostTarget;
+        activeIds.add(target.id);
+        this.ghost.register(target);
+      }
+
+      for (const child of element.children) {
+        traverse(child);
+      }
+    };
+
+    traverse(root);
+    this.ghost.prune(activeIds);
   }
 
   /**

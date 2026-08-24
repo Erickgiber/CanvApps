@@ -7,24 +7,26 @@
   <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
   <link rel="alternate icon" type="image/svg+xml" href="./icon.svg" />
   <script>
-    // GitHub Pages SPA redirect receiver (restores deep links from 404.html)
-    (function(l) {
+    // GitHub Pages SPA redirect receiver & dynamic base URL resolver
+    (function(l, d) {
+      var pathParts = l.pathname.split('/').filter(Boolean);
+      var isProject = l.hostname.endsWith('github.io') && pathParts.length > 0;
+      var repoPrefix = isProject ? '/' + pathParts[0] + '/' : '/';
+      d.write('<base href="' + l.origin + repoPrefix + '">');
+
       if (l.search && l.search.indexOf('p=') !== -1) {
         try {
           var params = new URLSearchParams(l.search);
           var p = params.get('p');
           var q = params.get('q');
           if (p) {
-            var pathParts = l.pathname.split('/').filter(Boolean);
-            var isProject = l.hostname.endsWith('github.io') && pathParts.length > 0;
-            var repoPrefix = isProject ? '/' + pathParts[0] : '';
-            var targetPath = repoPrefix + (p.startsWith('/') ? p : '/' + p);
+            var targetPath = (isProject ? '/' + pathParts[0] : '') + (p.startsWith('/') ? p : '/' + p);
             var targetSearch = q ? ('?' + q) : '';
             window.history.replaceState(null, null, targetPath + targetSearch + l.hash);
           }
         } catch(e) {}
       }
-    }(window.location));
+    }(window.location, document));
   </script>
   <style>
     * {

@@ -7,17 +7,19 @@ import { canvappsPlugin } from './CanvApps/compiler/vitePlugin';
 function libraryMinifierPlugin(): Plugin {
   return {
     name: 'canvapps-library-minifier',
-    renderChunk(code) {
-      const result = transformSync(code, {
-        minify: true,
-        minifyWhitespace: true,
-        minifyIdentifiers: true,
-        minifySyntax: true,
-        legalComments: 'none',
-      });
-      return {
-        code: result.code,
-      };
+    generateBundle(_options, bundle) {
+      for (const file of Object.values(bundle)) {
+        if (file.type === 'chunk') {
+          const result = transformSync(file.code, {
+            minify: true,
+            minifyWhitespace: true,
+            minifyIdentifiers: true,
+            minifySyntax: true,
+            legalComments: 'none',
+          });
+          file.code = result.code;
+        }
+      }
     },
   };
 }

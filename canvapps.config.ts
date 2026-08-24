@@ -2,7 +2,7 @@ import { defineConfig } from './CanvApps';
 
 export default defineConfig({
   // Deployment Target: 'SPA' (Clean Standard Web) | 'PWA' (Offline PWA) | 'CAPACITOR' (Native Mobile)
-  target: 'SPA',
+  target: 'PWA',
   title: 'CanvApps Application',
   outDir: 'dist-app',
 

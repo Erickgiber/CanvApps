@@ -219,6 +219,10 @@ export function toggleLikePin(pinOrId: PinItem | string, e?: any): void {
   );
 }
 
+export const categories = ['All', 'Architecture', 'Cyberpunk', 'Art & Design', 'Nature', 'Fashion', 'Anime', 'Sci-Fi'];
+export const activeCategory = signal<string>('All');
+export const searchQuery = signal<string>('');
+
 export const pintertestScrollPosition = signal<number>(0);
 let activeScrollTween: (() => void) | null = null;
 

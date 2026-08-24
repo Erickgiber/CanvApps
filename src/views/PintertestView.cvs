@@ -1,6 +1,6 @@
 <script lang="ts">
   import { sessionStore, navigateRoute } from '../stores/session.store';
-  import { pinsData, PinItem, toggleSavePin as storeToggleSavePin, toggleLikePin as storeToggleLikePin, savePintertestScroll, restorePintertestScroll, pintertestScrollPosition, resetScrollToTop } from '../stores/pintertest.store';
+  import { pinsData, PinItem, toggleSavePin as storeToggleSavePin, toggleLikePin as storeToggleLikePin, savePintertestScroll, restorePintertestScroll, pintertestScrollPosition, resetScrollToTop, activeCategory, searchQuery, categories } from '../stores/pintertest.store';
 
   const isDark = computed(() => sessionStore.state.theme === 'dark');
 
@@ -16,12 +16,8 @@
   });
 
   // 2. State Signals
-  const activeCategory = signal('All');
-  const searchQuery = signal('');
   const isModalOpen = signal(false);
   const selectedPin = signal<PinItem | null>(null);
-
-  const categories = ['All', 'Architecture', 'Cyberpunk', 'Art & Design', 'Nature', 'Fashion', 'Anime', 'Sci-Fi'];
 
   // 4. Reactive Filtered Data
   const filteredPins = computed(() => {

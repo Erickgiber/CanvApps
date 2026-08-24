@@ -24,8 +24,11 @@ interface MeasuredItem {
  * - Absolute positioning and box-model padding/margin offsets
  */
 export class FlexLayout {
+  private static currentViewportWidth = 0;
+  private static currentViewportHeight = 0;
+
   /**
-   * Performs a layout pass on the root element and all its descendant nodes.
+   * Primary entry point for calculating the layout of an entire UI tree.
    *
    * @param root The root UIElement to lay out.
    * @param containerWidth The available canvas/viewport width.
@@ -39,6 +42,9 @@ export class FlexLayout {
     if (!root.visible || root.styles.display === 'none') {
       return;
     }
+
+    this.currentViewportWidth = containerWidth;
+    this.currentViewportHeight = containerHeight;
 
     // Resolve root dimensions
     const rootWidth = this.resolveDimension(root.styles.width, containerWidth, containerWidth);
@@ -85,17 +91,23 @@ export class FlexLayout {
     const flowChildren: UIElement[] = [];
     const absoluteChildren: UIElement[] = [];
 
-    // Separate flow items from absolutely positioned items
-    for (const child of element.children) {
-      if (!child.visible || child.styles.display === 'none') {
-        continue;
+    const collectChildren = (parent: UIElement) => {
+      for (const child of parent.children) {
+        if (!child.visible || child.styles.display === 'none') {
+          continue;
+        }
+        if (child.styles.display === 'contents') {
+          child.isLayoutDirty = false;
+          collectChildren(child);
+        } else if (child.styles.position === 'absolute') {
+          absoluteChildren.push(child);
+        } else {
+          flowChildren.push(child);
+        }
       }
-      if (child.styles.position === 'absolute') {
-        absoluteChildren.push(child);
-      } else {
-        flowChildren.push(child);
-      }
-    }
+    };
+
+    collectChildren(element);
 
     // Lay out absolute children
     for (const absChild of absoluteChildren) {
@@ -143,6 +155,10 @@ export class FlexLayout {
     // Group items into flex lines based on flexWrap
     const isWrap = element.styles.flexWrap === 'wrap' || element.styles.flexWrap === 'wrap-reverse';
     const isWrapReverse = element.styles.flexWrap === 'wrap-reverse';
+    const isScrollable =
+      element.styles.overflow === 'scroll' ||
+      element.styles.overflow === 'auto' ||
+      element.styles.overflow === 'visible';
     const containerInnerMain = isRow ? innerWidth : innerHeight;
     const containerInnerCross = isRow ? innerHeight : innerWidth;
 
@@ -167,7 +183,7 @@ export class FlexLayout {
 
       if (isWrap && currentLine.length > 0 && proposedMain > containerInnerMain) {
         // Wrap to next line
-        lines.push(this.buildLineData(currentLine, currentMainSum));
+        lines.push(this.buildLineData(currentLine, currentMainSum, isRow, isScrollable));
         currentLine = [item];
         currentMainSum = itemOuterMain;
       } else {
@@ -177,7 +193,7 @@ export class FlexLayout {
     }
 
     if (currentLine.length > 0) {
-      lines.push(this.buildLineData(currentLine, currentMainSum));
+      lines.push(this.buildLineData(currentLine, currentMainSum, isRow, isScrollable));
     }
 
     // Position each flex line along the cross axis
@@ -208,9 +224,18 @@ export class FlexLayout {
       } else if (freeMainSpace < 0 && line.flexShrinkSum > 0) {
         const shrinkAmount = Math.abs(freeMainSpace);
         for (const item of line.items) {
-          const shrink = item.element.styles.flexShrink ?? 1;
-          if (shrink > 0) {
-            item.mainSize = Math.max(0, item.mainSize - (shrinkAmount * shrink) / line.flexShrinkSum);
+          const userShrink = item.element.styles.flexShrink;
+          const isScrollable =
+            element.styles.overflow === 'scroll' ||
+            element.styles.overflow === 'auto' ||
+            element.styles.overflow === 'visible';
+          const shrink = userShrink !== undefined ? userShrink : (isScrollable || !isRow ? 0 : 1);
+          if (shrink > 0 && line.flexShrinkSum > 0) {
+            const minSize = isRow
+              ? (item.element.styles.minWidth ?? 0)
+              : (item.element.styles.minHeight ?? 0);
+            const targetSize = item.mainSize - (shrinkAmount * shrink) / line.flexShrinkSum;
+            item.mainSize = Math.max(minSize, targetSize);
           }
         }
       }
@@ -276,15 +301,34 @@ export class FlexLayout {
     // Calculate scrollable bounds
     let maxContentX = 0;
     let maxContentY = 0;
-    for (const child of element.children) {
-      if (!child.visible || child.styles.display === 'none') continue;
-      const childRight = child.layoutRect.x + child.layoutRect.width;
-      const childBottom = child.layoutRect.y + child.layoutRect.height;
-      if (childRight > maxContentX) maxContentX = childRight;
-      if (childBottom > maxContentY) maxContentY = childBottom;
+
+    const calcBounds = (parent: UIElement) => {
+       for (const child of parent.children) {
+         if (!child.visible || child.styles.display === 'none' || child.styles.position === 'absolute') continue;
+         if (child.styles.display === 'contents') {
+           calcBounds(child);
+           continue;
+         }
+         const margin = child.getComputedMargin();
+         const childRight = child.layoutRect.x + child.layoutRect.width + margin.right;
+         const childBottom = child.layoutRect.y + child.layoutRect.height + margin.bottom;
+         if (childRight > maxContentX) maxContentX = childRight;
+         if (childBottom > maxContentY) maxContentY = childBottom;
+       }
+    };
+
+    calcBounds(element);
+
+    const isScrollContainer = !element.parent || element.styles.overflow === 'scroll' || element.styles.overflow === 'auto';
+    if (isScrollContainer) {
+      element.maxScrollLeft = Math.max(0, maxContentX + padding.right - availableWidth);
+      element.maxScrollTop = Math.max(0, maxContentY + padding.bottom - availableHeight);
+    } else {
+      element.maxScrollLeft = 0;
+      element.maxScrollTop = 0;
+      element.scrollLeft = 0;
+      element.scrollTop = 0;
     }
-    element.maxScrollLeft = Math.max(0, maxContentX + padding.right - availableWidth);
-    element.maxScrollTop = Math.max(0, maxContentY + padding.bottom - availableHeight);
 
     element.isLayoutDirty = false;
   }
@@ -292,7 +336,7 @@ export class FlexLayout {
   /**
    * Helper to aggregate flex line metadata.
    */
-  private static buildLineData(items: MeasuredItem[], mainSum: number): {
+  private static buildLineData(items: MeasuredItem[], mainSum: number, isRow = true, isScrollable = false): {
     items: MeasuredItem[];
     mainSizeSum: number;
     crossSizeMax: number;
@@ -307,7 +351,9 @@ export class FlexLayout {
       const itemOuterCross = item.crossSize + item.crossMarginStart + item.crossMarginEnd;
       crossMax = Math.max(crossMax, itemOuterCross);
       growSum += item.element.styles.flexGrow ?? 0;
-      shrinkSum += item.element.styles.flexShrink ?? 1;
+      const userShrink = item.element.styles.flexShrink;
+      const defaultShrink = isScrollable || !isRow ? 0 : 1;
+      shrinkSum += userShrink !== undefined ? userShrink : defaultShrink;
     }
 
     return {
@@ -381,25 +427,30 @@ export class FlexLayout {
     parentHeight: number,
     padding: { top: number; right: number; bottom: number; left: number }
   ): void {
+    const isModal = child.constructor.name === 'UIModal' || (child as any).isModal === true;
+    const effectiveParentW = isModal && this.currentViewportWidth > 0 ? this.currentViewportWidth : parentWidth;
+    const effectiveParentH = isModal && this.currentViewportHeight > 0 ? this.currentViewportHeight : parentHeight;
+    const effectivePadding = isModal ? { top: 0, right: 0, bottom: 0, left: 0 } : padding;
+
     const margin = child.getComputedMargin();
-    const intrinsic = child.measure(parentWidth, parentHeight);
+    const intrinsic = child.measure(effectiveParentW, effectiveParentH);
 
-    const childW = this.resolveDimension(child.styles.width, parentWidth, intrinsic.width);
-    const childH = this.resolveDimension(child.styles.height, parentHeight, intrinsic.height);
+    const childW = this.resolveDimension(child.styles.width, effectiveParentW, intrinsic.width);
+    const childH = this.resolveDimension(child.styles.height, effectiveParentH, intrinsic.height);
 
-    let x = padding.left + margin.left;
-    let y = padding.top + margin.top;
+    let x = effectivePadding.left + margin.left;
+    let y = effectivePadding.top + margin.top;
 
     if (typeof child.styles.left === 'number') {
       x = child.styles.left + margin.left;
     } else if (typeof child.styles.right === 'number') {
-      x = parentWidth - childW - child.styles.right - margin.right;
+      x = effectiveParentW - childW - child.styles.right - margin.right;
     }
 
     if (typeof child.styles.top === 'number') {
       y = child.styles.top + margin.top;
     } else if (typeof child.styles.bottom === 'number') {
-      y = parentHeight - childH - child.styles.bottom - margin.bottom;
+      y = effectiveParentH - childH - child.styles.bottom - margin.bottom;
     }
 
     child.setLayout(x, y, childW, childH);
@@ -417,10 +468,16 @@ export class FlexLayout {
     if (typeof value === 'number') {
       return Math.max(0, value);
     }
-    if (typeof value === 'string' && value.endsWith('%')) {
-      const pct = parseFloat(value);
-      if (!isNaN(pct)) {
-        return Math.max(0, (pct / 100) * parentDimension);
+    if (typeof value === 'string') {
+      if (value.endsWith('%')) {
+        const pct = parseFloat(value);
+        if (!isNaN(pct)) {
+          return Math.max(0, (pct / 100) * parentDimension);
+        }
+      }
+      const num = parseFloat(value);
+      if (!isNaN(num)) {
+        return Math.max(0, num);
       }
     }
     return autoFallback;

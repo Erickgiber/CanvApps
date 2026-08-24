@@ -621,21 +621,25 @@ export class CVSParser {
           }
         }
 
-        // Tag opening or self-closing e.g. <view ...> or <input ... />
+        // Tag opening or self-closing e.g. <view ...> or <button ... /> or <input ... />
         const tagEnd = this.findTagEnd(cleanSrc, cursor + 1);
         if (tagEnd !== -1) {
           const tagRaw = cleanSrc.slice(cursor + 1, tagEnd);
-          const isSelfClosing = tagRaw.endsWith('/');
-          const cleanRaw = isSelfClosing ? tagRaw.slice(0, -1).trim() : tagRaw.trim();
+          const trimmedRaw = tagRaw.trimEnd();
+          const isSelfClosing = trimmedRaw.endsWith('/');
+          const cleanRaw = isSelfClosing ? trimmedRaw.slice(0, -1).trim() : trimmedRaw.trim();
 
           const [tagName, ...attrChunks] = this.splitTagTokens(cleanRaw);
           const attributes = this.parseAttributes(attrChunks.join(' '));
+
+          const isVoidElement = /^(?:input|img|image|hr|br)$/i.test(tagName || '');
+          const finalSelfClosing = isSelfClosing || isVoidElement;
 
           tokens.push({
             type: 'tag-open',
             tagName,
             value: cleanSrc.slice(cursor, tagEnd + 1),
-            isSelfClosing,
+            isSelfClosing: finalSelfClosing,
             attributes,
           });
 
@@ -703,13 +707,75 @@ export class CVSParser {
 
   private static parseAttributes(attrString: string): Array<{ name: string; value: string }> {
     const attrs: Array<{ name: string; value: string }> = [];
-    const regex = /([@:*A-Za-z0-9_-]+)(?:=(?:"([^"]*)"|'([^']*)'|\{([\s\S]*?)\}|([^>\s]+)))?/g;
-    let match: RegExpExecArray | null;
+    let i = 0;
+    const len = attrString.length;
 
-    while ((match = regex.exec(attrString)) !== null) {
-      const name = match[1];
-      const value = match[2] ?? match[3] ?? match[4] ?? match[5] ?? 'true';
-      attrs.push({ name, value });
+    while (i < len) {
+      // Skip whitespace
+      while (i < len && /\s/.test(attrString[i])) i++;
+      if (i >= len) break;
+
+      // Match attribute name
+      const nameStart = i;
+      while (i < len && /[@:*A-Za-z0-9_-]/.test(attrString[i])) i++;
+      const name = attrString.slice(nameStart, i);
+      if (!name || name === '/') {
+        i++;
+        continue;
+      }
+
+      // Skip whitespace
+      while (i < len && /\s/.test(attrString[i])) i++;
+
+      if (i < len && attrString[i] === '=') {
+        i++; // skip '='
+        while (i < len && /\s/.test(attrString[i])) i++;
+
+        if (i < len && (attrString[i] === '"' || attrString[i] === "'")) {
+          const q = attrString[i];
+          i++; // skip opening quote
+          const valStart = i;
+          while (i < len && attrString[i] !== q) i++;
+          const value = attrString.slice(valStart, i);
+          if (i < len) i++; // skip closing quote
+          attrs.push({ name, value });
+        } else if (i < len && attrString[i] === '{') {
+          let depth = 0;
+          let inQ = false;
+          let qChar = '';
+          const valStart = i + 1;
+          for (; i < len; i++) {
+            const ch = attrString[i];
+            if ((ch === '"' || ch === "'") && depth > 0) {
+              if (!inQ) {
+                inQ = true;
+                qChar = ch;
+              } else if (ch === qChar) {
+                inQ = false;
+                qChar = '';
+              }
+            } else if (ch === '{' && !inQ) {
+              depth++;
+            } else if (ch === '}' && !inQ) {
+              depth--;
+              if (depth === 0) {
+                const value = attrString.slice(valStart, i).trim();
+                attrs.push({ name, value });
+                i++;
+                break;
+              }
+            }
+          }
+        } else {
+          const valStart = i;
+          while (i < len && !/\s/.test(attrString[i]) && attrString[i] !== '>') i++;
+          const value = attrString.slice(valStart, i);
+          attrs.push({ name, value });
+        }
+      } else {
+        // Boolean attribute
+        attrs.push({ name, value: 'true' });
+      }
     }
 
     return attrs;

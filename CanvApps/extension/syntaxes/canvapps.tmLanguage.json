@@ -13,12 +13,12 @@
   "repository": {
     "script-block": {
       "name": "meta.script.canvapps",
-      "begin": "(<)(script)(\\s+lang=(\"|')ts(\"|'))?(>)",
+      "begin": "(<)(script)(\\b[^>]*)(>)",
       "beginCaptures": {
         "1": { "name": "punctuation.definition.tag.begin.html" },
         "2": { "name": "entity.name.tag.html" },
-        "3": { "name": "meta.attribute.lang.html" },
-        "6": { "name": "punctuation.definition.tag.end.html" }
+        "3": { "name": "meta.attribute.script.canvapps" },
+        "4": { "name": "punctuation.definition.tag.end.html" }
       },
       "end": "(</)(script)(>)",
       "endCaptures": {
@@ -29,6 +29,9 @@
       "patterns": [
         {
           "include": "source.ts"
+        },
+        {
+          "include": "source.js"
         },
         {
           "include": "#ts-embedded"

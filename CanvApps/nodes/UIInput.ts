@@ -377,8 +377,12 @@ export class UIInput extends UIElement implements GhostTarget {
     }
 
     // 2. Border (active/focus ring)
-    const effectiveBorderColor = this.isFocused ? focusBorderColor : borderColor;
-    const effectiveBorderWidth = this.isFocused ? Math.max(1.5, borderWidth) : borderWidth;
+    const effectiveBorderColor = this.isFocused
+      ? (focusBorderColor && focusBorderColor !== 'transparent' ? focusBorderColor : undefined)
+      : (borderColor && borderColor !== 'transparent' ? borderColor : undefined);
+    const effectiveBorderWidth = this.isFocused && focusBorderColor && focusBorderColor !== 'transparent'
+      ? Math.max(1.5, borderWidth)
+      : borderWidth;
 
     if (effectiveBorderWidth > 0 && effectiveBorderColor) {
       ctx.beginPath();

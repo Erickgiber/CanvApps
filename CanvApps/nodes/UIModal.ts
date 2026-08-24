@@ -1,20 +1,25 @@
 import { UIElement } from '../core/UIElement';
+import { Engine } from '../core/Engine';
 import { VisualStyles } from '../types/style';
 
-export type ModalAnimationType = 'pixels' | 'scale-in' | 'fade' | 'zoom-in' | 'slide-up' | 'none';
+export type ModalAnimationType = 'hero' | 'zoom-center' | 'scale-in' | 'slide-up' | 'fade' | 'zoom-in' | 'none';
+
+export interface RectBounds {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
 
 /**
  * Styling and animation options specific to UIModal dialogs.
  */
 export interface ModalStyles extends VisualStyles {
   open?: boolean;
-
-  // Animation configuration
   animated?: boolean;
   animation?: ModalAnimationType;
   duration?: number;
-
-  // Backdrop & Overlay styling
+  originRect?: RectBounds | null;
   backdropColor?: string;
   backdropColors?: [string, string];
   gradient?: boolean;
@@ -25,19 +30,15 @@ export interface ModalStyles extends VisualStyles {
   closeOnBackdropClick?: boolean;
 }
 
-interface DigitalPixel {
-  x: number;
-  y: number;
-  targetX: number;
-  targetY: number;
-  size: number;
-  color: string;
-  alpha: number;
+// Silky smooth quartic-out fluid deceleration curve
+function fluidEase(t: number): number {
+  return 1 - Math.pow(1 - t, 3.5);
 }
 
 /**
- * Animated Modal dialog overlay component with customizable entrance animations,
- * flexible backdrop colors, radial gradients, and frosted glass blur on pure Canvas.
+ * High-performance animated Modal dialog overlay component with hardware-accelerated
+ * Hero Shared-Element expansion animations, bidirectional closing transitions,
+ * deep backdrop dimming, and touch dismissal.
  */
 export class UIModal extends UIElement {
   public declare styles: ModalStyles;
@@ -45,7 +46,8 @@ export class UIModal extends UIElement {
   private animProgress = 1;
   private isAnimating = false;
   private animStartTime = 0;
-  private pixels: DigitalPixel[] = [];
+  private animPhase: 'opening' | 'closing' | 'idle' = 'idle';
+  private originRect: RectBounds | null = null;
 
   constructor(styles: ModalStyles = {}) {
     super({
@@ -58,10 +60,13 @@ export class UIModal extends UIElement {
       alignItems: 'center',
       justifyContent: 'center',
       backgroundColor: 'transparent',
+      animation: 'hero',
+      duration: 300,
       ...styles,
     });
 
     this.isOpen = styles.open !== false;
+    this.originRect = styles.originRect ? { ...styles.originRect } : null;
     this.visible = this.isOpen;
     this.styles.display = this.isOpen ? 'flex' : 'none';
 
@@ -76,7 +81,6 @@ export class UIModal extends UIElement {
 
     // Backdrop click listener to dismiss modal
     this.on('pointerdown', (e: any) => {
-      // If clicked directly on the modal backdrop overlay (not on dialog card children)
       if (e.target === this) {
         if (this.styles.closeOnBackdropClick !== false) {
           this.emit('close', { target: this, currentTarget: this } as any);
@@ -95,244 +99,326 @@ export class UIModal extends UIElement {
   }
 
   /**
-   * Retrieves the active animation type (defaults to 'pixels').
+   * Returns whether an entrance or exit animation is actively running.
+   */
+  public isAnimationRunning(): boolean {
+    return this.isAnimating;
+  }
+
+  /**
+   * Retrieves the active animation type (defaults to 'hero').
    */
   private getAnimationType(): ModalAnimationType {
     if (!this.isAnimationEnabled()) return 'none';
-    return this.styles.animation ?? 'pixels';
+    return this.styles.animation ?? 'hero';
   }
 
-  private startEntranceAnimation(): void {
-    const duration = this.styles.duration ?? 340;
+  public startEntranceAnimation(onComplete?: () => void): void {
     const animType = this.getAnimationType();
 
     if (animType === 'none') {
       this.animProgress = 1;
       this.isAnimating = false;
+      this.animPhase = 'idle';
       this.markRenderDirty();
+      Engine.invalidateActive();
+      if (onComplete) onComplete();
       return;
     }
 
     this.animProgress = 0;
     this.isAnimating = true;
+    this.animPhase = 'opening';
     this.animStartTime = typeof performance !== 'undefined' ? performance.now() : Date.now();
-
-    if (animType === 'pixels') {
-      this.spawnPixelMatrix();
-    } else {
-      this.pixels = [];
-    }
-
-    const tick = (now: number) => {
-      if (!this.isOpen) {
-        this.isAnimating = false;
-        return;
-      }
-      const elapsed = now - this.animStartTime;
-      const t = Math.min(1, elapsed / duration);
-      // Cubic ease-out
-      this.animProgress = 1 - Math.pow(1 - t, 3);
-      this.markRenderDirty();
-
-      if (t < 1) {
-        if (typeof requestAnimationFrame !== 'undefined') {
-          requestAnimationFrame(tick);
-        }
-      } else {
-        this.animProgress = 1;
-        this.isAnimating = false;
-        this.pixels = [];
-        this.markRenderDirty();
-      }
-    };
-
-    if (typeof requestAnimationFrame !== 'undefined') {
-      requestAnimationFrame(tick);
+    this.markRenderDirty();
+    Engine.invalidateActive();
+    if (onComplete) {
+      setTimeout(onComplete, (this.styles.duration ?? 300) + 20);
     }
   }
 
-  private spawnPixelMatrix(): void {
-    this.pixels = [];
-    const colors = ['#38bdf8', '#34d399', '#60a5fa', '#818cf8', '#ffffff'];
-    const count = 36;
+  public startExitAnimation(onComplete?: () => void): void {
+    const animType = this.getAnimationType();
 
-    for (let i = 0; i < count; i++) {
-      const angle = Math.random() * Math.PI * 2;
-      const dist = Math.random() * 180 + 80;
-      this.pixels.push({
-        x: Math.cos(angle) * dist,
-        y: Math.sin(angle) * dist,
-        targetX: (Math.random() - 0.5) * 260,
-        targetY: (Math.random() - 0.5) * 220,
-        size: Math.floor(Math.random() * 6) + 4,
-        color: colors[Math.floor(Math.random() * colors.length)],
-        alpha: Math.random() * 0.7 + 0.3,
-      });
+    if (animType === 'none') {
+      this.animProgress = 0;
+      this.isAnimating = false;
+      this.animPhase = 'idle';
+      this.isOpen = false;
+      this.visible = false;
+      this.styles.display = 'none';
+      this.markRenderDirty();
+      this.markLayoutDirty();
+      Engine.invalidateActive();
+      if (onComplete) onComplete();
+      return;
+    }
+
+    this.animProgress = 1;
+    this.isAnimating = true;
+    this.animPhase = 'closing';
+    this.animStartTime = typeof performance !== 'undefined' ? performance.now() : Date.now();
+    this.markRenderDirty();
+    Engine.invalidateActive();
+    if (onComplete) {
+      setTimeout(onComplete, (this.styles.duration ?? 250) + 20);
     }
   }
 
   /**
-   * Toggles modal visibility and layout participation.
+   * Toggles modal visibility and layout participation with bidirectional transition.
    */
   public setOpen(open: boolean): this {
-    if (this.isOpen !== open) {
-      this.isOpen = open;
-      this.styles.open = open;
-      this.visible = open;
-      this.styles.display = open ? 'flex' : 'none';
-      if (open) {
-        if (this.isAnimationEnabled()) {
-          this.startEntranceAnimation();
-        } else {
-          this.animProgress = 1;
-          this.isAnimating = false;
-          this.markRenderDirty();
-        }
+    if (open) {
+      this.isOpen = true;
+      this.styles.open = true;
+      this.visible = true;
+      this.styles.display = 'flex';
+      this.isLayoutDirty = true;
+      if (this.styles.originRect) {
+        this.originRect = { ...this.styles.originRect };
+      }
+      if (this.isAnimationEnabled()) {
+        this.startEntranceAnimation();
+      } else {
+        this.animProgress = 1;
+        this.isAnimating = false;
+        this.markRenderDirty();
       }
       this.markLayoutDirty();
+    } else {
+      if (this.isAnimationEnabled() && this.isOpen && this.visible) {
+        this.startExitAnimation(() => {
+          this.styles.open = false;
+        });
+      } else {
+        this.isOpen = false;
+        this.styles.open = false;
+        this.visible = false;
+        this.styles.display = 'none';
+        this.animProgress = 0;
+        this.isAnimating = false;
+        this.markLayoutDirty();
+      }
     }
     return this;
   }
 
   public override setStyle(styles: Partial<ModalStyles>): this {
     super.setStyle(styles);
-    if (styles.open !== undefined) {
+    if (styles.originRect !== undefined) {
+      this.originRect = styles.originRect ? { ...styles.originRect } : null;
+    }
+    if (styles.open !== undefined && styles.open !== this.isOpen) {
       this.setOpen(styles.open);
     }
     return this;
   }
 
   /**
-   * Custom rendering pipeline: Backdrop overlay (solid or gradient), frosted glass blur,
-   * entrance animation (pixels, scale, fade, slide-up), and dialog card children.
+   * Always pins UIModal overlay to the active root viewport (0, 0, rootWidth, rootHeight).
+   */
+  public override updateWorldTransform(_parentWorldX = 0, _parentWorldY = 0): void {
+    if (!this.visible || this.styles.display === 'none' || !this.isOpen) {
+      return;
+    }
+
+    const root = this.getRootElement();
+    const viewportW = root ? root.layoutRect.width : (typeof window !== 'undefined' ? window.innerWidth : this.layoutRect.width);
+    const viewportH = root ? root.layoutRect.height : (typeof window !== 'undefined' ? window.innerHeight : this.layoutRect.height);
+
+    this.worldRect.x = 0;
+    this.worldRect.y = 0;
+    this.worldRect.width = viewportW;
+    this.worldRect.height = viewportH;
+    this.layoutRect.x = 0;
+    this.layoutRect.y = 0;
+    this.layoutRect.width = viewportW;
+    this.layoutRect.height = viewportH;
+
+    for (const child of this.children) {
+      if (child.visible && child.styles.display !== 'none') {
+        child.updateWorldTransform(0, 0);
+      }
+    }
+  }
+
+  private getRootElement(): UIElement {
+    let curr: UIElement = this;
+    while (curr.parent) {
+      curr = curr.parent;
+    }
+    return curr;
+  }
+
+  /**
+   * Discovers the actual visible modal dialog card element inside this modal,
+   * unwrapping any conditional or fragment containers (e.g. display: 'contents').
+   */
+  private getModalCard(): UIElement | null {
+    const findCard = (element: UIElement): UIElement | null => {
+      for (const child of element.children) {
+        if (!child.visible || child.styles.display === 'none') continue;
+        if (child.styles.display === 'contents') {
+          const found = findCard(child);
+          if (found) return found;
+        } else {
+          return child;
+        }
+      }
+      return null;
+    };
+    return findCard(this);
+  }
+
+  /**
+   * Spatial hit-testing covering 100% of the active viewport when open.
+   */
+  public override hitTest(worldX: number, worldY: number): UIElement | null {
+    if (!this.visible || this.styles.display === 'none' || !this.isOpen) {
+      return null;
+    }
+
+    const card = this.getModalCard();
+    if (card) {
+      const hit = card.hitTest(worldX, worldY);
+      if (hit) {
+        return hit;
+      }
+    }
+
+    // If click is within viewport bounds, hit the modal backdrop overlay (this)
+    if (worldX >= 0 && worldX <= this.worldRect.width && worldY >= 0 && worldY <= this.worldRect.height) {
+      return this;
+    }
+
+    return null;
+  }
+
+  /**
+   * Hardware-accelerated rendering: Hero Shared-Element expansion, dimmed glass overlay, and dialog card.
    */
   public override render(ctx: CanvasRenderingContext2D): void {
     if (!this.visible || this.styles.display === 'none' || !this.isOpen) {
       return;
     }
 
-    const { width, height } = this.layoutRect;
-    if (width <= 0 || height <= 0) {
-      return;
-    }
+    // Advance animation frame synchronized with the Engine render loop
+    if (this.isAnimating) {
+      const now = typeof performance !== 'undefined' ? performance.now() : Date.now();
+      const elapsed = now - this.animStartTime;
+      const duration = this.animPhase === 'closing' ? Math.min(250, this.styles.duration ?? 250) : (this.styles.duration ?? 300);
+      const t = Math.min(1, elapsed / duration);
 
-    ctx.save();
+      if (this.animPhase === 'closing') {
+        this.animProgress = 1 - t;
+      } else {
+        this.animProgress = t;
+      }
 
-    const isGradient = this.styles.gradient !== false && this.styles.backdropGradient !== false;
-    const isBlur = this.styles.blur === true || this.styles.blurBackdrop === true;
-    const blurRadius = this.styles.blurRadius ?? 8;
-    const animType = this.getAnimationType();
-
-    // Calculate global full canvas dimensions to cover 100% of viewport edge-to-edge
-    const dpr = typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1;
-    const fullCanvasWidth = ctx.canvas ? ctx.canvas.width / dpr : (typeof window !== 'undefined' ? window.innerWidth : width);
-    const fullCanvasHeight = ctx.canvas ? ctx.canvas.height / dpr : (typeof window !== 'undefined' ? window.innerHeight : height);
-
-    // 1. Real Frosted Glass Backdrop Blur (if enabled)
-    if (isBlur && ctx.canvas && typeof (ctx as any).filter === 'string') {
-      try {
-        ctx.save();
-        ctx.filter = `blur(${blurRadius}px)`;
-        ctx.globalAlpha = Math.max(0, Math.min(1, this.animProgress));
-        ctx.drawImage(ctx.canvas, 0, 0, fullCanvasWidth, fullCanvasHeight);
-        ctx.restore();
-      } catch {
-        // Fallback gracefully on environments without ctx.filter or security restrictions
+      if (t < 1) {
+        this.markRenderDirty();
+        Engine.invalidateActive();
+      } else {
+        this.isAnimating = false;
+        if (this.animPhase === 'closing') {
+          this.animProgress = 0;
+          this.isOpen = false;
+          this.visible = false;
+          this.styles.display = 'none';
+          this.styles.open = false;
+          this.markLayoutDirty();
+        } else {
+          this.animProgress = 1;
+        }
+        this.animPhase = 'idle';
+        this.markRenderDirty();
+        Engine.invalidateActive();
       }
     }
 
-    // 2. Draw Fullscreen Backdrop Overlay (covers 100% of viewport edge-to-edge)
+    const dpr = typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1;
+    const fullCanvasWidth = ctx.canvas ? ctx.canvas.width / dpr : (this.worldRect.width || (typeof window !== 'undefined' ? window.innerWidth : 800));
+    const fullCanvasHeight = ctx.canvas ? ctx.canvas.height / dpr : (this.worldRect.height || (typeof window !== 'undefined' ? window.innerHeight : 600));
+
     ctx.save();
-    if (isGradient) {
-      const grad = ctx.createRadialGradient(
-        fullCanvasWidth / 2,
-        fullCanvasHeight / 2,
-        Math.min(fullCanvasWidth, fullCanvasHeight) * 0.1,
-        fullCanvasWidth / 2,
-        fullCanvasHeight / 2,
-        Math.max(fullCanvasWidth, fullCanvasHeight) * 0.8
-      );
+    // Fixed viewport-level overlay transform
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-      const colorStart = this.styles.backdropColors ? this.styles.backdropColors[0] : (this.styles.backdropColor ?? 'rgba(15, 23, 42, 0.65)');
-      const colorEnd = this.styles.backdropColors ? this.styles.backdropColors[1] : 'rgba(15, 23, 42, 0.88)';
+    const progress = this.animProgress;
+    const eased = fluidEase(progress);
 
-      grad.addColorStop(0, colorStart);
-      grad.addColorStop(1, colorEnd);
-      ctx.fillStyle = grad;
-    } else {
-      ctx.fillStyle = this.styles.backdropColor ?? 'rgba(15, 23, 42, 0.72)';
-    }
-
-    ctx.globalAlpha = Math.max(0, Math.min(1, this.animProgress));
+    // 1. Draw Fullscreen Dark Backdrop Overlay
+    ctx.save();
+    ctx.fillStyle = this.styles.backdropColor ?? 'rgba(0, 0, 0, 0.78)';
+    const backdropAlpha = Math.max(0, Math.min(1, progress * 1.4));
+    ctx.globalAlpha = backdropAlpha;
     ctx.fillRect(0, 0, fullCanvasWidth, fullCanvasHeight);
     ctx.restore();
 
-    // 3. Pixel-Forming Matrix Effect (when animation="pixels")
-    if (animType === 'pixels' && this.isAnimating && this.pixels.length > 0) {
+    // 2. Render Modal Dialog Card with Hero Morph Transition
+    const originRect = this.styles.originRect || this.originRect;
+    const card = this.getModalCard();
+
+    if (card && card.visible && card.styles.display !== 'none') {
       ctx.save();
-      const cx = width / 2;
-      const cy = height / 2;
-      const inv = 1 - this.animProgress;
 
-      for (const p of this.pixels) {
-        const curX = cx + p.targetX + (p.x - p.targetX) * inv;
-        const curY = cy + p.targetY + (p.y - p.targetY) * inv;
-        const curAlpha = p.alpha * (1 - inv * inv);
+      const targetX = card.layoutRect.x;
+      const targetY = card.layoutRect.y;
+      const targetW = card.layoutRect.width;
+      const targetH = card.layoutRect.height;
+      const targetCenterX = targetX + targetW / 2;
+      const targetCenterY = targetY + targetH / 2;
 
-        ctx.fillStyle = p.color;
-        ctx.globalAlpha = Math.max(0, Math.min(1, curAlpha));
-        ctx.fillRect(curX, curY, p.size, p.size);
-      }
-      ctx.restore();
-    }
+      if (originRect && typeof originRect.width === 'number' && originRect.width > 0 && targetW > 0 && targetH > 0) {
+        // Precise Figma Smart Animation Morph (originRect -> modal dialog card)
+        const originX = originRect.x;
+        const originY = originRect.y;
+        const originW = originRect.width;
 
-    // 4. Calculate Child Transform based on animation preset
-    let cardScale = 1.0;
-    let cardAlpha = 1.0;
-    let childSlideY = 0;
+        // Compute interpolated bounding box
+        const curX = originX + (targetX - originX) * eased;
+        const curY = originY + (targetY - originY) * eased;
+        const curW = originW + (targetW - originW) * eased;
 
-    if (animType === 'pixels') {
-      cardScale = 0.88 + 0.12 * this.animProgress;
-      cardAlpha = Math.max(0, Math.min(1, this.animProgress));
-    } else if (animType === 'scale-in') {
-      cardScale = 0.92 + 0.08 * this.animProgress;
-      cardAlpha = Math.max(0, Math.min(1, this.animProgress));
-    } else if (animType === 'zoom-in') {
-      cardScale = 0.7 + 0.3 * this.animProgress;
-      cardAlpha = Math.max(0, Math.min(1, this.animProgress));
-    } else if (animType === 'slide-up') {
-      childSlideY = (1 - this.animProgress) * 40;
-      cardAlpha = Math.max(0, Math.min(1, this.animProgress));
-    } else if (animType === 'fade') {
-      cardScale = 1.0;
-      cardAlpha = Math.max(0, Math.min(1, this.animProgress));
-    } else {
-      // None
-      cardScale = 1.0;
-      cardAlpha = 1.0;
-    }
+        // Uniform scale factor
+        const scale = curW / targetW;
+        const cardAlpha = Math.max(0, Math.min(1, progress * 3.0));
 
-    // 5. Render Modal Dialog Card Children
-    for (const child of this.children) {
-      if (child.visible && child.styles.display !== 'none') {
-        ctx.save();
-        const childCenterX = child.worldRect.x + child.worldRect.width / 2;
-        const childCenterY = child.worldRect.y + child.worldRect.height / 2 + childSlideY;
-
-        ctx.translate(childCenterX, childCenterY);
-        if (cardScale !== 1.0) {
-          ctx.scale(cardScale, cardScale);
+        ctx.translate(curX, curY);
+        if (scale !== 1.0) {
+          ctx.scale(scale, scale);
         }
-        ctx.translate(-childCenterX, -childCenterY);
-        ctx.globalAlpha *= cardAlpha;
+        ctx.translate(-targetX, -targetY);
+        ctx.globalAlpha = cardAlpha;
 
-        child.render(ctx);
-        ctx.restore();
+        card.render(ctx);
+      } else {
+        // Natural zoom-center fallback
+        const currentCenterX = targetCenterX;
+        const currentCenterY = targetCenterY + (1 - eased) * 40;
+        const currentScale = 0.7 + 0.3 * eased;
+        const cardAlpha = Math.max(0, Math.min(1, progress * 2.2));
+
+        ctx.translate(currentCenterX, currentCenterY);
+        if (currentScale !== 1.0) {
+          ctx.scale(currentScale, currentScale);
+        }
+        ctx.translate(-targetCenterX, -targetCenterY);
+        ctx.globalAlpha = cardAlpha;
+
+        card.render(ctx);
       }
+
+      ctx.restore();
     }
 
     ctx.restore();
     this.isRenderDirty = false;
+  }
+
+  public isModalOpen(): boolean {
+    return this.isOpen && this.visible && this.styles.display !== 'none' && this.animProgress > 0.01;
   }
 
   public draw(_ctx: CanvasRenderingContext2D): void {

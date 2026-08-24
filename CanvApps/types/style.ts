@@ -1,7 +1,7 @@
 /**
  * Supported display types in the layout engine.
  */
-export type DisplayMode = 'flex' | 'none';
+export type DisplayMode = 'flex' | 'none' | 'contents';
 
 /**
  * Positioning strategy for an element relative to its parent container.
@@ -112,6 +112,7 @@ export interface LayoutStyles {
   marginBottom?: number;
   marginLeft?: number;
 
+  aspectRatio?: number;
   zIndex?: number;
 }
 
@@ -130,6 +131,11 @@ export interface VisualStyles extends LayoutStyles {
   boxShadow?: BoxShadow;
   overflow?: 'visible' | 'hidden' | 'scroll' | 'auto';
   cursor?: string;
+
+  // Image properties
+  src?: string;
+  fit?: 'cover' | 'contain' | 'fill' | 'none';
+  placeholderColor?: string;
 
   translateX?: number;
   translateY?: number;

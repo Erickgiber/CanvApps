@@ -39,6 +39,7 @@ export interface MotionStyles extends VisualStyles {
  */
 export class UIMotion extends UIView {
   private cancelFn: (() => void) | null = null;
+  private hasAutoPlayed = false;
 
   constructor(styles: MotionStyles = {}) {
     super({
@@ -47,8 +48,19 @@ export class UIMotion extends UIView {
     });
 
     if (styles.autoPlay !== false && typeof window !== 'undefined') {
-      setTimeout(() => this.play(), 16);
+      // Use microtask queue so bound properties/children are attached before first play
+      queueMicrotask(() => {
+        if (!this.hasAutoPlayed) {
+          this.hasAutoPlayed = true;
+          this.play();
+        }
+      });
     }
+  }
+
+  public override removeFromParent(): void {
+    this.cancel();
+    super.removeFromParent();
   }
 
   /**

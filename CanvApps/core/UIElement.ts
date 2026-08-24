@@ -139,6 +139,7 @@ export abstract class UIElement {
 
     child.parent = this;
     this.children.push(child);
+    child.markLayoutDirty();
     this.markLayoutDirty();
     return this;
   }
@@ -205,19 +206,75 @@ export abstract class UIElement {
     this.markLayoutDirty();
   }
 
+  private static readonly LAYOUT_AFFECTING_KEYS = new Set<string>([
+    'width',
+    'height',
+    'minWidth',
+    'maxWidth',
+    'minHeight',
+    'maxHeight',
+    'padding',
+    'paddingTop',
+    'paddingRight',
+    'paddingBottom',
+    'paddingLeft',
+    'margin',
+    'marginTop',
+    'marginRight',
+    'marginBottom',
+    'marginLeft',
+    'flexDirection',
+    'flexWrap',
+    'justifyContent',
+    'alignItems',
+    'alignSelf',
+    'flexGrow',
+    'flexShrink',
+    'gap',
+    'rowGap',
+    'columnGap',
+    'display',
+    'position',
+    'left',
+    'top',
+    'right',
+    'bottom',
+    'fontSize',
+    'fontWeight',
+    'fontFamily',
+    'lineHeight',
+    'wordWrap',
+    'maxLines',
+    'overflow',
+  ]);
+
   // ---------------------------------------------------------------------------
   // Style and Invalidation
   // ---------------------------------------------------------------------------
 
   /**
-   * Updates styles and marks the element dirty for layout/rendering.
+   * Updates styles and marks the element dirty for layout or rendering with zero-overhead discrimination.
+   * Render-only properties (opacity, scale, translate, color, etc.) bypass FlexLayout completely.
    *
    * @param styles Partial style overrides.
    * @returns This instance for chaining.
    */
   public setStyle(styles: Partial<VisualStyles>): this {
+    let requiresLayout = false;
+    for (const key of Object.keys(styles)) {
+      if (UIElement.LAYOUT_AFFECTING_KEYS.has(key)) {
+        requiresLayout = true;
+        break;
+      }
+    }
+
     Object.assign(this.styles, styles);
-    this.markLayoutDirty();
+
+    if (requiresLayout) {
+      this.markLayoutDirty();
+    } else {
+      this.markRenderDirty();
+    }
     return this;
   }
 
@@ -228,8 +285,11 @@ export abstract class UIElement {
     this.isLayoutDirty = true;
     this.isRenderDirty = true;
 
-    if (this.parent && !this.parent.isLayoutDirty) {
-      this.parent.markLayoutDirty();
+    let curr: UIElement | null = this.parent;
+    while (curr) {
+      curr.isLayoutDirty = true;
+      curr.isRenderDirty = true;
+      curr = curr.parent;
     }
   }
 
@@ -238,8 +298,11 @@ export abstract class UIElement {
    */
   public markRenderDirty(): void {
     this.isRenderDirty = true;
-    if (this.parent && !this.parent.isRenderDirty) {
-      this.parent.markRenderDirty();
+
+    let curr: UIElement | null = this.parent;
+    while (curr) {
+      curr.isRenderDirty = true;
+      curr = curr.parent;
     }
   }
 
@@ -355,9 +418,20 @@ export abstract class UIElement {
     const gap = this.styles.gap ?? 0;
     const mainGap = isColumn ? (this.styles.rowGap ?? gap) : (this.styles.columnGap ?? gap);
 
-    const flowChildren = this.children.filter(
-      (c) => c.visible && c.styles.display !== 'none' && c.styles.position !== 'absolute'
-    );
+    const getFlowChildren = (parent: UIElement): UIElement[] => {
+      const flow: UIElement[] = [];
+      for (const child of parent.children) {
+        if (!child.visible || child.styles.display === 'none' || child.styles.position === 'absolute') continue;
+        if (child.styles.display === 'contents') {
+          flow.push(...getFlowChildren(child));
+        } else {
+          flow.push(child);
+        }
+      }
+      return flow;
+    };
+
+    const flowChildren = getFlowChildren(this);
 
     if (flowChildren.length > 0) {
       if (isColumn) {
@@ -391,19 +465,33 @@ export abstract class UIElement {
       }
     }
 
-    const width =
-      typeof this.styles.width === 'number'
-        ? this.styles.width
-        : typeof this.styles.width === 'string' && this.styles.width.endsWith('%')
-        ? (parseFloat(this.styles.width) / 100) * availableWidth
-        : intrinsicW + padding.left + padding.right;
+    let width = intrinsicW + padding.left + padding.right;
+    if (typeof this.styles.width === 'number') {
+      width = this.styles.width;
+    } else if (typeof this.styles.width === 'string') {
+      if (this.styles.width.endsWith('%')) {
+        width = (parseFloat(this.styles.width) / 100) * availableWidth;
+      } else {
+        const num = parseFloat(this.styles.width);
+        if (!isNaN(num)) {
+          width = num;
+        }
+      }
+    }
 
-    const height =
-      typeof this.styles.height === 'number'
-        ? this.styles.height
-        : typeof this.styles.height === 'string' && this.styles.height.endsWith('%')
-        ? (parseFloat(this.styles.height) / 100) * availableHeight
-        : intrinsicH + padding.top + padding.bottom;
+    let height = intrinsicH + padding.top + padding.bottom;
+    if (typeof this.styles.height === 'number') {
+      height = this.styles.height;
+    } else if (typeof this.styles.height === 'string') {
+      if (this.styles.height.endsWith('%')) {
+        height = (parseFloat(this.styles.height) / 100) * availableHeight;
+      } else {
+        const num = parseFloat(this.styles.height);
+        if (!isNaN(num)) {
+          height = num;
+        }
+      }
+    }
 
     return { width, height };
   }
@@ -431,6 +519,19 @@ export abstract class UIElement {
    * @param parentWorldY Absolute Y offset of parent.
    */
   public updateWorldTransform(parentWorldX = 0, parentWorldY = 0): void {
+    if (this.styles.display === 'contents') {
+      this.worldRect.x = parentWorldX;
+      this.worldRect.y = parentWorldY;
+      this.worldRect.width = 0;
+      this.worldRect.height = 0;
+      for (const child of this.children) {
+        if (child.visible && child.styles.display !== 'none') {
+          child.updateWorldTransform(parentWorldX, parentWorldY);
+        }
+      }
+      return;
+    }
+
     this.worldRect.x = parentWorldX + this.layoutRect.x;
     this.worldRect.y = parentWorldY + this.layoutRect.y;
     this.worldRect.width = this.layoutRect.width;
@@ -478,6 +579,16 @@ export abstract class UIElement {
       return null;
     }
 
+    if (this.styles.display === 'contents') {
+      for (let i = this.children.length - 1; i >= 0; i--) {
+        const hitChild = this.children[i].hitTest(worldX, worldY);
+        if (hitChild) {
+          return hitChild;
+        }
+      }
+      return null;
+    }
+
     if (!this.containsPoint(worldX, worldY)) {
       return null;
     }
@@ -504,6 +615,18 @@ export abstract class UIElement {
    */
   public render(ctx: CanvasRenderingContext2D): void {
     if (!this.visible || this.styles.display === 'none') {
+      this.isRenderDirty = false;
+      return;
+    }
+
+    this.isRenderDirty = false;
+
+    if (this.styles.display === 'contents') {
+      for (const child of this.children) {
+        if (child.visible && child.styles.display !== 'none') {
+          child.render(ctx);
+        }
+      }
       return;
     }
 
@@ -568,7 +691,6 @@ export abstract class UIElement {
     }
 
     ctx.restore();
-    this.isRenderDirty = false;
   }
 
   /**

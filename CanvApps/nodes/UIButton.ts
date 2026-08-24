@@ -7,6 +7,7 @@ import { VisualStyles } from '../types/style';
 export interface ButtonStyles extends VisualStyles {
   label?: string;
   labelColor?: string;
+  color?: string;
   fontSize?: number;
   fontFamily?: string;
   fontWeight?: string | number;
@@ -38,7 +39,6 @@ export class UIButton extends UIElement {
       fontSize: 14,
       fontFamily: 'system-ui, -apple-system, sans-serif',
       fontWeight: '600',
-      labelColor: '#ffffff',
       ...styles,
     });
 
@@ -49,8 +49,14 @@ export class UIButton extends UIElement {
    * Updates button label text.
    */
   public setLabel(text: string): this {
-    this.styles.label = text;
-    this.markRenderDirty();
+    if (this.styles.label !== text) {
+      this.styles.label = text;
+      if (typeof this.styles.width === 'number' && typeof this.styles.height === 'number') {
+        this.markRenderDirty();
+      } else {
+        this.markLayoutDirty();
+      }
+    }
     return this;
   }
 
@@ -108,7 +114,8 @@ export class UIButton extends UIElement {
       borderColor,
       disabled,
       label = '',
-      labelColor = '#ffffff',
+      labelColor,
+      color,
       fontSize = 14,
       fontWeight = '600',
       fontFamily = 'system-ui, -apple-system, sans-serif',
@@ -167,8 +174,9 @@ export class UIButton extends UIElement {
 
     // 4. Center Label Text / Icon
     if (label) {
+      const textColor = labelColor ?? color ?? '#ffffff';
       ctx.font = `${fontWeight} ${fontSize}px ${fontFamily}`;
-      ctx.fillStyle = labelColor;
+      ctx.fillStyle = textColor;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.fillText(label, width / 2, height / 2);

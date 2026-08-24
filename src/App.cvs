@@ -2,21 +2,19 @@
   import SplashView from './views/SplashView.cvs';
   import DashboardView from './views/DashboardView.cvs';
   import AuthView from './views/AuthView.cvs';
+  import PintertestView from './views/PintertestView.cvs';
   import AppLayout from './layouts/AppLayout.cvs';
+  import { signal } from '@canvapps';
   import { sessionStore, navigateRoute } from './stores/session.store';
 
-  // 1. Reactive Splash State
   const isSplashActive = signal(true);
 
-  // 2. Navigation Callbacks
   function onSplashFinish() {
     isSplashActive.value = false;
   }
 
   function handleNavigate(target: string) {
-    if (target === 'auth' || target === 'dashboard') {
-      navigateRoute(target);
-    }
+    navigateRoute(target);
   }
 </script>
 
@@ -26,13 +24,17 @@
   @if (!isSplashActive.value) {
     <AppLayout @navigate="handleNavigate">
       
-      <!-- Dynamic Scenes rendered inside AppLayout slot based on activeRoute store -->
-      @if (sessionStore.state.activeRoute === 'dashboard') {
+      <!-- Dynamic Scenes rendered inside AppLayout slot based on activeRoute -->
+      @if (sessionStore.state.activeRoute === '/') {
         <DashboardView />
       }
 
-      @if (sessionStore.state.activeRoute === 'auth') {
+      @if (sessionStore.state.activeRoute === '/auth') {
         <AuthView />
+      }
+
+      @if (sessionStore.state.activeRoute === '/pintertest') {
+        <PintertestView />
       }
 
     </AppLayout>

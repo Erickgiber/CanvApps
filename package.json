@@ -36,9 +36,9 @@
   },
   "scripts": {
     "dev": "vite",
-    "build": "npm run build:lib && npm run build:preview-code",
+    "build": "npm run build:lib && npm run build:app && npm run build:preview-code",
     "build:lib": "tsc --noEmit && vite build",
-    "build:unminified": "vite build --mode unminified && npm run build:preview-code",
+    "build:unminified": "vite build --mode unminified && npm run build:app && npm run build:preview-code",
     "build:lib:unminified": "vite build --mode unminified",
     "build:app": "tsx CanvApps/cli/bin.ts build",
     "build:preview-code": "tsx CanvApps/cli/bin.ts preview-code",

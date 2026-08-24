@@ -59,7 +59,19 @@ export class Engine {
   private resizeObserver: ResizeObserver | null = null;
   private isDirty = true;
 
+  private static activeEngine: Engine | null = null;
+
+  /**
+   * Invalidates the currently active engine for an immediate vsync repaint.
+   */
+  public static invalidateActive(): void {
+    if (this.activeEngine) {
+      this.activeEngine.invalidate();
+    }
+  }
+
   constructor(options: EngineOptions = {}) {
+    Engine.activeEngine = this;
     if (options.selectable !== undefined) {
       UIElement.defaultSelectable = options.selectable;
     }
@@ -281,14 +293,16 @@ export class Engine {
       return;
     }
 
-    const needsLayout = this.root.isLayoutDirty || this.isDirty;
-    const needsRender = this.root.isRenderDirty || this.isDirty;
+    const needsLayout = Boolean(this.root.isLayoutDirty);
+    const needsRender = Boolean(this.root.isRenderDirty || this.isDirty || needsLayout);
 
     if (!needsLayout && !needsRender) {
       return;
     }
 
-    // 1. Layout pass
+    this.isDirty = false;
+
+    // 1. Layout pass (strictly executed when layout is marked dirty)
     if (needsLayout) {
       FlexLayout.calculateLayout(this.root, this.width, this.height);
       this.syncGhostDOM(this.root);
@@ -311,8 +325,6 @@ export class Engine {
     this.root.render(this.ctx);
 
     this.ctx.restore();
-
-    this.isDirty = false;
   }
 
   /**

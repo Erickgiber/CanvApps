@@ -77,15 +77,14 @@ export class CLIBuilder {
     // GitHub Pages .nojekyll (disables Jekyll engine)
     fs.writeFileSync(path.resolve(outputDir, '.nojekyll'), '', 'utf-8');
 
-    // GitHub Pages 404.html SPA Deep Link Redirector
+    // GitHub Pages 404.html SPA Deep Link Redirector (Restores Clean Paths)
     const github404Html = `<!DOCTYPE html>
 <html>
   <head>
     <meta charset="utf-8">
     <title>CanvApps</title>
     <script>
-      // Single Page Apps for GitHub Pages
-      // Redirects 404 paths to repository hash route: https://username.github.io/repo/#/path
+      // Single Page Apps for GitHub Pages - Clean Path Routing
       var path = window.location.pathname;
       var pathParts = path.split('/').filter(Boolean);
       var isProject = window.location.hostname.endsWith('github.io') && pathParts.length > 0;
@@ -95,8 +94,9 @@ export class CLIBuilder {
 
       var target = window.location.protocol + '//' + window.location.hostname +
         (window.location.port ? ':' + window.location.port : '') +
-        repoPrefix + '/#' + (routePath.startsWith('/') ? routePath : '/' + routePath) +
-        (window.location.search || '');
+        repoPrefix + '/?p=' + encodeURIComponent(routePath) +
+        (window.location.search ? '&q=' + encodeURIComponent(window.location.search.slice(1)) : '') +
+        window.location.hash;
 
       window.location.replace(target);
     </script>

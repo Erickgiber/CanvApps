@@ -145,7 +145,7 @@ if (typeof window !== 'undefined') {
 export const isUserLoggedIn = computed(() => sessionStore.state.isAuthenticated);
 
 /**
- * Store Action: Navigates dynamically to ANY target route URL
+ * Store Action: Navigates dynamically to ANY target route URL preserving repository base path
  */
 export function navigateRoute(route: string): void {
   const target = normalizeRoutePath(route);
@@ -154,20 +154,11 @@ export function navigateRoute(route: string): void {
     activeRoute: target,
   }));
 
-  if (typeof window !== 'undefined') {
+  if (typeof window !== 'undefined' && window.history) {
     try {
-      const isGitHubPages = window.location.hostname.toLowerCase().endsWith('github.io');
-      if (isGitHubPages) {
-        // On GitHub Pages, use hash routing so the repository subpath (/CanvApps/#/pintertest) is never stripped
-        const hashTarget = target === '/' ? '#/' : `#${target}`;
-        if (window.location.hash !== hashTarget) {
-          window.location.hash = hashTarget;
-        }
-      } else if (window.history) {
-        const base = getBasePath();
-        const fullUrl = base ? `${base}${target === '/' ? '' : target}` : target;
-        window.history.pushState(null, '', fullUrl || '/');
-      }
+      const base = getBasePath();
+      const fullUrl = base ? (target === '/' ? `${base}/` : `${base}${target}`) : (target || '/');
+      window.history.pushState(null, '', fullUrl);
     } catch {
       // Fallback
     }

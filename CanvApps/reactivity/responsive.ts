@@ -26,8 +26,8 @@ export function useBreakpoints(): ViewportBreakpoints {
 
   const width = signal(initialWidth);
   const height = signal(initialHeight);
-  const isMobile = signal(initialWidth < 640);
-  const isTablet = signal(initialWidth >= 640 && initialWidth < 1024);
+  const isMobile = signal(initialWidth <= 840);
+  const isTablet = signal(initialWidth > 840 && initialWidth < 1024);
   const isDesktop = signal(initialWidth >= 1024);
 
   if (typeof window !== 'undefined') {
@@ -36,8 +36,8 @@ export function useBreakpoints(): ViewportBreakpoints {
       const h = window.innerHeight;
       width.value = w;
       height.value = h;
-      isMobile.value = w < 640;
-      isTablet.value = w >= 640 && w < 1024;
+      isMobile.value = w <= 840;
+      isTablet.value = w > 840 && w < 1024;
       isDesktop.value = w >= 1024;
     };
 

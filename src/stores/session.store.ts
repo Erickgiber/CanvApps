@@ -49,6 +49,17 @@ export function normalizeRoutePath(route: string): string {
  */
 function getInitialRoute(): string {
   if (typeof window !== 'undefined') {
+    const hash = window.location.hash.replace(/^#\/?/, '');
+    if (hash) {
+      return normalizeRoutePath(hash);
+    }
+
+    const pathname = window.location.pathname;
+    const cleanPath = normalizeRoutePath(pathname);
+    if (cleanPath && cleanPath !== '/') {
+      return cleanPath;
+    }
+
     try {
       const params = new URLSearchParams(window.location.search);
       const pParam = params.get('p') || params.get('route');
@@ -59,14 +70,8 @@ function getInitialRoute(): string {
       // Fallback
     }
 
-    const hash = window.location.hash.replace(/^#\/?/, '');
-    if (hash) {
-      return normalizeRoutePath(hash);
-    }
-
-    const pathname = window.location.pathname;
-    if (pathname) {
-      return normalizeRoutePath(pathname);
+    if (cleanPath) {
+      return cleanPath;
     }
   }
   return '/';

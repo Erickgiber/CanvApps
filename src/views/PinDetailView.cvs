@@ -30,7 +30,11 @@
 
   // 4. User Actions
   function goBack() {
-    navigateRoute('/pintertest');
+    if (typeof window !== 'undefined' && window.history && window.history.length > 1) {
+      window.history.back();
+    } else {
+      navigateRoute('/pintertest');
+    }
     restorePintertestScroll();
   }
 

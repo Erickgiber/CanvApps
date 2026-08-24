@@ -41,7 +41,11 @@ export class PWATargetBuilder {
     <script>
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-          navigator.serviceWorker.register('./sw.js').then((reg) => {
+          var baseEl = document.querySelector('base');
+          var baseUrl = baseEl ? baseEl.href : window.location.origin + '/';
+          var swUrl = new URL('sw.js', baseUrl).href;
+          var swScope = new URL('./', baseUrl).href;
+          navigator.serviceWorker.register(swUrl, { scope: swScope }).then((reg) => {
             console.log('[CanvApps PWA]: Service Worker registered with scope:', reg.scope);
           }).catch((err) => {
             console.warn('[CanvApps PWA]: Service Worker registration failed:', err);

@@ -1,4 +1,5 @@
 import { UIElement } from '../core/UIElement';
+import { Engine } from '../core/Engine';
 import { Easings, animate } from './Tween';
 
 export type MotionEnterType =
@@ -79,6 +80,7 @@ export class Motion {
         letterSpacing: 0,
         subtitleOpacity: 1.0,
       });
+      Engine.invalidateActive();
       options.onFinish?.();
       return () => {};
     }
@@ -126,10 +128,12 @@ export class Motion {
         const subtitleOpacity = t > 0.55 ? Math.min(1, (t - 0.55) / 0.45) : 0;
 
         onUpdate?.({ scale, opacity, letterSpacing, subtitleOpacity });
+        Engine.invalidateActive();
         rafId = requestAnimationFrame(frame);
       } else if (elapsed <= entranceDuration + holdDuration) {
         // Phase 2: Hold with glowing illumination
         onUpdate?.({ scale: 1.0, opacity: 1.0, letterSpacing: 0, subtitleOpacity: 1.0 });
+        Engine.invalidateActive();
         rafId = requestAnimationFrame(frame);
       } else if (elapsed <= totalDuration) {
         // Phase 3: Negative Scale Exit Transition (scale 1.0 -> exitScale, opacity 1.0 -> 0.0)
@@ -143,10 +147,12 @@ export class Motion {
         const subtitleOpacity = Math.max(0, 1.0 - exitEased * 1.3);
 
         onUpdate?.({ scale, opacity, letterSpacing: 0, subtitleOpacity });
+        Engine.invalidateActive();
         rafId = requestAnimationFrame(frame);
       } else {
         // Completed: Reveal target scene
         onUpdate?.({ scale: exitScale, opacity: 0, letterSpacing: 0, subtitleOpacity: 0 });
+        Engine.invalidateActive();
         onFinish?.();
       }
     }

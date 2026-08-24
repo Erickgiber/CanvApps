@@ -57,7 +57,9 @@
         "path": "./syntaxes/canvapps.tmLanguage.json",
         "embeddedLanguages": {
           "source.ts": "typescript",
-          "text.html": "html"
+          "source.js": "javascript",
+          "text.html": "html",
+          "meta.script.canvapps": "typescript"
         }
       }
     ],

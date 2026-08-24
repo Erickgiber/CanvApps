@@ -703,13 +703,75 @@ export class CVSParser {
 
   private static parseAttributes(attrString: string): Array<{ name: string; value: string }> {
     const attrs: Array<{ name: string; value: string }> = [];
-    const regex = /([@:*A-Za-z0-9_-]+)(?:=(?:"([^"]*)"|'([^']*)'|\{([\s\S]*?)\}|([^>\s]+)))?/g;
-    let match: RegExpExecArray | null;
+    let i = 0;
+    const len = attrString.length;
 
-    while ((match = regex.exec(attrString)) !== null) {
-      const name = match[1];
-      const value = match[2] ?? match[3] ?? match[4] ?? match[5] ?? 'true';
-      attrs.push({ name, value });
+    while (i < len) {
+      // Skip whitespace
+      while (i < len && /\s/.test(attrString[i])) i++;
+      if (i >= len) break;
+
+      // Match attribute name
+      const nameStart = i;
+      while (i < len && /[@:*A-Za-z0-9_-]/.test(attrString[i])) i++;
+      const name = attrString.slice(nameStart, i);
+      if (!name) {
+        i++;
+        continue;
+      }
+
+      // Skip whitespace
+      while (i < len && /\s/.test(attrString[i])) i++;
+
+      if (i < len && attrString[i] === '=') {
+        i++; // skip '='
+        while (i < len && /\s/.test(attrString[i])) i++;
+
+        if (i < len && (attrString[i] === '"' || attrString[i] === "'")) {
+          const q = attrString[i];
+          i++; // skip opening quote
+          const valStart = i;
+          while (i < len && attrString[i] !== q) i++;
+          const value = attrString.slice(valStart, i);
+          if (i < len) i++; // skip closing quote
+          attrs.push({ name, value });
+        } else if (i < len && attrString[i] === '{') {
+          let depth = 0;
+          let inQ = false;
+          let qChar = '';
+          const valStart = i + 1;
+          for (; i < len; i++) {
+            const ch = attrString[i];
+            if ((ch === '"' || ch === "'") && depth > 0) {
+              if (!inQ) {
+                inQ = true;
+                qChar = ch;
+              } else if (ch === qChar) {
+                inQ = false;
+                qChar = '';
+              }
+            } else if (ch === '{' && !inQ) {
+              depth++;
+            } else if (ch === '}' && !inQ) {
+              depth--;
+              if (depth === 0) {
+                const value = attrString.slice(valStart, i).trim();
+                attrs.push({ name, value });
+                i++;
+                break;
+              }
+            }
+          }
+        } else {
+          const valStart = i;
+          while (i < len && !/\s/.test(attrString[i]) && attrString[i] !== '>') i++;
+          const value = attrString.slice(valStart, i);
+          attrs.push({ name, value });
+        }
+      } else {
+        // Boolean attribute
+        attrs.push({ name, value: 'true' });
+      }
     }
 
     return attrs;

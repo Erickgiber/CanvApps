@@ -3,6 +3,7 @@
   import DashboardView from './views/DashboardView.cvs';
   import AuthView from './views/AuthView.cvs';
   import AppLayout from './layouts/AppLayout.cvs';
+  import { signal } from '@canvapps'
   import { sessionStore, navigateRoute } from './stores/session.store';
 
   // 1. Reactive Splash State
@@ -19,6 +20,7 @@
     }
   }
 </script>
+
 
 <view width="100%" height="100%" backgroundColor="#101010" position="relative">
 

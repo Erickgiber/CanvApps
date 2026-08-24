@@ -185,7 +185,8 @@ export class UIText extends UIElement implements GhostTarget {
 
     const lines = this.computeLines(innerAvailableWidth);
     const fontSize = this.styles.fontSize ?? 16;
-    const lineSpacing = (this.styles.lineHeight ?? 1.2) * fontSize;
+    const rawLineHeight = this.styles.lineHeight ?? 1.3;
+    const lineSpacing = rawLineHeight > 3 ? rawLineHeight : rawLineHeight * fontSize;
 
     let maxLineWidth = 0;
     for (const line of lines) {
@@ -221,7 +222,8 @@ export class UIText extends UIElement implements GhostTarget {
     }
 
     const fontSize = this.styles.fontSize ?? 16;
-    const lineHeight = (this.styles.lineHeight ?? 1.2) * fontSize;
+    const rawLineHeight = this.styles.lineHeight ?? 1.3;
+    const lineHeight = rawLineHeight > 3 ? rawLineHeight : rawLineHeight * fontSize;
     const textAlign = this.styles.textAlign ?? 'left';
 
     ctx.save();

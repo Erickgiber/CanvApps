@@ -112,6 +112,14 @@ export class EventDispatcher {
   }
 
   // ---------------------------------------------------------------------------
+  private isPointerDown = false;
+  private pointerStartX = 0;
+  private pointerStartY = 0;
+  private lastPointerX = 0;
+  private lastPointerY = 0;
+  private isDraggingScroll = false;
+
+  // ---------------------------------------------------------------------------
   // Native Event Handlers
   // ---------------------------------------------------------------------------
 
@@ -123,6 +131,13 @@ export class EventDispatcher {
         selection.removeAllRanges();
       }
     }
+
+    this.isPointerDown = true;
+    this.pointerStartX = e.clientX;
+    this.pointerStartY = e.clientY;
+    this.lastPointerX = e.clientX;
+    this.lastPointerY = e.clientY;
+    this.isDraggingScroll = false;
 
     const { x, y } = this.clientToCanvas(e.clientX, e.clientY);
     const target = this.hitTest(x, y);
@@ -154,9 +169,84 @@ export class EventDispatcher {
     this.invalidate();
   }
 
+  private hasOpenModal(): boolean {
+    const root = this.getRoot();
+    if (!root) return false;
+    let openModal = false;
+    const check = (el: UIElement) => {
+      if (openModal) return;
+      if (
+        (el.constructor.name === 'UIModal' || (el as any).isModal === true) &&
+        el.visible &&
+        el.styles.display !== 'none' &&
+        (el as any).isOpen !== false
+      ) {
+        openModal = true;
+        return;
+      }
+      for (const child of el.children) {
+        check(child);
+      }
+    };
+    check(root);
+    return openModal;
+  }
+
   private handlePointerMove(e: PointerEvent): void {
     const { x, y } = this.clientToCanvas(e.clientX, e.clientY);
     const target = this.hitTest(x, y);
+
+    // Handle touch & pointer drag scrolling
+    if (this.isPointerDown) {
+      if (this.hasOpenModal()) {
+        this.lastPointerX = e.clientX;
+        this.lastPointerY = e.clientY;
+      } else {
+        const dx = e.clientX - this.lastPointerX;
+        const dy = e.clientY - this.lastPointerY;
+        const totalDist = Math.hypot(e.clientX - this.pointerStartX, e.clientY - this.pointerStartY);
+
+        if (totalDist > 6) {
+          this.isDraggingScroll = true;
+        }
+
+        if (this.isDraggingScroll && (dx !== 0 || dy !== 0)) {
+          let curr: UIElement | null = target || this.getRoot();
+          let didScroll = false;
+
+          while (curr) {
+            if (curr.styles.display !== 'contents') {
+              const isScrollContainer = !curr.parent || curr.styles.overflow === 'scroll' || curr.styles.overflow === 'auto';
+              // Horizontal scroll
+              if (dx !== 0 && isScrollContainer && curr.maxScrollLeft > 0) {
+                const prev = curr.scrollLeft;
+                curr.scrollLeft = Math.max(0, Math.min(curr.maxScrollLeft, curr.scrollLeft - dx));
+                if (curr.scrollLeft !== prev) {
+                  curr.markRenderDirty();
+                  didScroll = true;
+                }
+              }
+              // Vertical scroll
+              if (dy !== 0 && isScrollContainer && curr.maxScrollTop > 0) {
+                const prev = curr.scrollTop;
+                curr.scrollTop = Math.max(0, Math.min(curr.maxScrollTop, curr.scrollTop - dy));
+                if (curr.scrollTop !== prev) {
+                  curr.markRenderDirty();
+                  didScroll = true;
+                }
+              }
+              if (didScroll) {
+                break;
+              }
+            }
+            curr = curr.parent;
+          }
+        }
+
+        this.lastPointerX = e.clientX;
+        this.lastPointerY = e.clientY;
+      }
+    }
 
     // Handle hover transitions
     if (target !== this.hoveredElement) {
@@ -193,6 +283,10 @@ export class EventDispatcher {
   private handlePointerUp(e: PointerEvent): void {
     const { x, y } = this.clientToCanvas(e.clientX, e.clientY);
     const target = this.hitTest(x, y);
+    const wasDragging = this.isDraggingScroll;
+
+    this.isPointerDown = false;
+    this.isDraggingScroll = false;
 
     if (this.pressedElement) {
       this.pressedElement.isPressed = false;
@@ -201,8 +295,8 @@ export class EventDispatcher {
       const upEvent = new CanvasPointerEvent('pointerup', this.pressedElement, e, x, y);
       this.pressedElement.emit('pointerup', upEvent);
 
-      // If released on the same element that was pressed, trigger click
-      if (target === this.pressedElement) {
+      // If released on the same element and user was NOT swiping to scroll, trigger click
+      if (!wasDragging && target === this.pressedElement) {
         const clickEvent = new CanvasPointerEvent('click', target, e, x, y);
         target.emit('click', clickEvent);
       }
@@ -217,6 +311,8 @@ export class EventDispatcher {
   }
 
   private handlePointerCancel(e: PointerEvent): void {
+    this.isPointerDown = false;
+    this.isDraggingScroll = false;
     const { x, y } = this.clientToCanvas(e.clientX, e.clientY);
     if (this.pressedElement) {
       this.pressedElement.isPressed = false;
@@ -239,6 +335,10 @@ export class EventDispatcher {
   }
 
   private handleWheel(e: WheelEvent): void {
+    if (this.hasOpenModal()) {
+      e.preventDefault();
+      return;
+    }
     const { x, y } = this.clientToCanvas(e.clientX, e.clientY);
     const target = this.hitTest(x, y) || this.getRoot();
     if (target) {
@@ -249,10 +349,24 @@ export class EventDispatcher {
       let curr: UIElement | null = target;
       let scrolled = false;
       while (curr) {
-        if (curr.maxScrollTop > 0 || curr.styles.overflow === 'scroll' || curr.styles.overflow === 'auto') {
-          const prevScroll = curr.scrollTop;
-          curr.scrollTop = Math.max(0, Math.min(curr.maxScrollTop, curr.scrollTop + e.deltaY));
-          if (curr.scrollTop !== prevScroll) {
+        if (curr.styles.display !== 'contents') {
+          const isScrollContainer = !curr.parent || curr.styles.overflow === 'scroll' || curr.styles.overflow === 'auto';
+          let didScroll = false;
+          if (e.deltaX !== 0 && isScrollContainer && curr.maxScrollLeft > 0) {
+            const prev = curr.scrollLeft;
+            curr.scrollLeft = Math.max(0, Math.min(curr.maxScrollLeft, curr.scrollLeft + e.deltaX));
+            if (curr.scrollLeft !== prev) {
+              didScroll = true;
+            }
+          }
+          if (e.deltaY !== 0 && isScrollContainer && curr.maxScrollTop > 0) {
+            const prev = curr.scrollTop;
+            curr.scrollTop = Math.max(0, Math.min(curr.maxScrollTop, curr.scrollTop + e.deltaY));
+            if (curr.scrollTop !== prev) {
+              didScroll = true;
+            }
+          }
+          if (didScroll) {
             curr.markRenderDirty();
             scrolled = true;
             break;

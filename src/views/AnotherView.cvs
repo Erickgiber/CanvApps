@@ -1,0 +1,638 @@
+<script lang="ts">
+  import { signal, computed, useBreakpoints } from '@canvapps';
+  import { sessionStore } from '../stores/session.store';
+
+  const isDark = computed(() => sessionStore.state.theme === 'dark');
+
+  interface PinItem {
+    id: string;
+    title: string;
+    author: string;
+    authorHandle: string;
+    avatarColor: string;
+    src: string;
+    height: number;
+    aspectRatio: number;
+    category: string;
+    likes: number;
+    isLiked?: boolean;
+    isSaved?: boolean;
+    tags: string[];
+    description: string;
+  }
+
+  // 1. Responsive Viewport Signals (First-Mobile Architecture)
+  const { isMobile, isTablet, isDesktop, width } = useBreakpoints();
+
+  // Responsive Column Count
+  const columnCount = computed(() => {
+    if (isMobile.value) return 2;
+    if (isTablet.value) return 3;
+    if (width.value >= 1400) return 5;
+    return 4;
+  });
+
+  // 2. State Signals
+  const activeCategory = signal('All');
+  const searchQuery = signal('');
+  const isModalOpen = signal(false);
+  const selectedPin = signal<PinItem | null>(null);
+
+  // 3. Dataset of High-Resolution Curated Pins
+  const pinsData = signal<PinItem[]>([
+    {
+      id: 'pin-1',
+      title: 'Minimalist Bauhaus Villa',
+      author: 'Elena Rostova',
+      authorHandle: '@elena.arch',
+      avatarColor: '#e11d48',
+      src: 'https://images.unsplash.com/photo-1513694203232-719a280e022f?w=700&auto=format&fit=crop&q=80',
+      height: 270,
+      aspectRatio: 0.75,
+      category: 'Architecture',
+      likes: 1420,
+      tags: ['#bauhaus', '#minimal', '#concrete'],
+      description: 'Monolithic raw concrete lines contrasting with warm natural wood interior aesthetics.',
+    },
+    {
+      id: 'pin-2',
+      title: 'Neo-Tokyo Cyberpunk Rain',
+      author: 'Kenji Sato',
+      authorHandle: '@kenji.visuals',
+      avatarColor: '#06b6d4',
+      src: 'https://images.unsplash.com/photo-1508739773434-c26b3d09e071?w=700&auto=format&fit=crop&q=80',
+      height: 320,
+      aspectRatio: 0.65,
+      category: 'Cyberpunk',
+      likes: 2890,
+      tags: ['#cyberpunk', '#neon', '#tokyo'],
+      description: 'Atmospheric neon drenched alleyway in Shinjuku during midnight rainstorm.',
+    },
+    {
+      id: 'pin-3',
+      title: 'Fluid Iridescent Glasswave',
+      author: 'Maya Lin',
+      authorHandle: '@maya.design',
+      avatarColor: '#8b5cf6',
+      src: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=700&auto=format&fit=crop&q=80',
+      height: 180,
+      aspectRatio: 1.2,
+      category: 'Art & Design',
+      likes: 954,
+      tags: ['#3d', '#glassmorphism', '#gradient'],
+      description: 'Organic caustic refractions simulated in high precision sub-pixel shaders.',
+    },
+    {
+      id: 'pin-4',
+      title: 'Misty Alpine Pine Ridge',
+      author: 'Lukas Steiner',
+      authorHandle: '@lukas.nature',
+      avatarColor: '#10b981',
+      src: 'https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?w=700&auto=format&fit=crop&q=80',
+      height: 310,
+      aspectRatio: 0.67,
+      category: 'Nature',
+      likes: 3110,
+      tags: ['#forest', '#mountains', '#fog'],
+      description: 'Sunrise fog rolls over dense alpine evergreen canopies in the Dolomites.',
+    },
+    {
+      id: 'pin-5',
+      title: 'High-Fashion Minimal Trench',
+      author: 'Clara Dupont',
+      authorHandle: '@clara.vogue',
+      avatarColor: '#f59e0b',
+      src: 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=700&auto=format&fit=crop&q=80',
+      height: 290,
+      aspectRatio: 0.67,
+      category: 'Fashion',
+      likes: 1870,
+      tags: ['#couture', '#editorial', '#minimal'],
+      description: 'Autumn runway statement piece with structured geometry and bold saffron tones.',
+    },
+    {
+      id: 'pin-6',
+      title: 'Futuristic Spiral Atrium',
+      author: 'Zaha Studio',
+      authorHandle: '@zaha.forms',
+      avatarColor: '#ec4899',
+      src: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=700&auto=format&fit=crop&q=80',
+      height: 280,
+      aspectRatio: 0.68,
+      category: 'Architecture',
+      likes: 2415,
+      tags: ['#parametric', '#spiral', '#atrium'],
+      description: 'Continuous parametric spiral connecting 8 levels of light-filled open gallery space.',
+    },
+    {
+      id: 'pin-7',
+      title: 'Vibrant Acrylic Chromatics',
+      author: 'Gabriel Ross',
+      authorHandle: '@gabriel.art',
+      avatarColor: '#3b82f6',
+      src: 'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?w=700&auto=format&fit=crop&q=80',
+      height: 260,
+      aspectRatio: 0.7,
+      category: 'Art & Design',
+      likes: 1240,
+      tags: ['#acrylic', '#colorplay', '#abstract'],
+      description: 'Macro pigment suspension capturing microscopic eddies of saturated cobalt and magenta.',
+    },
+    {
+      id: 'pin-8',
+      title: 'Cyber Mech Core Reactor',
+      author: 'Aoi Kuroda',
+      authorHandle: '@aoi.mecha',
+      avatarColor: '#14b8a6',
+      src: 'https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?w=700&auto=format&fit=crop&q=80',
+      height: 190,
+      aspectRatio: 1.1,
+      category: 'Cyberpunk',
+      likes: 3820,
+      tags: ['#mecha', '#scifi', '#hardedge'],
+      description: 'High-density computational core housing quantum stabilization chambers.',
+    },
+    {
+      id: 'pin-9',
+      title: 'Golden Hour Dolomite Peak',
+      author: 'Marco Bellini',
+      authorHandle: '@marco.peaks',
+      avatarColor: '#f97316',
+      src: 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=700&auto=format&fit=crop&q=80',
+      height: 175,
+      aspectRatio: 1.3,
+      category: 'Nature',
+      likes: 4190,
+      tags: ['#dolomites', '#goldenhour', '#alps'],
+      description: 'Last rays of alpine sun illuminating jagged limestone cliffs above the cloud layer.',
+    },
+    {
+      id: 'pin-10',
+      title: 'Anime Sunset Twilight Cloud',
+      author: 'Sora Hayashi',
+      authorHandle: '@sora.sky',
+      avatarColor: '#a855f7',
+      src: 'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=700&auto=format&fit=crop&q=80',
+      height: 285,
+      aspectRatio: 0.7,
+      category: 'Anime',
+      likes: 5620,
+      tags: ['#makoto', '#clouds', '#sunset'],
+      description: 'Dreamlike cumulus towers glowing under pastel twilight skies.',
+    },
+    {
+      id: 'pin-11',
+      title: 'Glass Horizon Infinity Villa',
+      author: 'Elena Rostova',
+      authorHandle: '@elena.arch',
+      avatarColor: '#e11d48',
+      src: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=700&auto=format&fit=crop&q=80',
+      height: 185,
+      aspectRatio: 1.25,
+      category: 'Architecture',
+      likes: 2130,
+      tags: ['#villa', '#infinity', '#luxury'],
+      description: 'Seamless glass boundaries connecting interior living spaces directly with ocean vistas.',
+    },
+    {
+      id: 'pin-12',
+      title: 'Deep Space Nebula Cluster',
+      author: 'Cosmo Lab',
+      authorHandle: '@cosmo.deep',
+      avatarColor: '#6366f1',
+      src: 'https://images.unsplash.com/photo-1534447677768-be436bb09401?w=700&auto=format&fit=crop&q=80',
+      height: 270,
+      aspectRatio: 0.75,
+      category: 'Sci-Fi',
+      likes: 3490,
+      tags: ['#nebula', '#astronomy', '#deepspace'],
+      description: 'Stellar nursery glowing in ionized hydrogen and oxygen emission spectrums.',
+    },
+  ]);
+
+  const categories = ['All', 'Architecture', 'Cyberpunk', 'Art & Design', 'Nature', 'Fashion', 'Anime', 'Sci-Fi'];
+
+  // 4. Reactive Filtered Data
+  const filteredPins = computed(() => {
+    const cat = activeCategory.value;
+    const q = searchQuery.value.trim().toLowerCase();
+
+    return pinsData.value.filter((pin) => {
+      const matchCat = cat === 'All' || pin.category === cat;
+      const matchSearch =
+        !q ||
+        pin.title.toLowerCase().includes(q) ||
+        pin.author.toLowerCase().includes(q) ||
+        pin.tags.some((t) => t.toLowerCase().includes(q));
+      return matchCat && matchSearch;
+    });
+  });
+
+  // 5. True Greedy Shortest-Column Masonry Algorithm
+  const columns = computed(() => {
+    const count = columnCount.value;
+    const cols: PinItem[][] = Array.from({ length: count }, () => []);
+    const heights = Array.from({ length: count }, () => 0);
+
+    filteredPins.value.forEach((pin) => {
+      let minCol = 0;
+      for (let i = 1; i < count; i++) {
+        if (heights[i] < heights[minCol]) {
+          minCol = i;
+        }
+      }
+      cols[minCol].push(pin);
+      heights[minCol] += (pin.height || 220) + 60;
+    });
+
+    return cols;
+  });
+
+  const col0 = computed(() => columns.value[0] || []);
+  const col1 = computed(() => columns.value[1] || []);
+  const col2 = computed(() => columns.value[2] || []);
+  const col3 = computed(() => columns.value[3] || []);
+  const col4 = computed(() => columns.value[4] || []);
+
+  const colWidth = computed(() => isMobile.value ? '48.5%' : columnCount.value === 3 ? '32%' : columnCount.value === 4 ? '23.8%' : '18.8%');
+
+  // 6. User Interaction Handlers
+  function selectCategory(cat: string) {
+    activeCategory.value = cat;
+  }
+
+  function onSearchChange(val: string) {
+    searchQuery.value = val;
+  }
+
+  function toggleSavePin(pin: PinItem, e?: any) {
+    if (e && typeof e.stopPropagation === 'function') {
+      e.stopPropagation();
+    }
+    pin.isSaved = !pin.isSaved;
+    pinsData.value = [...pinsData.value];
+    if (selectedPin.value && selectedPin.value.id === pin.id) {
+      selectedPin.value = { ...selectedPin.value, isSaved: pin.isSaved };
+    }
+  }
+
+  function toggleLikePin(pin: PinItem, e?: any) {
+    if (e && typeof e.stopPropagation === 'function') {
+      e.stopPropagation();
+    }
+    if (pin.isLiked) {
+      pin.likes--;
+      pin.isLiked = false;
+    } else {
+      pin.likes++;
+      pin.isLiked = true;
+    }
+    pinsData.value = [...pinsData.value];
+    if (selectedPin.value && selectedPin.value.id === pin.id) {
+      selectedPin.value = { ...selectedPin.value, likes: pin.likes, isLiked: pin.isLiked };
+    }
+  }
+
+  const modalOriginRect = signal<{ x: number; y: number; width: number; height: number } | null>(null);
+
+  function openPinModal(pin: PinItem, e?: any) {
+    selectedPin.value = pin;
+    let rect: { x: number; y: number; width: number; height: number } | null = null;
+    const target = e?.target;
+    const currentTarget = e?.currentTarget;
+    const el = (currentTarget && currentTarget.worldRect && currentTarget.worldRect.width > 0)
+      ? currentTarget
+      : (target && target.worldRect && target.worldRect.width > 0)
+      ? target
+      : null;
+
+    if (el && el.worldRect && el.worldRect.width > 0) {
+      rect = {
+        x: el.worldRect.x,
+        y: el.worldRect.y,
+        width: el.worldRect.width,
+        height: el.worldRect.height,
+      };
+    } else if (e && typeof e.x === 'number' && typeof e.y === 'number') {
+      const w = 240;
+      const h = pin.height || 260;
+      rect = {
+        x: Math.max(0, e.x - w / 2),
+        y: Math.max(0, e.y - h / 2),
+        width: w,
+        height: h,
+      };
+    }
+    modalOriginRect.value = rect;
+    isModalOpen.value = true;
+  }
+
+  function closeModal() {
+    isModalOpen.value = false;
+  }
+</script>
+
+<!-- Pinterest Canvas View Container -->
+<view width="100%" flexDirection="column" :padding={isMobile.value ? [10, 6] : [16, 20]} :gap={isMobile.value ? 14 : 20} flexShrink="0">
+
+  <!-- 1. Header Toolbar & Search Bar -->
+  <view width="100%" :flexDirection={isMobile.value ? 'column' : 'row'} :alignItems={isMobile.value ? 'stretch' : 'center'} justifyContent="space-between" :gap={isMobile.value ? 10 : 16} flexShrink="0">
+    
+    <!-- Title & Brand Badge -->
+    <view flexDirection="row" alignItems="center" gap="10" flexShrink="0">
+      <view width="36" height="36" backgroundColor="#e60023" borderRadius="18" alignItems="center" justifyContent="center">
+        <text fontSize="20" fontWeight="bold" color="#ffffff">P</text>
+      </view>
+      <view flexDirection="column" gap="1">
+        <text fontSize="20" fontWeight="bold" :color={isDark.value ? '#ffffff' : '#0f172a'}>Pinterest Canvas</text>
+        <text fontSize="11" :color={isDark.value ? '#888888' : '#64748b'}>Hardware-accelerated sub-pixel visual grid</text>
+      </view>
+    </view>
+
+    <!-- Search Input Bar -->
+    <view :width={isMobile.value ? '100%' : '380'} height="40" :backgroundColor={isDark.value ? '#1e1e24' : '#ffffff'} borderRadius="20" padding="[0, 14]" flexDirection="row" alignItems="center" gap="8" borderWidth="1" :borderColor={isDark.value ? '#2e2e38' : '#cbd5e1'} flexShrink="0">
+      <text fontSize="14" :color={isDark.value ? '#888888' : '#94a3b8'}>🔍</text>
+      <input 
+        width="100%" 
+        height="32" 
+        backgroundColor="transparent" 
+        borderWidth="0" 
+        borderColor="transparent" 
+        focusBorderColor="transparent" 
+        :color={isDark.value ? '#f5f5f5' : '#0f172a'} 
+        :placeholderColor={isDark.value ? '#888888' : '#94a3b8'} 
+        fontSize="13" 
+        placeholder="Search aesthetics, architecture, neon..." 
+        :value="searchQuery.value" 
+        @input="onSearchChange" 
+      />
+    </view>
+
+  </view>
+
+  <!-- 2. Category Filter Pills Bar (Horizontal Chips Carousel) -->
+  <view width="100%" flexDirection="row" gap="8" overflow="auto" padding="[2, 0]" flexShrink="0">
+    @each categories as cat {
+      <button 
+        :label="cat" 
+        :backgroundColor={activeCategory.value === cat ? '#e60023' : (isDark.value ? '#202028' : '#f1f5f9')} 
+        :color={activeCategory.value === cat ? '#ffffff' : (isDark.value ? '#a0a0b0' : '#475569')} 
+        borderRadius="20" 
+        padding="[6, 14]" 
+        fontSize="13" 
+        :fontWeight={activeCategory.value === cat ? 'bold' : 'normal'}
+        :borderWidth={activeCategory.value === cat ? 0 : 1}
+        :borderColor={isDark.value ? '#2c2c36' : '#e2e8f0'}
+        flexShrink="0"
+        @click="selectCategory(cat)" 
+      />
+    }
+  </view>
+
+  <!-- 3. Responsive Masonry Multi-Column Grid -->
+  <view width="100%" flexDirection="row" :gap={isMobile.value ? 10 : 16} alignItems="flex-start" flexShrink="0">
+
+    <!-- Column 0 -->
+    <view :width="colWidth.value" flexDirection="column" :gap={isMobile.value ? 10 : 16} flexShrink="0">
+      @each col0.value as pin {
+        <view width="100%" flexDirection="column" :backgroundColor={isDark.value ? '#18181e' : '#ffffff'} borderRadius="16" overflow="hidden" borderWidth="1" :borderColor={isDark.value ? '#262630' : '#e2e8f0'} flexShrink="0" @click="openPinModal(pin, $event)">
+          <view width="100%" position="relative" flexShrink="0">
+            <image :src="pin.src" width="100%" :height="pin.height" fit="cover" borderRadius="[16, 16, 0, 0]" :backgroundColor={isDark.value ? '#1f1f26' : '#f1f5f9'} />
+            <view position="absolute" right="8" top="8">
+              <button 
+                :label={pin.isSaved ? 'Saved ✓' : 'Save'} 
+                :backgroundColor={pin.isSaved ? (isDark.value ? '#111111' : '#e2e8f0') : '#e60023'} 
+                :color={pin.isSaved ? (isDark.value ? '#ffffff' : '#334155') : '#ffffff'} 
+                borderRadius="14" 
+                padding="[4, 10]" 
+                fontSize="11" 
+                fontWeight="bold" 
+                @click="toggleSavePin(pin, $event)" 
+              />
+            </view>
+          </view>
+          <view width="100%" padding="[10, 12]" flexDirection="column" gap="6" flexShrink="0">
+            <text fontSize="14" fontWeight="bold" :color={isDark.value ? '#f0f0f0' : '#0f172a'} textOverflow="ellipsis">{{ pin.title }}</text>
+            <view width="100%" flexDirection="row" alignItems="center" justifyContent="space-between">
+              <view flexDirection="row" alignItems="center" gap="6">
+                <view width="20" height="20" :backgroundColor="pin.avatarColor" borderRadius="10" alignItems="center" justifyContent="center">
+                  <text fontSize="10" fontWeight="bold" color="#ffffff">{{ pin.author.charAt(0) }}</text>
+                </view>
+                <text fontSize="11" :color={isDark.value ? '#999999' : '#64748b'}>{{ pin.author }}</text>
+              </view>
+              <button :label={pin.isLiked ? '♥ ' + pin.likes : '♡ ' + pin.likes} :color={pin.isLiked ? '#ff4d6d' : (isDark.value ? '#888888' : '#64748b')} backgroundColor="transparent" fontSize="11" @click="toggleLikePin(pin, $event)" />
+            </view>
+          </view>
+        </view>
+      }
+    </view>
+
+    <!-- Column 1 -->
+    <view :width="colWidth.value" flexDirection="column" :gap={isMobile.value ? 10 : 16} flexShrink="0">
+      @each col1.value as pin {
+        <view width="100%" flexDirection="column" :backgroundColor={isDark.value ? '#18181e' : '#ffffff'} borderRadius="16" overflow="hidden" borderWidth="1" :borderColor={isDark.value ? '#262630' : '#e2e8f0'} flexShrink="0" @click="openPinModal(pin, $event)">
+          <view width="100%" position="relative" flexShrink="0">
+            <image :src="pin.src" width="100%" :height="pin.height" fit="cover" borderRadius="[16, 16, 0, 0]" :backgroundColor={isDark.value ? '#1f1f26' : '#f1f5f9'} />
+            <view position="absolute" right="8" top="8">
+              <button 
+                :label={pin.isSaved ? 'Saved ✓' : 'Save'} 
+                :backgroundColor={pin.isSaved ? (isDark.value ? '#111111' : '#e2e8f0') : '#e60023'} 
+                :color={pin.isSaved ? (isDark.value ? '#ffffff' : '#334155') : '#ffffff'} 
+                borderRadius="14" 
+                padding="[4, 10]" 
+                fontSize="11" 
+                fontWeight="bold" 
+                @click="toggleSavePin(pin, $event)" 
+              />
+            </view>
+          </view>
+          <view width="100%" padding="[10, 12]" flexDirection="column" gap="6" flexShrink="0">
+            <text fontSize="14" fontWeight="bold" :color={isDark.value ? '#f0f0f0' : '#0f172a'} textOverflow="ellipsis">{{ pin.title }}</text>
+            <view width="100%" flexDirection="row" alignItems="center" justifyContent="space-between">
+              <view flexDirection="row" alignItems="center" gap="6">
+                <view width="20" height="20" :backgroundColor="pin.avatarColor" borderRadius="10" alignItems="center" justifyContent="center">
+                  <text fontSize="10" fontWeight="bold" color="#ffffff">{{ pin.author.charAt(0) }}</text>
+                </view>
+                <text fontSize="11" :color={isDark.value ? '#999999' : '#64748b'}>{{ pin.author }}</text>
+              </view>
+              <button :label={pin.isLiked ? '♥ ' + pin.likes : '♡ ' + pin.likes} :color={pin.isLiked ? '#ff4d6d' : (isDark.value ? '#888888' : '#64748b')} backgroundColor="transparent" fontSize="11" @click="toggleLikePin(pin, $event)" />
+            </view>
+          </view>
+        </view>
+      }
+    </view>
+
+    <!-- Column 2 (Tablet / Desktop) -->
+    @if (columnCount.value >= 3) {
+      <view :width="colWidth.value" flexDirection="column" :gap={isMobile.value ? 10 : 16} flexShrink="0">
+        @each col2.value as pin {
+          <view width="100%" flexDirection="column" :backgroundColor={isDark.value ? '#18181e' : '#ffffff'} borderRadius="16" overflow="hidden" borderWidth="1" :borderColor={isDark.value ? '#262630' : '#e2e8f0'} flexShrink="0" @click="openPinModal(pin, $event)">
+            <view width="100%" position="relative" flexShrink="0">
+              <image :src="pin.src" width="100%" :height="pin.height" fit="cover" borderRadius="[16, 16, 0, 0]" :backgroundColor={isDark.value ? '#1f1f26' : '#f1f5f9'} />
+              <view position="absolute" right="8" top="8">
+                <button 
+                  :label={pin.isSaved ? 'Saved ✓' : 'Save'} 
+                  :backgroundColor={pin.isSaved ? (isDark.value ? '#111111' : '#e2e8f0') : '#e60023'} 
+                  :color={pin.isSaved ? (isDark.value ? '#ffffff' : '#334155') : '#ffffff'} 
+                  borderRadius="14" 
+                  padding="[4, 10]" 
+                  fontSize="11" 
+                  fontWeight="bold" 
+                  @click="toggleSavePin(pin, $event)" 
+                />
+              </view>
+            </view>
+            <view width="100%" padding="[10, 12]" flexDirection="column" gap="6" flexShrink="0">
+              <text fontSize="14" fontWeight="bold" :color={isDark.value ? '#f0f0f0' : '#0f172a'} textOverflow="ellipsis">{{ pin.title }}</text>
+              <view width="100%" flexDirection="row" alignItems="center" justifyContent="space-between">
+                <view flexDirection="row" alignItems="center" gap="6">
+                  <view width="20" height="20" :backgroundColor="pin.avatarColor" borderRadius="10" alignItems="center" justifyContent="center">
+                    <text fontSize="10" fontWeight="bold" color="#ffffff">{{ pin.author.charAt(0) }}</text>
+                  </view>
+                  <text fontSize="11" :color={isDark.value ? '#999999' : '#64748b'}>{{ pin.author }}</text>
+                </view>
+                <button :label={pin.isLiked ? '♥ ' + pin.likes : '♡ ' + pin.likes} :color={pin.isLiked ? '#ff4d6d' : (isDark.value ? '#888888' : '#64748b')} backgroundColor="transparent" fontSize="11" @click="toggleLikePin(pin, $event)" />
+              </view>
+            </view>
+          </view>
+        }
+      </view>
+    }
+
+    <!-- Column 3 (Desktop) -->
+    @if (columnCount.value >= 4) {
+      <view :width="colWidth.value" flexDirection="column" :gap={isMobile.value ? 10 : 16} flexShrink="0">
+        @each col3.value as pin {
+          <view width="100%" flexDirection="column" :backgroundColor={isDark.value ? '#18181e' : '#ffffff'} borderRadius="16" overflow="hidden" borderWidth="1" :borderColor={isDark.value ? '#262630' : '#e2e8f0'} flexShrink="0" @click="openPinModal(pin, $event)">
+            <view width="100%" position="relative" flexShrink="0">
+              <image :src="pin.src" width="100%" :height="pin.height" fit="cover" borderRadius="[16, 16, 0, 0]" :backgroundColor={isDark.value ? '#1f1f26' : '#f1f5f9'} />
+              <view position="absolute" right="8" top="8">
+                <button 
+                  :label={pin.isSaved ? 'Saved ✓' : 'Save'} 
+                  :backgroundColor={pin.isSaved ? (isDark.value ? '#111111' : '#e2e8f0') : '#e60023'} 
+                  :color={pin.isSaved ? (isDark.value ? '#ffffff' : '#334155') : '#ffffff'} 
+                  borderRadius="14" 
+                  padding="[4, 10]" 
+                  fontSize="11" 
+                  fontWeight="bold" 
+                  @click="toggleSavePin(pin, $event)" 
+                />
+              </view>
+            </view>
+            <view width="100%" padding="[10, 12]" flexDirection="column" gap="6" flexShrink="0">
+              <text fontSize="14" fontWeight="bold" :color={isDark.value ? '#f0f0f0' : '#0f172a'} textOverflow="ellipsis">{{ pin.title }}</text>
+              <view width="100%" flexDirection="row" alignItems="center" justifyContent="space-between">
+                <view flexDirection="row" alignItems="center" gap="6">
+                  <view width="20" height="20" :backgroundColor="pin.avatarColor" borderRadius="10" alignItems="center" justifyContent="center">
+                    <text fontSize="10" fontWeight="bold" color="#ffffff">{{ pin.author.charAt(0) }}</text>
+                  </view>
+                  <text fontSize="11" :color={isDark.value ? '#999999' : '#64748b'}>{{ pin.author }}</text>
+                </view>
+                <button :label={pin.isLiked ? '♥ ' + pin.likes : '♡ ' + pin.likes} :color={pin.isLiked ? '#ff4d6d' : (isDark.value ? '#888888' : '#64748b')} backgroundColor="transparent" fontSize="11" @click="toggleLikePin(pin, $event)" />
+              </view>
+            </view>
+          </view>
+        }
+      </view>
+    }
+
+    <!-- Column 4 (Wide Screen) -->
+    @if (columnCount.value >= 5) {
+      <view :width="colWidth.value" flexDirection="column" :gap={isMobile.value ? 10 : 16} flexShrink="0">
+        @each col4.value as pin {
+          <view width="100%" flexDirection="column" :backgroundColor={isDark.value ? '#18181e' : '#ffffff'} borderRadius="16" overflow="hidden" borderWidth="1" :borderColor={isDark.value ? '#262630' : '#e2e8f0'} flexShrink="0" @click="openPinModal(pin, $event)">
+            <view width="100%" position="relative" flexShrink="0">
+              <image :src="pin.src" width="100%" :height="pin.height" fit="cover" borderRadius="[16, 16, 0, 0]" :backgroundColor={isDark.value ? '#1f1f26' : '#f1f5f9'} />
+              <view position="absolute" right="8" top="8">
+                <button 
+                  :label={pin.isSaved ? 'Saved ✓' : 'Save'} 
+                  :backgroundColor={pin.isSaved ? (isDark.value ? '#111111' : '#e2e8f0') : '#e60023'} 
+                  :color={pin.isSaved ? (isDark.value ? '#ffffff' : '#334155') : '#ffffff'} 
+                  borderRadius="14" 
+                  padding="[4, 10]" 
+                  fontSize="11" 
+                  fontWeight="bold" 
+                  @click="toggleSavePin(pin, $event)" 
+                />
+              </view>
+            </view>
+            <view width="100%" padding="[10, 12]" flexDirection="column" gap="6" flexShrink="0">
+              <text fontSize="14" fontWeight="bold" :color={isDark.value ? '#f0f0f0' : '#0f172a'} textOverflow="ellipsis">{{ pin.title }}</text>
+              <view width="100%" flexDirection="row" alignItems="center" justifyContent="space-between">
+                <view flexDirection="row" alignItems="center" gap="6">
+                  <view width="20" height="20" :backgroundColor="pin.avatarColor" borderRadius="10" alignItems="center" justifyContent="center">
+                    <text fontSize="10" fontWeight="bold" color="#ffffff">{{ pin.author.charAt(0) }}</text>
+                  </view>
+                  <text fontSize="11" :color={isDark.value ? '#999999' : '#64748b'}>{{ pin.author }}</text>
+                </view>
+                <button :label={pin.isLiked ? '♥ ' + pin.likes : '♡ ' + pin.likes} :color={pin.isLiked ? '#ff4d6d' : (isDark.value ? '#888888' : '#64748b')} backgroundColor="transparent" fontSize="11" @click="toggleLikePin(pin, $event)" />
+              </view>
+            </view>
+          </view>
+        }
+      </view>
+    }
+
+  </view>
+
+  <!-- 4. Interactive Fullscreen Pin Lightbox Modal -->
+  <modal :open="isModalOpen.value" :originRect="modalOriginRect.value" animation="hero" :duration="340" @close="closeModal">
+    @if (selectedPin.value) {
+      <view :width={isMobile.value ? '92%' : 780} :flexDirection={isMobile.value ? 'column' : 'row'} :backgroundColor={isDark.value ? '#1b1b22' : '#ffffff'} borderRadius="24" overflow="hidden" borderWidth="1" :borderColor={isDark.value ? '#333342' : '#e2e8f0'} :boxShadow={isDark.value ? { offsetX: 0, offsetY: 20, blur: 50, color: 'rgba(0,0,0,0.85)' } : { offsetX: 0, offsetY: 20, blur: 50, color: 'rgba(0,0,0,0.18)' }}>
+        
+        <!-- Left: Large Image View -->
+        <view :width={isMobile.value ? '100%' : 400} :height={isMobile.value ? 220 : 480} :backgroundColor={isDark.value ? '#111115' : '#f1f5f9'} flexShrink="0">
+          <image :src="selectedPin.value?.src" width="100%" height="100%" fit="cover" />
+        </view>
+
+        <!-- Right: Details & Actions -->
+        <view :width={isMobile.value ? '100%' : 380} flexGrow="1" flexDirection="column" :padding={isMobile.value ? [12, 14] : [20, 24]} :gap={isMobile.value ? 10 : 16} flexShrink="0">
+          
+          <!-- Top Row: Close & Save Action -->
+          <view width="100%" flexDirection="row" justifyContent="space-between" alignItems="center" flexShrink="0">
+            <button label="✕ Close" :backgroundColor={isDark.value ? '#282834' : '#f1f5f9'} :color={isDark.value ? '#bbbbbb' : '#475569'} borderRadius="16" padding="[6, 12]" fontSize="12" @click="closeModal" />
+            <button 
+              :label={selectedPin.value?.isSaved ? 'Saved to Board ✓' : 'Save Pin'} 
+              :backgroundColor={selectedPin.value?.isSaved ? (isDark.value ? '#22222a' : '#e2e8f0') : '#e60023'} 
+              :color={selectedPin.value?.isSaved ? (isDark.value ? '#ffffff' : '#334155') : '#ffffff'} 
+              borderRadius="18" 
+              padding="[6, 16]" 
+              fontSize="12" 
+              fontWeight="bold" 
+              @click="toggleSavePin(selectedPin.value!, $event)" 
+            />
+          </view>
+
+          <!-- Pin Content Info -->
+          <view width="100%" flexDirection="column" gap="6" flexShrink="0">
+            <text :fontSize={isMobile.value ? 16 : 22} fontWeight="bold" :color={isDark.value ? '#ffffff' : '#0f172a'} :wordWrap="true">{{ selectedPin.value?.title }}</text>
+            <text :fontSize={isMobile.value ? 12 : 13} :color={isDark.value ? '#aaaaaa' : '#475569'} :lineHeight="18" :wordWrap="true">{{ selectedPin.value?.description }}</text>
+          </view>
+
+          <!-- Author Info & Follow Action Card -->
+          <view width="100%" flexDirection="row" alignItems="center" justifyContent="space-between" :padding={isMobile.value ? [8, 10] : [10, 12]} borderRadius="16" :backgroundColor={isDark.value ? '#20202a' : '#f8fafc'} borderWidth="1" :borderColor={isDark.value ? '#2e2e3c' : '#e2e8f0'} flexShrink="0">
+            <view flexDirection="row" alignItems="center" gap="10">
+              <view width="36" height="36" :backgroundColor="selectedPin.value?.avatarColor || '#e11d48'" borderRadius="18" alignItems="center" justifyContent="center">
+                <text fontSize="14" fontWeight="bold" color="#ffffff">{{ (selectedPin.value?.author || 'P').charAt(0) }}</text>
+              </view>
+              <view flexDirection="column" gap="1">
+                <text fontSize="13" fontWeight="bold" :color={isDark.value ? '#ffffff' : '#0f172a'}>{{ selectedPin.value?.author }}</text>
+                <text fontSize="10" :color={isDark.value ? '#888888' : '#64748b'}>{{ selectedPin.value?.authorHandle }}</text>
+              </view>
+            </view>
+            <button label="Follow" :backgroundColor={isDark.value ? '#323240' : '#e2e8f0'} :color={isDark.value ? '#f0f0f0' : '#1e293b'} borderRadius="14" padding="[6, 14]" fontSize="11" fontWeight="bold" />
+          </view>
+
+          <!-- Footer Stats & Tags -->
+          <view width="100%" flexDirection="row" alignItems="center" justifyContent="space-between" flexShrink="0">
+            <button :label={selectedPin.value?.isLiked ? '♥ Liked (' + (selectedPin.value?.likes || 0) + ')' : '♡ Like (' + (selectedPin.value?.likes || 0) + ')'} :color={selectedPin.value?.isLiked ? '#ff4d6d' : (isDark.value ? '#ffffff' : '#1e293b')} :backgroundColor={isDark.value ? '#282834' : '#f1f5f9'} borderRadius="14" padding="[4, 12]" fontSize="11" @click="toggleLikePin(selectedPin.value!, $event)" />
+            <text fontSize="11" :color={isDark.value ? '#666677' : '#94a3b8'}>Category: {{ selectedPin.value?.category }}</text>
+          </view>
+
+        </view>
+
+      </view>
+    }
+  </modal>
+
+</view>

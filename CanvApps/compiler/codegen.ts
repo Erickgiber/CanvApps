@@ -39,7 +39,7 @@ export class CVSCodeGenerator {
     }
 
     return `
-import { UIView, UIText, UIButton, UIInput, UIModal, UIMotion, UIElement, KineticFX, Motion, createRouter, useRouter, effect, signal, computed, batch, untrack, createStore, persistentSignal, useBreakpoints, useMediaQuery, useWindowSize } from '@canvapps';
+import { UIView, UIText, UIButton, UIInput, UIModal, UIMotion, UIImage, UIElement, KineticFX, Motion, createRouter, useRouter, effect, signal, computed, batch, untrack, createStore, persistentSignal, useBreakpoints, useMediaQuery, useWindowSize } from '@canvapps';
 ${importLines.join('\n')}
 
 export function createComponent(props: Record<string, any> = {}): UIElement {
@@ -111,7 +111,7 @@ export default createComponent;
 
       const initialStyles = hasModal
         ? `{ position: 'absolute', left: 0, top: 0, width: '100%', height: '100%' }`
-        : `{}`;
+        : `{ display: 'contents' }`;
 
       return {
         code: `
@@ -122,9 +122,9 @@ export default createComponent;
       ${ifContainer}.removeAllChildren();
       if (isConditionActive) {
         ${ifContainer}.visible = true;
-        ${ifContainer}.setStyle({ display: 'flex' });
+        ${ifContainer}.setStyle({ display: ${hasModal ? "'flex'" : "'contents'"} });
 ${consequentLines.join('\n')}
-      }${node.alternate && node.alternate.length > 0 ? ` else {\n        ${ifContainer}.visible = true;\n        ${ifContainer}.setStyle({ display: 'flex' });\n${alternateLines.join('\n')}\n      }` : ` else {\n        ${ifContainer}.visible = false;\n        ${ifContainer}.setStyle({ display: 'none' });\n      }`}
+      }${node.alternate && node.alternate.length > 0 ? ` else {\n        ${ifContainer}.visible = true;\n        ${ifContainer}.setStyle({ display: ${hasModal ? "'flex'" : "'contents'"} });\n${alternateLines.join('\n')}\n      }` : ` else {\n        ${ifContainer}.visible = false;\n        ${ifContainer}.setStyle({ display: 'none' });\n      }`}
     });
   });
 `,
@@ -146,7 +146,7 @@ ${consequentLines.join('\n')}
 
       return {
         code: `
-  const ${forContainer} = new UIView({ width: '100%', flexDirection: 'column', gap: 6 });
+  const ${forContainer} = new UIView({ display: 'contents' });
   effect(() => {
     ${forContainer}.removeAllChildren();
     const items = ${node.iterable};
@@ -206,6 +206,14 @@ ${itemCodeLines.join('\n')}
     const isCustomComponent = /^[A-Z]/.test(element.tag);
 
     if (isCustomComponent) {
+      const childVars: string[] = [];
+      for (const child of element.children) {
+        if (child.type === 'text') continue;
+        const { code: childCode, rootVar: childVar } = this.generateNode(child, inLoop);
+        codeLines.push(childCode);
+        childVars.push(childVar);
+      }
+
       const propPairs: string[] = [];
       for (const evt of events) {
         const val = evt.value.trim();
@@ -221,11 +229,38 @@ ${itemCodeLines.join('\n')}
       for (const dyn of dynamicProps) {
         propPairs.push(`${dyn.name}: ${dyn.value}`);
       }
+      if (childVars.length > 0) {
+        propPairs.push(`children: [${childVars.join(', ')}]`);
+      }
+
       const propsArg = propPairs.length > 0
         ? `{ ...${JSON.stringify(staticStyles)}, ${propPairs.join(', ')} }`
         : JSON.stringify(staticStyles);
 
       codeLines.push(`  const ${elVar} = ${element.tag}(${propsArg});`);
+    } else if (element.tag === 'slot') {
+      codeLines.push(`  const ${elVar} = new UIView({ display: 'contents', ...${JSON.stringify(staticStyles)} });`);
+      const slotCondVar = this.nextId('hasSlotChildren');
+      codeLines.push(`  const ${slotCondVar} = Array.isArray((props as any)?.children) ? (props as any).children.length > 0 : Boolean((props as any)?.children);`);
+      codeLines.push(`  if (${slotCondVar}) {`);
+      codeLines.push(`    if (Array.isArray((props as any).children)) {`);
+      codeLines.push(`      for (const slotChild of (props as any).children) {`);
+      codeLines.push(`        if (slotChild) ${elVar}.addChild(slotChild);`);
+      codeLines.push(`      }`);
+      codeLines.push(`    } else {`);
+      codeLines.push(`      ${elVar}.addChild((props as any).children);`);
+      codeLines.push(`    }`);
+      codeLines.push(`  }`);
+      if (element.children.length > 0) {
+        codeLines.push(`  else {`);
+        for (const child of element.children) {
+          if (child.type === 'text') continue;
+          const { code: childCode, rootVar: childVar } = this.generateNode(child, inLoop);
+          codeLines.push(childCode);
+          codeLines.push(`    ${elVar}.addChild(${childVar});`);
+        }
+        codeLines.push(`  }`);
+      }
     } else if (element.tag === 'text') {
       const textChild = element.children.find((c) => c.type === 'text') as ASTTextNode | undefined;
       const content = textChild ? textChild.content : '';
@@ -262,6 +297,12 @@ ${itemCodeLines.join('\n')}
       } else {
         codeLines.push(`  const ${elVar} = new UIButton(${JSON.stringify(label)}, ${JSON.stringify(staticStyles)});`);
       }
+    } else if (element.tag === 'image' || element.tag === 'img' || element.tag === 'UIImage') {
+      const srcProp = element.props.find((p) => p.name === 'src' && !p.isDynamic);
+      const fitProp = element.props.find((p) => p.name === 'fit' && !p.isDynamic);
+      const srcVal = srcProp ? srcProp.value : '';
+      const fitVal = fitProp ? fitProp.value : (staticStyles.fit || 'cover');
+      codeLines.push(`  const ${elVar} = new UIImage(${JSON.stringify(srcVal)}, { ...${JSON.stringify(staticStyles)}, fit: ${JSON.stringify(fitVal)} });`);
     } else if (element.tag === 'input') {
       codeLines.push(`  const ${elVar} = new UIInput(${JSON.stringify(staticStyles)});`);
     } else if (element.tag === 'modal') {
@@ -279,7 +320,7 @@ ${itemCodeLines.join('\n')}
       if (val.includes('=>')) {
         codeLines.push(`  ${elVar}.on(${JSON.stringify(evt.name)}, (${val}) as any);`);
       } else if (val.endsWith(')')) {
-        codeLines.push(`  ${elVar}.on(${JSON.stringify(evt.name)}, () => { ${val}; });`);
+        codeLines.push(`  ${elVar}.on(${JSON.stringify(evt.name)}, ($event) => { ${val}; });`);
       } else {
         codeLines.push(`  ${elVar}.on(${JSON.stringify(evt.name)}, (e) => { ${val}(e); });`);
       }
@@ -292,8 +333,14 @@ ${itemCodeLines.join('\n')}
           codeLines.push(`  ${elVar}.setValue(String(${dyn.value} ?? ''));`);
         } else if (element.tag === 'input' && dyn.name === 'placeholder') {
           codeLines.push(`  ${elVar}.setPlaceholder(String(${dyn.value} ?? ''));`);
+        } else if ((element.tag === 'image' || element.tag === 'img' || element.tag === 'UIImage') && dyn.name === 'src') {
+          codeLines.push(`  ${elVar}.setSrc(String(${dyn.value} ?? ''));`);
+        } else if ((element.tag === 'image' || element.tag === 'img' || element.tag === 'UIImage') && dyn.name === 'fit') {
+          codeLines.push(`  ${elVar}.setFit((${dyn.value}) as any);`);
         } else if (element.tag === 'modal' && dyn.name === 'open') {
           codeLines.push(`  ${elVar}.setOpen(Boolean(${dyn.value}));`);
+        } else if (element.tag === 'modal' && dyn.name === 'originRect') {
+          codeLines.push(`  ${elVar}.setStyle({ originRect: ${dyn.value} });`);
         } else if (element.tag === 'text' && dyn.name === 'text') {
           codeLines.push(`  ${elVar}.setText(String(${dyn.value} ?? ''));`);
         } else if (element.tag === 'text' && dyn.name === 'selectable') {
@@ -314,10 +361,25 @@ ${itemCodeLines.join('\n')}
   effect(() => {
     ${elVar}.setPlaceholder(String(${dyn.value} ?? ''));
   });`);
+        } else if ((element.tag === 'image' || element.tag === 'img' || element.tag === 'UIImage') && dyn.name === 'src') {
+          codeLines.push(`
+  effect(() => {
+    ${elVar}.setSrc(String(${dyn.value} ?? ''));
+  });`);
+        } else if ((element.tag === 'image' || element.tag === 'img' || element.tag === 'UIImage') && dyn.name === 'fit') {
+          codeLines.push(`
+  effect(() => {
+    ${elVar}.setFit((${dyn.value}) as any);
+  });`);
         } else if (element.tag === 'modal' && dyn.name === 'open') {
           codeLines.push(`
   effect(() => {
     ${elVar}.setOpen(Boolean(${dyn.value}));
+  });`);
+        } else if (element.tag === 'modal' && dyn.name === 'originRect') {
+          codeLines.push(`
+  effect(() => {
+    ${elVar}.setStyle({ originRect: ${dyn.value} });
   });`);
         } else if (element.tag === 'text' && dyn.name === 'text') {
           codeLines.push(`
@@ -343,19 +405,21 @@ ${itemCodeLines.join('\n')}
       }
     }
 
-    // Process children
-    for (const child of element.children) {
-      if (child.type === 'text' && (element.tag === 'text' || element.tag === 'button')) {
-        continue;
+    // Process children for native container elements
+    if (!isCustomComponent && element.tag !== 'slot') {
+      for (const child of element.children) {
+        if (child.type === 'text' && (element.tag === 'text' || element.tag === 'button')) {
+          continue;
+        }
+        const { code: childCode, rootVar: childVar } = this.generateNode(child, inLoop);
+        codeLines.push(childCode);
+        codeLines.push(`  ${elVar}.addChild(${childVar});`);
       }
-      const { code: childCode, rootVar: childVar } = this.generateNode(child, inLoop);
-      codeLines.push(childCode);
-      codeLines.push(`  ${elVar}.addChild(${childVar});`);
     }
 
-    // Declarative Motion animation attributes (enter="scale" or enter="fade")
+    // Declarative Motion animation attributes (enter="scale" or enter="fade") on standard nodes
     const enterProp = element.props.find((p) => p.name === 'enter' || p.name === 'transition');
-    if (enterProp && !inLoop) {
+    if (enterProp && !inLoop && element.tag !== 'motion' && element.tag !== 'Motion') {
       const enterVal = enterProp.value.trim() || 'scale';
       codeLines.push(`  Motion.enter(${elVar}, { type: ${JSON.stringify(enterVal)} });`);
     }

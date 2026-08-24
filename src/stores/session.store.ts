@@ -154,11 +154,20 @@ export function navigateRoute(route: string): void {
     activeRoute: target,
   }));
 
-  if (typeof window !== 'undefined' && window.history) {
+  if (typeof window !== 'undefined') {
     try {
-      const base = getBasePath();
-      const fullUrl = base ? `${base}${target === '/' ? '' : target}` : target;
-      window.history.pushState(null, '', fullUrl || '/');
+      const isGitHubPages = window.location.hostname.toLowerCase().endsWith('github.io');
+      if (isGitHubPages) {
+        // On GitHub Pages, use hash routing so the repository subpath (/CanvApps/#/pintertest) is never stripped
+        const hashTarget = target === '/' ? '#/' : `#${target}`;
+        if (window.location.hash !== hashTarget) {
+          window.location.hash = hashTarget;
+        }
+      } else if (window.history) {
+        const base = getBasePath();
+        const fullUrl = base ? `${base}${target === '/' ? '' : target}` : target;
+        window.history.pushState(null, '', fullUrl || '/');
+      }
     } catch {
       // Fallback
     }

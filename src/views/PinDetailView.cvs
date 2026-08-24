@@ -6,7 +6,7 @@
   const { isMobile, isTablet, isDesktop, width } = useBreakpoints();
   const isDark = computed(() => sessionStore.state.theme === 'dark');
 
-  // 2. Resolve Active Pin from Subroute Parameter
+  // 2. Resolve Active Pin from Subroute Parameter (retaining last valid pin during transitions)
   const pinId = computed(() => {
     const route = sessionStore.state.activeRoute;
     if (route.startsWith('/pintertest/')) {
@@ -15,10 +15,16 @@
     return '';
   });
 
+  let lastValidPin: PinItem | null = null;
   const currentPin = computed(() => {
     const id = pinId.value;
-    return pinsData.value.find((p) => p.id === id) || null;
+    if (!id) return lastValidPin;
+    const found = pinsData.value.find((p) => p.id === id) || null;
+    if (found) lastValidPin = found;
+    return found || lastValidPin;
   });
+
+  const pinTags = computed(() => currentPin.value?.tags || []);
 
   // 3. Immediately reset scroll to top so entrance scale animation renders from top
   if (typeof window !== 'undefined') {
@@ -75,7 +81,7 @@
 
       @if (currentPin.value) {
         <view padding="[4, 10]" borderRadius="12" :backgroundColor={isDark.value ? '#1e293b' : '#e0f2fe'} borderWidth="1" :borderColor={isDark.value ? '#334155' : '#bae6fd'}>
-          <text fontSize="11" fontWeight="bold" :color={isDark.value ? '#38bdf8' : '#0284c7'}>{{ currentPin.value.category }}</text>
+          <text fontSize="11" fontWeight="bold" :color={isDark.value ? '#38bdf8' : '#0284c7'}>{{ currentPin.value?.category }}</text>
         </view>
       }
     </view>
@@ -97,7 +103,7 @@
         <!-- Large High-Resolution Image -->
         <view width="100%" position="relative" flexShrink="0">
           <image 
-            :src="currentPin.value.src" 
+            :src="currentPin.value?.src" 
             width="100%" 
             :height={isMobile.value ? 340 : 500} 
             fit="cover" 
@@ -108,9 +114,9 @@
           <!-- Floating Save Action on Top Right -->
           <view position="absolute" right="12" top="12">
             <button 
-              :label={currentPin.value.isSaved ? 'Saved to Board ✓' : 'Save Pin'} 
-              :backgroundColor={currentPin.value.isSaved ? (isDark.value ? '#111111' : '#e2e8f0') : '#0284c7'} 
-              :color={currentPin.value.isSaved ? (isDark.value ? '#ffffff' : '#334155') : '#ffffff'} 
+              :label={currentPin.value?.isSaved ? 'Saved to Board ✓' : 'Save Pin'} 
+              :backgroundColor={currentPin.value?.isSaved ? (isDark.value ? '#111111' : '#e2e8f0') : '#0284c7'} 
+              :color={currentPin.value?.isSaved ? (isDark.value ? '#ffffff' : '#334155') : '#ffffff'} 
               borderRadius="16" 
               padding="[7, 14]" 
               fontSize="12" 
@@ -126,16 +132,16 @@
           <!-- Title and Description -->
           <view width="100%" flexDirection="column" gap="6" flexShrink="0">
             <text :fontSize={isMobile.value ? 18 : 24} fontWeight="bold" :color={isDark.value ? '#ffffff' : '#0f172a'} :wordWrap="true">
-              {{ currentPin.value.title }}
+              {{ currentPin.value?.title }}
             </text>
             <text :fontSize={isMobile.value ? 13 : 14} :color={isDark.value ? '#aaaaaa' : '#475569'} :lineHeight="20" :wordWrap="true">
-              {{ currentPin.value.description }}
+              {{ currentPin.value?.description }}
             </text>
           </view>
 
           <!-- Tags List -->
           <view width="100%" flexDirection="row" gap="6" overflow="auto" padding="[2, 0]" flexShrink="0">
-            @each currentPin.value.tags as tag {
+            @each pinTags.value as tag {
               <view padding="[3, 8]" borderRadius="8" :backgroundColor={isDark.value ? '#22222c' : '#f1f5f9'} borderWidth="1" :borderColor={isDark.value ? '#30303e' : '#e2e8f0'}>
                 <text fontSize="11" :color={isDark.value ? '#94a3b8' : '#64748b'}>{{ tag }}</text>
               </view>
@@ -145,12 +151,12 @@
           <!-- Author Info Card & Follow Action -->
           <view width="100%" flexDirection="row" alignItems="center" justifyContent="space-between" :padding={isMobile.value ? [10, 12] : [12, 16]} borderRadius="16" :backgroundColor={isDark.value ? '#20202a' : '#f8fafc'} borderWidth="1" :borderColor={isDark.value ? '#2e2e3c' : '#e2e8f0'} flexShrink="0">
             <view flexDirection="row" alignItems="center" gap="10">
-              <view width="40" height="40" :backgroundColor={currentPin.value.avatarColor || '#e11d48'} borderRadius="20" alignItems="center" justifyContent="center">
-                <text fontSize="16" fontWeight="bold" color="#ffffff">{{ (currentPin.value.author || 'P').charAt(0) }}</text>
+              <view width="40" height="40" :backgroundColor={currentPin.value?.avatarColor || '#e11d48'} borderRadius="20" alignItems="center" justifyContent="center">
+                <text fontSize="16" fontWeight="bold" color="#ffffff">{{ (currentPin.value?.author || 'P').charAt(0) }}</text>
               </view>
               <view flexDirection="column" gap="2">
-                <text :fontSize={isMobile.value ? 13 : 14} fontWeight="bold" :color={isDark.value ? '#ffffff' : '#0f172a'}>{{ currentPin.value.author }}</text>
-                <text fontSize="11" :color={isDark.value ? '#888888' : '#64748b'}>{{ currentPin.value.authorHandle }}</text>
+                <text :fontSize={isMobile.value ? 13 : 14} fontWeight="bold" :color={isDark.value ? '#ffffff' : '#0f172a'}>{{ currentPin.value?.author }}</text>
+                <text fontSize="11" :color={isDark.value ? '#888888' : '#64748b'}>{{ currentPin.value?.authorHandle }}</text>
               </view>
             </view>
             <button label="Follow" :backgroundColor={isDark.value ? '#323240' : '#e2e8f0'} :color={isDark.value ? '#f0f0f0' : '#1e293b'} borderRadius="14" padding="[6, 14]" fontSize="11" fontWeight="bold" />
@@ -159,8 +165,8 @@
           <!-- Footer Actions: Interactive Like Button & Category Info -->
           <view width="100%" flexDirection="row" alignItems="center" justifyContent="space-between" flexShrink="0" padding="[4, 0]">
             <button 
-              :label={currentPin.value.isLiked ? '♥ Liked (' + currentPin.value.likes + ')' : '♡ Like (' + currentPin.value.likes + ')'} 
-              :color={currentPin.value.isLiked ? '#ff4d6d' : (isDark.value ? '#ffffff' : '#1e293b')} 
+              :label={currentPin.value?.isLiked ? '♥ Liked (' + (currentPin.value?.likes || 0) + ')' : '♡ Like (' + (currentPin.value?.likes || 0) + ')'} 
+              :color={currentPin.value?.isLiked ? '#ff4d6d' : (isDark.value ? '#ffffff' : '#1e293b')} 
               :backgroundColor={isDark.value ? '#282834' : '#f1f5f9'} 
               borderRadius="14" 
               padding="[6, 14]" 

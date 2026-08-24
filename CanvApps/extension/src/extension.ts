@@ -211,50 +211,99 @@ function validateCanvAppsDocument(document: vscode.TextDocument): vscode.Diagnos
   const templateText = text.replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, (m) => ' '.repeat(m.length));
 
   // Check tag matching stack
-  const tagRegex = /<(\/)?([a-zA-Z0-9_-]+)([^>]*?)(\/?)>/g;
   const tagStack: { name: string; pos: vscode.Position; index: number }[] = [];
   const voidTags = new Set(['slot', 'image', 'input', 'br', 'hr', 'img']);
 
-  let tagMatch: RegExpExecArray | null;
-  while ((tagMatch = tagRegex.exec(templateText)) !== null) {
-    const isClosing = tagMatch[1] === '/';
-    const tagName = tagMatch[2];
-    const isSelfClosing = tagMatch[4] === '/' || voidTags.has(tagName.toLowerCase());
-    const matchIndex = tagMatch.index;
+  let i = 0;
+  const len = templateText.length;
 
-    // Skip comments or directives inside tags
-    if (tagName.startsWith('!--')) continue;
+  while (i < len) {
+    if (templateText[i] === '<') {
+      if (templateText.slice(i, i + 4) === '<!--') {
+        const commentEnd = templateText.indexOf('-->', i + 4);
+        i = commentEnd === -1 ? len : commentEnd + 3;
+        continue;
+      }
 
-    if (isClosing) {
-      if (tagStack.length === 0) {
-        const pos = document.positionAt(matchIndex);
-        diagnostics.push(
-          new vscode.Diagnostic(
-            new vscode.Range(pos, document.positionAt(matchIndex + tagMatch[0].length)),
-            `Unexpected closing tag </${tagName}> without matching opening tag.`,
-            vscode.DiagnosticSeverity.Error
-          )
-        );
-      } else {
-        const last = tagStack.pop()!;
-        if (last.name !== tagName) {
-          const pos = document.positionAt(matchIndex);
-          diagnostics.push(
-            new vscode.Diagnostic(
-              new vscode.Range(pos, document.positionAt(matchIndex + tagMatch[0].length)),
-              `Mismatched closing tag </${tagName}>. Expected </${last.name}> (opened on line ${last.pos.line + 1}).`,
-              vscode.DiagnosticSeverity.Error
-            )
-          );
+      const isClosing = templateText[i + 1] === '/';
+      const startName = isClosing ? i + 2 : i + 1;
+      let nameEnd = startName;
+      while (nameEnd < len && /[a-zA-Z0-9_-]/.test(templateText[nameEnd])) {
+        nameEnd++;
+      }
+      const tagName = templateText.slice(startName, nameEnd).trim();
+      if (!tagName) {
+        i++;
+        continue;
+      }
+
+      // Find true tag end ignoring quotes and braces
+      let inQuotes = false;
+      let quoteChar = '';
+      let braceDepth = 0;
+      let tagEnd = -1;
+
+      for (let j = nameEnd; j < len; j++) {
+        const ch = templateText[j];
+        if ((ch === '"' || ch === "'") && braceDepth === 0) {
+          if (!inQuotes) {
+            inQuotes = true;
+            quoteChar = ch;
+          } else if (ch === quoteChar) {
+            inQuotes = false;
+            quoteChar = '';
+          }
+        } else if (ch === '{' && !inQuotes) {
+          braceDepth++;
+        } else if (ch === '}' && !inQuotes && braceDepth > 0) {
+          braceDepth--;
+        } else if (ch === '>' && !inQuotes && braceDepth === 0) {
+          tagEnd = j;
+          break;
         }
       }
-    } else if (!isSelfClosing) {
-      tagStack.push({
-        name: tagName,
-        pos: document.positionAt(matchIndex),
-        index: matchIndex,
-      });
+
+      if (tagEnd !== -1) {
+        const matchLength = tagEnd - i + 1;
+        const tagInner = templateText.slice(nameEnd, tagEnd).trimEnd();
+        const isSelfClosing = tagInner.endsWith('/') || voidTags.has(tagName.toLowerCase());
+
+        if (isClosing) {
+          if (tagStack.length === 0) {
+            const pos = document.positionAt(i);
+            diagnostics.push(
+              new vscode.Diagnostic(
+                new vscode.Range(pos, document.positionAt(i + matchLength)),
+                `Unexpected closing tag </${tagName}> without matching opening tag.`,
+                vscode.DiagnosticSeverity.Error
+              )
+            );
+          } else {
+            const last = tagStack.pop()!;
+            if (last.name.toLowerCase() !== tagName.toLowerCase()) {
+              const pos = document.positionAt(i);
+              diagnostics.push(
+                new vscode.Diagnostic(
+                  new vscode.Range(pos, document.positionAt(i + matchLength)),
+                  `Mismatched closing tag </${tagName}>. Expected </${last.name}> (opened on line ${last.pos.line + 1}).`,
+                  vscode.DiagnosticSeverity.Error
+                )
+              );
+            }
+          }
+        } else if (!isSelfClosing) {
+          tagStack.push({
+            name: tagName,
+            pos: document.positionAt(i),
+            index: i,
+          });
+        }
+
+        i = tagEnd + 1;
+        continue;
+      }
     }
+    i++;
   }
 
   // Report any remaining unclosed tags

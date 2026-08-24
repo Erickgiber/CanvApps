@@ -5,8 +5,7 @@
   const { isMobile } = useBreakpoints();
   const isDark = computed(() => sessionStore.state.theme === 'dark');
 
-  function handleRouteSwitch() {
-    const target = sessionStore.state.activeRoute === 'auth' ? 'dashboard' : 'auth';
+  function goToRoute(target: string) {
     navigateRoute(target);
     if (typeof (props as any)?.onNavigate === 'function') {
       (props as any).onNavigate(target);
@@ -37,17 +36,23 @@
     }
   </view>
 
-  <!-- Right: Theme Toggle, Dynamic Route Switcher & Docs Link -->
+  <!-- Right: Theme Toggle, Route Switchers & Docs Link -->
   <view flexDirection="row" alignItems="center" :gap={isMobile.value ? 5 : 8}>
     
     <!-- 1. Theme Toggle Button -->
     <button :label={isMobile.value ? (isDark.value ? '☀️' : '🌙') : (isDark.value ? '☀️ Light' : '🌙 Dark')} :backgroundColor={isDark.value ? '#222222' : '#f8fafc'} :hoverBackgroundColor={isDark.value ? '#2e2e2e' : '#f1f5f9'} activeBackgroundColor="#e2e8f0" :labelColor={isDark.value ? '#e5e5e5' : '#475569'} borderWidth="1" :borderColor={isDark.value ? '#333333' : '#cbd5e1'} borderRadius="8" :padding={isMobile.value ? [5, 8] : [6, 12]} :fontSize={isMobile.value ? 11 : 12} fontWeight="bold" @click="handleThemeClick" />
 
-    <!-- 2. Dynamic Route Switcher Button (Switches between Dashboard and Auth) -->
-    <button :label={sessionStore.state.activeRoute === 'auth' ? (isMobile.value ? '📊 App' : '📊 Dashboard') : (isMobile.value ? '🔑 Auth' : '🔑 Test Auth')} :backgroundColor={sessionStore.state.activeRoute === 'auth' ? '#059669' : '#2563eb'} :hoverBackgroundColor={sessionStore.state.activeRoute === 'auth' ? '#047857' : '#1d4ed8'} labelColor="#ffffff" borderRadius="8" :padding={isMobile.value ? [5, 8] : [6, 14]} :fontSize={isMobile.value ? 11 : 12} fontWeight="bold" @click="handleRouteSwitch" />
+    <!-- 2. Dashboard Route Button -->
+    <button :label={isMobile.value ? '📊' : '📊 Dashboard'} :backgroundColor={sessionStore.state.activeRoute === '/' ? '#2563eb' : (isDark.value ? '#222222' : '#f8fafc')} :hoverBackgroundColor={sessionStore.state.activeRoute === '/' ? '#1d4ed8' : (isDark.value ? '#2e2e2e' : '#f1f5f9')} :labelColor={sessionStore.state.activeRoute === '/' ? '#ffffff' : (isDark.value ? '#e5e5e5' : '#475569')} borderWidth="1" :borderColor={sessionStore.state.activeRoute === '/' ? '#2563eb' : (isDark.value ? '#333333' : '#cbd5e1')} borderRadius="8" :padding={isMobile.value ? [5, 8] : [6, 12]} :fontSize={isMobile.value ? 11 : 12} fontWeight="bold" @click="() => goToRoute('/')" />
 
-    <!-- 3. GitHub Docs Link -->
-    <button label="GitHub ↗" :backgroundColor={isDark.value ? '#222222' : '#eff6ff'} :hoverBackgroundColor={isDark.value ? '#2e2e2e' : '#dbeafe'} activeBackgroundColor="#bfdbfe" :labelColor={isDark.value ? '#a0a0a0' : '#2563eb'} borderWidth="1" :borderColor={isDark.value ? '#333333' : '#dbeafe'} borderRadius="8" :padding={isMobile.value ? [5, 7] : [6, 14]} :fontSize={isMobile.value ? 11 : 12} fontWeight="bold" @click="openDocs" />
+    <!-- 3. Auth Route Button -->
+    <button :label={isMobile.value ? '🔑' : '🔑 Auth'} :backgroundColor={sessionStore.state.activeRoute === '/auth' ? '#059669' : (isDark.value ? '#222222' : '#f8fafc')} :hoverBackgroundColor={sessionStore.state.activeRoute === '/auth' ? '#047857' : (isDark.value ? '#2e2e2e' : '#f1f5f9')} :labelColor={sessionStore.state.activeRoute === '/auth' ? '#ffffff' : (isDark.value ? '#e5e5e5' : '#475569')} borderWidth="1" :borderColor={sessionStore.state.activeRoute === '/auth' ? '#059669' : (isDark.value ? '#333333' : '#cbd5e1')} borderRadius="8" :padding={isMobile.value ? [5, 8] : [6, 12]} :fontSize={isMobile.value ? 11 : 12} fontWeight="bold" @click="() => goToRoute('/auth')" />
+
+    <!-- 4. Pintertest Route Button -->
+    <button :label={isMobile.value ? '📌' : '📌 Pintertest'} :backgroundColor={sessionStore.state.activeRoute === '/pintertest' ? '#0284c7' : (isDark.value ? '#222222' : '#f8fafc')} :hoverBackgroundColor={sessionStore.state.activeRoute === '/pintertest' ? '#0369a1' : (isDark.value ? '#2e2e2e' : '#f1f5f9')} :labelColor={sessionStore.state.activeRoute === '/pintertest' ? '#ffffff' : (isDark.value ? '#e5e5e5' : '#475569')} borderWidth="1" :borderColor={sessionStore.state.activeRoute === '/pintertest' ? '#0284c7' : (isDark.value ? '#333333' : '#cbd5e1')} borderRadius="8" :padding={isMobile.value ? [5, 8] : [6, 12]} :fontSize={isMobile.value ? 11 : 12} fontWeight="bold" @click="() => goToRoute('/pintertest')" />
+
+    <!-- 5. GitHub Docs Link -->
+    <button label="GitHub ↗" :backgroundColor={isDark.value ? '#222222' : '#eff6ff'} :hoverBackgroundColor={isDark.value ? '#2e2e2e' : '#dbeafe'} activeBackgroundColor="#bfdbfe" :labelColor={isDark.value ? '#a0a0a0' : '#2563eb'} borderWidth="1" :borderColor={isDark.value ? '#333333' : '#dbeafe'} borderRadius="8" :padding={isMobile.value ? [5, 7] : [6, 12]} :fontSize={isMobile.value ? 11 : 12} fontWeight="bold" @click="openDocs" />
 
   </view>
 

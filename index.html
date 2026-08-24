@@ -6,6 +6,27 @@
   <title>CanvApps - Canvas UI Framework</title>
   <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
   <link rel="alternate icon" type="image/svg+xml" href="/icon.svg" />
+  <script>
+    // GitHub Pages SPA redirect receiver (restores deep links from 404.html)
+    (function(l) {
+      if (l.search[1] === 'p') {
+        var decoded = l.search.slice(1).split('&').map(function(s) { 
+          return s.replace(/~and~/g, '&')
+        }).reduce(function(acc, cur) {
+          var parts = cur.split('=');
+          acc[parts[0]] = decodeURIComponent(parts.slice(1).join('='));
+          return acc;
+        }, {});
+        if (decoded.p !== undefined) {
+          window.history.replaceState(null, null,
+            l.pathname.slice(0, -1) + (decoded.p || '') +
+            (decoded.q ? ('?' + decoded.q) : '') +
+            l.hash
+          );
+        }
+      }
+    }(window.location));
+  </script>
   <style>
     * {
       box-sizing: border-box;

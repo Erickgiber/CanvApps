@@ -73,9 +73,49 @@ export class CLIBuilder {
         break;
     }
 
-    // Touch .nojekyll so GitHub Pages serves assets directly without Jekyll filtering
+    // 3. Automated SPA Hosting Support (GitHub Pages, Vercel, Netlify)
+    // GitHub Pages .nojekyll (disables Jekyll engine)
     fs.writeFileSync(path.resolve(outputDir, '.nojekyll'), '', 'utf-8');
 
+    // GitHub Pages 404.html SPA Deep Link Redirector
+    const github404Html = `<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>CanvApps</title>
+    <script>
+      // Single Page Apps for GitHub Pages
+      // https://github.com/rafgraph/spa-github-pages
+      var segmentCount = 0;
+      var l = window.location;
+      l.replace(
+        l.protocol + '//' + l.hostname + (l.port ? ':' + l.port : '') +
+        l.pathname.split('/').slice(0, 1 + segmentCount).join('/') + '/?p=/' +
+        l.pathname.slice(1).split('/').slice(segmentCount).join('/').replace(/&/g, '~and~') +
+        (l.search ? '&q=' + l.search.slice(1).replace(/&/g, '~and~') : '') +
+        l.hash
+      );
+    </script>
+  </head>
+  <body></body>
+</html>`;
+    fs.writeFileSync(path.resolve(outputDir, '404.html'), github404Html, 'utf-8');
+
+    // Netlify _redirects rule
+    fs.writeFileSync(path.resolve(outputDir, '_redirects'), '/*    /index.html   200\n', 'utf-8');
+
+    // Vercel vercel.json rewrite configuration
+    const vercelConfig = JSON.stringify(
+      {
+        rewrites: [{ source: '/(.*)', destination: '/index.html' }],
+      },
+      null,
+      2
+    );
+    fs.writeFileSync(path.resolve(outputDir, 'vercel.json'), vercelConfig, 'utf-8');
+    fs.writeFileSync(path.resolve(cwd, 'vercel.json'), vercelConfig, 'utf-8');
+
+    console.log(`  ✓ Generated SPA deployment routing files for GitHub Pages, Netlify & Vercel`);
     console.log(`\n✨ [CanvApps Build Completed Successfully for Target: ${target}] 🎉\n`);
   }
 

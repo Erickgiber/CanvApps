@@ -621,21 +621,25 @@ export class CVSParser {
           }
         }
 
-        // Tag opening or self-closing e.g. <view ...> or <input ... />
+        // Tag opening or self-closing e.g. <view ...> or <button ... /> or <input ... />
         const tagEnd = this.findTagEnd(cleanSrc, cursor + 1);
         if (tagEnd !== -1) {
           const tagRaw = cleanSrc.slice(cursor + 1, tagEnd);
-          const isSelfClosing = tagRaw.endsWith('/');
-          const cleanRaw = isSelfClosing ? tagRaw.slice(0, -1).trim() : tagRaw.trim();
+          const trimmedRaw = tagRaw.trimEnd();
+          const isSelfClosing = trimmedRaw.endsWith('/');
+          const cleanRaw = isSelfClosing ? trimmedRaw.slice(0, -1).trim() : trimmedRaw.trim();
 
           const [tagName, ...attrChunks] = this.splitTagTokens(cleanRaw);
           const attributes = this.parseAttributes(attrChunks.join(' '));
+
+          const isVoidElement = /^(?:input|img|image|hr|br)$/i.test(tagName || '');
+          const finalSelfClosing = isSelfClosing || isVoidElement;
 
           tokens.push({
             type: 'tag-open',
             tagName,
             value: cleanSrc.slice(cursor, tagEnd + 1),
-            isSelfClosing,
+            isSelfClosing: finalSelfClosing,
             attributes,
           });
 
@@ -715,7 +719,7 @@ export class CVSParser {
       const nameStart = i;
       while (i < len && /[@:*A-Za-z0-9_-]/.test(attrString[i])) i++;
       const name = attrString.slice(nameStart, i);
-      if (!name) {
+      if (!name || name === '/') {
         i++;
         continue;
       }

@@ -14,7 +14,46 @@ export interface UserSessionState {
   theme: 'dark' | 'light';
   streakCount: number;
   lastLogin: string | null;
-  activeRoute: 'dashboard' | 'auth';
+  activeRoute: string;
+}
+
+/**
+ * Normalizes any route string with leading slash
+ */
+export function normalizeRoutePath(route: string): string {
+  if (!route) return '/';
+  const clean = route.split('?')[0].split('#')[0];
+  if (!clean || clean === '/' || clean === '/dashboard' || clean === 'dashboard') return '/';
+  const withLeading = clean.startsWith('/') ? clean : `/${clean}`;
+  return withLeading.endsWith('/') && withLeading.length > 1 ? withLeading.slice(0, -1) : withLeading;
+}
+
+/**
+ * Dynamically resolves initial route from browser URL, search queries, or hash
+ */
+function getInitialRoute(): string {
+  if (typeof window !== 'undefined') {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const pParam = params.get('p') || params.get('route');
+      if (pParam) {
+        return normalizeRoutePath(pParam);
+      }
+    } catch {
+      // Fallback
+    }
+
+    const hash = window.location.hash.replace(/^#\/?/, '');
+    if (hash) {
+      return normalizeRoutePath(hash);
+    }
+
+    const pathname = window.location.pathname;
+    if (pathname) {
+      return normalizeRoutePath(pathname);
+    }
+  }
+  return '/';
 }
 
 /**
@@ -48,7 +87,7 @@ const initialSessionState: UserSessionState = {
   theme: getInitialTheme(),
   streakCount: 10,
   lastLogin: new Date().toISOString(),
-  activeRoute: 'dashboard',
+  activeRoute: getInitialRoute(),
 };
 
 /**
@@ -61,14 +100,27 @@ export const sessionStore = createStore<UserSessionState>(initialSessionState, {
 });
 
 // Automatically persist theme changes to localStorage whenever theme updates
-if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
-  sessionStore.select('theme').subscribe(() => {
-    try {
-      localStorage.setItem('canvapps_theme', sessionStore.state.theme);
-    } catch {
-      // Ignore quota errors
+if (typeof window !== 'undefined') {
+  if (typeof localStorage !== 'undefined') {
+    sessionStore.select('theme').subscribe(() => {
+      try {
+        localStorage.setItem('canvapps_theme', sessionStore.state.theme);
+      } catch {
+        // Ignore quota errors
+      }
+    });
+  }
+
+  // Synchronize browser history and hash navigation dynamically
+  const syncRouteFromLocation = () => {
+    const current = getInitialRoute();
+    if (sessionStore.state.activeRoute !== current) {
+      sessionStore.update((prev) => ({ ...prev, activeRoute: current }));
     }
-  });
+  };
+
+  window.addEventListener('popstate', syncRouteFromLocation);
+  window.addEventListener('hashchange', syncRouteFromLocation);
 }
 
 /**
@@ -77,13 +129,22 @@ if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
 export const isUserLoggedIn = computed(() => sessionStore.state.isAuthenticated);
 
 /**
- * Store Action: Navigates between active routes
+ * Store Action: Navigates dynamically to ANY target route URL
  */
-export function navigateRoute(route: 'dashboard' | 'auth'): void {
+export function navigateRoute(route: string): void {
+  const target = normalizeRoutePath(route);
   sessionStore.update((prev) => ({
     ...prev,
-    activeRoute: route,
+    activeRoute: target,
   }));
+
+  if (typeof window !== 'undefined' && window.history) {
+    try {
+      window.history.pushState(null, '', target);
+    } catch {
+      // Fallback
+    }
+  }
 }
 
 /**

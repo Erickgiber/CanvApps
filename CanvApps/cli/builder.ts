@@ -85,16 +85,20 @@ export class CLIBuilder {
     <title>CanvApps</title>
     <script>
       // Single Page Apps for GitHub Pages
-      // https://github.com/rafgraph/spa-github-pages
-      var segmentCount = 0;
-      var l = window.location;
-      l.replace(
-        l.protocol + '//' + l.hostname + (l.port ? ':' + l.port : '') +
-        l.pathname.split('/').slice(0, 1 + segmentCount).join('/') + '/?p=/' +
-        l.pathname.slice(1).split('/').slice(segmentCount).join('/').replace(/&/g, '~and~') +
-        (l.search ? '&q=' + l.search.slice(1).replace(/&/g, '~and~') : '') +
-        l.hash
-      );
+      // Redirects 404 paths to repository hash route: https://username.github.io/repo/#/path
+      var path = window.location.pathname;
+      var pathParts = path.split('/').filter(Boolean);
+      var isProject = window.location.hostname.endsWith('github.io') && pathParts.length > 0;
+      var repoPrefix = isProject ? '/' + pathParts[0] : '';
+      var routePath = isProject ? '/' + pathParts.slice(1).join('/') : path;
+      if (!routePath || routePath === '/') routePath = '/';
+
+      var target = window.location.protocol + '//' + window.location.hostname +
+        (window.location.port ? ':' + window.location.port : '') +
+        repoPrefix + '/#' + (routePath.startsWith('/') ? routePath : '/' + routePath) +
+        (window.location.search || '');
+
+      window.location.replace(target);
     </script>
   </head>
   <body></body>

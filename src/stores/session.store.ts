@@ -18,12 +18,28 @@ export interface UserSessionState {
 }
 
 /**
- * Normalizes any route string with leading slash
+ * Automatically detects repository base path (e.g. '/CanvApps' on GitHub Pages)
+ */
+export function getBasePath(): string {
+  if (typeof window === 'undefined') return '';
+  const pathSegments = window.location.pathname.split('/').filter(Boolean);
+  if (window.location.hostname.endsWith('github.io') && pathSegments.length > 0) {
+    return '/' + pathSegments[0];
+  }
+  return '';
+}
+
+/**
+ * Normalizes any route string with leading slash and strips base path
  */
 export function normalizeRoutePath(route: string): string {
   if (!route) return '/';
-  const clean = route.split('?')[0].split('#')[0];
-  if (!clean || clean === '/' || clean === '/dashboard' || clean === 'dashboard') return '/';
+  let clean = route.split('?')[0].split('#')[0];
+  const base = getBasePath();
+  if (base && clean.startsWith(base)) {
+    clean = clean.slice(base.length);
+  }
+  if (!clean || clean === '/') return '/';
   const withLeading = clean.startsWith('/') ? clean : `/${clean}`;
   return withLeading.endsWith('/') && withLeading.length > 1 ? withLeading.slice(0, -1) : withLeading;
 }
@@ -138,9 +154,20 @@ export function navigateRoute(route: string): void {
     activeRoute: target,
   }));
 
-  if (typeof window !== 'undefined' && window.history) {
+  if (typeof window !== 'undefined') {
     try {
-      window.history.pushState(null, '', target);
+      const isGitHubPages = window.location.hostname.toLowerCase().endsWith('github.io');
+      if (isGitHubPages) {
+        // On GitHub Pages, use hash routing so the repository subpath (/CanvApps/#/pintertest) is never stripped
+        const hashTarget = target === '/' ? '#/' : `#${target}`;
+        if (window.location.hash !== hashTarget) {
+          window.location.hash = hashTarget;
+        }
+      } else if (window.history) {
+        const base = getBasePath();
+        const fullUrl = base ? `${base}${target === '/' ? '' : target}` : target;
+        window.history.pushState(null, '', fullUrl || '/');
+      }
     } catch {
       // Fallback
     }

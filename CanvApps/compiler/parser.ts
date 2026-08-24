@@ -303,7 +303,7 @@ export class CVSParser {
 
       const trimmedAfter = afterEach.trimStart();
       if (trimmedAfter.startsWith('(')) {
-        // Parenthesized expression: @each (milestones.value as item, index) { ... }
+        // Parenthesized expression: @each (milestones.value as item, index) { ... } or @each (items) as item { ... }
         const openParen = src.indexOf('(', eachMatch + 5);
         const closeParen = this.findMatchingParen(src, openParen);
         if (closeParen === -1) {
@@ -311,12 +311,15 @@ export class CVSParser {
           continue;
         }
 
-        expr = src.slice(openParen + 1, closeParen).trim();
+        const innerExpr = src.slice(openParen + 1, closeParen).trim();
         openBrace = src.indexOf('{', closeParen + 1);
         if (openBrace === -1) {
           index = eachMatch + 5;
           continue;
         }
+
+        const trailingPart = src.slice(closeParen + 1, openBrace).trim();
+        expr = trailingPart ? `${innerExpr} ${trailingPart}` : innerExpr;
       } else {
         // Non-parenthesized expression: @each milestones.value as item, index { ... }
         openBrace = src.indexOf('{', eachMatch + 5);

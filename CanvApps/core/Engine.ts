@@ -324,7 +324,33 @@ export class Engine {
     // 3. Render tree
     this.root.render(this.ctx);
 
+    // 4. Render top-layer modal overlay portals
+    const activeModals = this.findActiveModals(this.root);
+    for (const modal of activeModals) {
+      modal.render(this.ctx);
+    }
+
     this.ctx.restore();
+  }
+
+  /**
+   * Discovers all active modals across the UI hierarchy.
+   */
+  private findActiveModals(root: UIElement): UIElement[] {
+    const modals: UIElement[] = [];
+    const traverse = (element: UIElement) => {
+      if (!element.visible || element.styles.display === 'none') {
+        return;
+      }
+      if ((element as any).isModal === true) {
+        modals.push(element);
+      }
+      for (const child of element.children) {
+        traverse(child);
+      }
+    };
+    traverse(root);
+    return modals;
   }
 
   /**

@@ -1,5 +1,6 @@
 import { UIElement } from '../core/UIElement';
 import { Engine } from '../core/Engine';
+import { FlexLayout } from '../layout/FlexLayout';
 import { VisualStyles } from '../types/style';
 
 export type ModalAnimationType = 'hero' | 'zoom-center' | 'scale-in' | 'slide-up' | 'fade' | 'zoom-in' | 'none';
@@ -41,6 +42,7 @@ function fluidEase(t: number): number {
  * deep backdrop dimming, and touch dismissal.
  */
 export class UIModal extends UIElement {
+  public readonly isModal = true;
   public declare styles: ModalStyles;
   private isOpen = true;
   private animProgress = 1;
@@ -236,10 +238,16 @@ export class UIModal extends UIElement {
     this.layoutRect.width = viewportW;
     this.layoutRect.height = viewportH;
 
-    for (const child of this.children) {
-      if (child.visible && child.styles.display !== 'none') {
-        child.updateWorldTransform(0, 0);
-      }
+    const card = this.getModalCard();
+    if (card) {
+      const cardW = Math.min(viewportW * 0.94, (typeof card.styles.width === 'number' ? card.styles.width : (card.layoutRect.width > 0 ? card.layoutRect.width : 780)));
+      const cardH = Math.min(viewportH * 0.94, (typeof card.styles.height === 'number' ? card.styles.height : (card.layoutRect.height > 0 ? card.layoutRect.height : 480)));
+      const cardX = Math.round((viewportW - cardW) / 2);
+      const cardY = Math.round((viewportH - cardH) / 2);
+
+      FlexLayout.calculateLayout(card, cardW, cardH);
+      card.setLayout(cardX, cardY, cardW, cardH);
+      card.updateWorldTransform(0, 0);
     }
   }
 
@@ -363,12 +371,19 @@ export class UIModal extends UIElement {
     if (card && card.visible && card.styles.display !== 'none') {
       ctx.save();
 
-      const targetX = card.layoutRect.x;
-      const targetY = card.layoutRect.y;
-      const targetW = card.layoutRect.width;
-      const targetH = card.layoutRect.height;
-      const targetCenterX = targetX + targetW / 2;
-      const targetCenterY = targetY + targetH / 2;
+      const targetW = Math.min(fullCanvasWidth * 0.94, (typeof card.styles.width === 'number' ? card.styles.width : (card.layoutRect.width > 0 ? card.layoutRect.width : 780)));
+      const targetH = Math.min(fullCanvasHeight * 0.94, (typeof card.styles.height === 'number' ? card.styles.height : (card.layoutRect.height > 0 ? card.layoutRect.height : 480)));
+
+      // Calculate absolute dead center on the visible viewport
+      const targetX = Math.round((fullCanvasWidth - targetW) / 2);
+      const targetY = Math.round((fullCanvasHeight - targetH) / 2);
+      const targetCenterX = fullCanvasWidth / 2;
+      const targetCenterY = fullCanvasHeight / 2;
+
+      // Keep layout and world transformation perfectly synchronized with viewport
+      FlexLayout.calculateLayout(card, targetW, targetH);
+      card.setLayout(targetX, targetY, targetW, targetH);
+      card.updateWorldTransform(0, 0);
 
       if (originRect && typeof originRect.width === 'number' && originRect.width > 0 && targetW > 0 && targetH > 0) {
         // Precise Figma Smart Animation Morph (originRect -> modal dialog card)
@@ -385,11 +400,14 @@ export class UIModal extends UIElement {
         const scale = curW / targetW;
         const cardAlpha = Math.max(0, Math.min(1, progress * 3.0));
 
-        ctx.translate(curX, curY);
+        const curCenterX = curX + curW / 2;
+        const curCenterY = curY + (targetH * scale) / 2;
+
+        ctx.translate(curCenterX, curCenterY);
         if (scale !== 1.0) {
           ctx.scale(scale, scale);
         }
-        ctx.translate(-targetX, -targetY);
+        ctx.translate(-targetCenterX, -targetCenterY);
         ctx.globalAlpha = cardAlpha;
 
         card.render(ctx);

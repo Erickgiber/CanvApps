@@ -682,6 +682,9 @@ export abstract class UIElement {
     // Recursively render child elements (drawn at their absolute worldRect)
     for (const child of this.children) {
       if (child.visible && child.styles.display !== 'none') {
+        if ((child as any).isModal === true) {
+          continue; // Rendered in Engine top-layer overlay portal pass
+        }
         child.render(ctx);
       }
     }

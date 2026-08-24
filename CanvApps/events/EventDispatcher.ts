@@ -108,6 +108,27 @@ export class EventDispatcher {
     if (!root) {
       return null;
     }
+
+    // 1. Check open top-layer modals first (highest hit priority)
+    const findOpenModal = (element: UIElement): UIElement | null => {
+      if ((element as any).isModal === true && (element as any).isModalOpen?.()) {
+        return element;
+      }
+      for (let i = element.children.length - 1; i >= 0; i--) {
+        const found = findOpenModal(element.children[i]);
+        if (found) return found;
+      }
+      return null;
+    };
+
+    const openModal = findOpenModal(root);
+    if (openModal) {
+      const hit = openModal.hitTest(canvasX, canvasY);
+      if (hit) {
+        return hit;
+      }
+    }
+
     return root.hitTest(canvasX, canvasY);
   }
 

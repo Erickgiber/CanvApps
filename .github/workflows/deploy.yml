@@ -35,9 +35,7 @@ jobs:
         run: npm ci || npm install
 
       - name: Build Compiled Framework & Production Minified App
-        run: |
-          npm run build:lib
-          npm run build:app
+        run: npm run build
 
       - name: Setup Pages
         uses: actions/configure-pages@v5

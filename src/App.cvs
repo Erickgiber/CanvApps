@@ -3,6 +3,7 @@
   import DashboardView from './views/DashboardView.cvs';
   import AuthView from './views/AuthView.cvs';
   import PintertestView from './views/PintertestView.cvs';
+  import PinDetailView from './views/PinDetailView.cvs';
   import NotFoundView from './views/NotFoundView.cvs';
   import AppLayout from './layouts/AppLayout.cvs';
   import { signal } from '@canvapps';
@@ -38,8 +39,12 @@
         <PintertestView />
       }
 
+      @if (sessionStore.state.activeRoute.startsWith('/pintertest/')) {
+        <PinDetailView />
+      }
+
       <!-- 404 Fallback Scene for unmapped routes -->
-      @if (sessionStore.state.activeRoute !== '/' && sessionStore.state.activeRoute !== '/dashboard' && sessionStore.state.activeRoute !== '/auth' && sessionStore.state.activeRoute !== '/pintertest') {
+      @if (sessionStore.state.activeRoute !== '/' && sessionStore.state.activeRoute !== '/dashboard' && sessionStore.state.activeRoute !== '/auth' && sessionStore.state.activeRoute !== '/pintertest' && !sessionStore.state.activeRoute.startsWith('/pintertest/')) {
         <NotFoundView />
       }
 

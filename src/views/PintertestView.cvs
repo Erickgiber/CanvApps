@@ -1,24 +1,8 @@
 <script lang="ts">
-  import { sessionStore } from '../stores/session.store';
+  import { sessionStore, navigateRoute } from '../stores/session.store';
+  import { pinsData, PinItem, toggleSavePin as storeToggleSavePin, toggleLikePin as storeToggleLikePin, savePintertestScroll, restorePintertestScroll, pintertestScrollPosition, resetScrollToTop } from '../stores/pintertest.store';
 
   const isDark = computed(() => sessionStore.state.theme === 'dark');
-
-  interface PinItem {
-    id: string;
-    title: string;
-    author: string;
-    authorHandle: string;
-    avatarColor: string;
-    src: string;
-    height: number;
-    aspectRatio: number;
-    category: string;
-    likes: number;
-    isLiked?: boolean;
-    isSaved?: boolean;
-    tags: string[];
-    description: string;
-  }
 
   // 1. Responsive Viewport Signals (First-Mobile Architecture)
   const { isMobile, isTablet, isDesktop, width } = useBreakpoints();
@@ -36,178 +20,6 @@
   const searchQuery = signal('');
   const isModalOpen = signal(false);
   const selectedPin = signal<PinItem | null>(null);
-
-  // 3. Dataset of High-Resolution Curated Pins
-  const pinsData = signal<PinItem[]>([
-    {
-      id: 'pin-1',
-      title: 'Minimalist Bauhaus Villa',
-      author: 'Elena Rostova',
-      authorHandle: '@elena.arch',
-      avatarColor: '#e11d48',
-      src: 'https://images.unsplash.com/photo-1513694203232-719a280e022f?w=700&auto=format&fit=crop&q=80',
-      height: 270,
-      aspectRatio: 0.75,
-      category: 'Architecture',
-      likes: 1420,
-      tags: ['#bauhaus', '#minimal', '#concrete'],
-      description: 'Monolithic raw concrete lines contrasting with warm natural wood interior aesthetics.',
-    },
-    {
-      id: 'pin-2',
-      title: 'Neo-Tokyo Cyberpunk Rain',
-      author: 'Kenji Sato',
-      authorHandle: '@kenji.visuals',
-      avatarColor: '#06b6d4',
-      src: 'https://images.unsplash.com/photo-1508739773434-c26b3d09e071?w=700&auto=format&fit=crop&q=80',
-      height: 320,
-      aspectRatio: 0.65,
-      category: 'Cyberpunk',
-      likes: 2890,
-      tags: ['#cyberpunk', '#neon', '#tokyo'],
-      description: 'Atmospheric neon drenched alleyway in Shinjuku during midnight rainstorm.',
-    },
-    {
-      id: 'pin-3',
-      title: 'Fluid Iridescent Glasswave',
-      author: 'Maya Lin',
-      authorHandle: '@maya.design',
-      avatarColor: '#8b5cf6',
-      src: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=700&auto=format&fit=crop&q=80',
-      height: 180,
-      aspectRatio: 1.2,
-      category: 'Art & Design',
-      likes: 954,
-      tags: ['#3d', '#glassmorphism', '#gradient'],
-      description: 'Organic caustic refractions simulated in high precision sub-pixel shaders.',
-    },
-    {
-      id: 'pin-4',
-      title: 'Misty Alpine Pine Ridge',
-      author: 'Lukas Steiner',
-      authorHandle: '@lukas.nature',
-      avatarColor: '#10b981',
-      src: 'https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?w=700&auto=format&fit=crop&q=80',
-      height: 310,
-      aspectRatio: 0.67,
-      category: 'Nature',
-      likes: 3110,
-      tags: ['#forest', '#mountains', '#fog'],
-      description: 'Sunrise fog rolls over dense alpine evergreen canopies in the Dolomites.',
-    },
-    {
-      id: 'pin-5',
-      title: 'High-Fashion Minimal Trench',
-      author: 'Clara Dupont',
-      authorHandle: '@clara.vogue',
-      avatarColor: '#f59e0b',
-      src: 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=700&auto=format&fit=crop&q=80',
-      height: 290,
-      aspectRatio: 0.67,
-      category: 'Fashion',
-      likes: 1870,
-      tags: ['#couture', '#editorial', '#minimal'],
-      description: 'Autumn runway statement piece with structured geometry and bold saffron tones.',
-    },
-    {
-      id: 'pin-6',
-      title: 'Futuristic Spiral Atrium',
-      author: 'Zaha Studio',
-      authorHandle: '@zaha.forms',
-      avatarColor: '#ec4899',
-      src: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=700&auto=format&fit=crop&q=80',
-      height: 280,
-      aspectRatio: 0.68,
-      category: 'Architecture',
-      likes: 2415,
-      tags: ['#parametric', '#spiral', '#atrium'],
-      description: 'Continuous parametric spiral connecting 8 levels of light-filled open gallery space.',
-    },
-    {
-      id: 'pin-7',
-      title: 'Vibrant Acrylic Chromatics',
-      author: 'Gabriel Ross',
-      authorHandle: '@gabriel.art',
-      avatarColor: '#3b82f6',
-      src: 'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?w=700&auto=format&fit=crop&q=80',
-      height: 260,
-      aspectRatio: 0.7,
-      category: 'Art & Design',
-      likes: 1240,
-      tags: ['#acrylic', '#colorplay', '#abstract'],
-      description: 'Macro pigment suspension capturing microscopic eddies of saturated cobalt and magenta.',
-    },
-    {
-      id: 'pin-8',
-      title: 'Cyber Mech Core Reactor',
-      author: 'Aoi Kuroda',
-      authorHandle: '@aoi.mecha',
-      avatarColor: '#14b8a6',
-      src: 'https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?w=700&auto=format&fit=crop&q=80',
-      height: 190,
-      aspectRatio: 1.1,
-      category: 'Cyberpunk',
-      likes: 3820,
-      tags: ['#mecha', '#scifi', '#hardedge'],
-      description: 'High-density computational core housing quantum stabilization chambers.',
-    },
-    {
-      id: 'pin-9',
-      title: 'Golden Hour Dolomite Peak',
-      author: 'Marco Bellini',
-      authorHandle: '@marco.peaks',
-      avatarColor: '#f97316',
-      src: 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=700&auto=format&fit=crop&q=80',
-      height: 175,
-      aspectRatio: 1.3,
-      category: 'Nature',
-      likes: 4190,
-      tags: ['#dolomites', '#goldenhour', '#alps'],
-      description: 'Last rays of alpine sun illuminating jagged limestone cliffs above the cloud layer.',
-    },
-    {
-      id: 'pin-10',
-      title: 'Anime Sunset Twilight Cloud',
-      author: 'Sora Hayashi',
-      authorHandle: '@sora.sky',
-      avatarColor: '#a855f7',
-      src: 'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=700&auto=format&fit=crop&q=80',
-      height: 285,
-      aspectRatio: 0.7,
-      category: 'Anime',
-      likes: 5620,
-      tags: ['#makoto', '#clouds', '#sunset'],
-      description: 'Dreamlike cumulus towers glowing under pastel twilight skies.',
-    },
-    {
-      id: 'pin-11',
-      title: 'Glass Horizon Infinity Villa',
-      author: 'Elena Rostova',
-      authorHandle: '@elena.arch',
-      avatarColor: '#e11d48',
-      src: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=700&auto=format&fit=crop&q=80',
-      height: 185,
-      aspectRatio: 1.25,
-      category: 'Architecture',
-      likes: 2130,
-      tags: ['#villa', '#infinity', '#luxury'],
-      description: 'Seamless glass boundaries connecting interior living spaces directly with ocean vistas.',
-    },
-    {
-      id: 'pin-12',
-      title: 'Deep Space Nebula Cluster',
-      author: 'Cosmo Lab',
-      authorHandle: '@cosmo.deep',
-      avatarColor: '#6366f1',
-      src: 'https://images.unsplash.com/photo-1534447677768-be436bb09401?w=700&auto=format&fit=crop&q=80',
-      height: 270,
-      aspectRatio: 0.75,
-      category: 'Sci-Fi',
-      likes: 3490,
-      tags: ['#nebula', '#astronomy', '#deepspace'],
-      description: 'Stellar nursery glowing in ionized hydrogen and oxygen emission spectrums.',
-    },
-  ]);
 
   const categories = ['All', 'Architecture', 'Cyberpunk', 'Art & Design', 'Nature', 'Fashion', 'Anime', 'Sci-Fi'];
 
@@ -265,31 +77,36 @@
   }
 
   function toggleSavePin(pin: PinItem, e?: any) {
-    if (e && typeof e.stopPropagation === 'function') {
-      e.stopPropagation();
-    }
-    pin.isSaved = !pin.isSaved;
-    pinsData.value = [...pinsData.value];
+    storeToggleSavePin(pin, e);
     if (selectedPin.value && selectedPin.value.id === pin.id) {
       selectedPin.value = { ...selectedPin.value, isSaved: pin.isSaved };
     }
   }
 
   function toggleLikePin(pin: PinItem, e?: any) {
-    if (e && typeof e.stopPropagation === 'function') {
-      e.stopPropagation();
-    }
-    if (pin.isLiked) {
-      pin.likes--;
-      pin.isLiked = false;
-    } else {
-      pin.likes++;
-      pin.isLiked = true;
-    }
-    pinsData.value = [...pinsData.value];
+    storeToggleLikePin(pin, e);
     if (selectedPin.value && selectedPin.value.id === pin.id) {
       selectedPin.value = { ...selectedPin.value, likes: pin.likes, isLiked: pin.isLiked };
     }
+  }
+
+  function handlePinClick(pin: PinItem, e?: any) {
+    if (isMobile.value) {
+      savePintertestScroll();
+      resetScrollToTop();
+      navigateRoute('/pintertest/' + pin.id);
+    } else {
+      openPinModal(pin, e);
+    }
+  }
+
+  // Restore previous scroll position on mobile return
+  if (typeof window !== 'undefined') {
+    queueMicrotask(() => {
+      if (pintertestScrollPosition.value > 0) {
+        restorePintertestScroll();
+      }
+    });
   }
 
   const modalOriginRect = signal<{ x: number; y: number; width: number; height: number } | null>(null);
@@ -395,7 +212,7 @@
       <!-- Column 0 -->
       <view :width="colWidth.value" flexDirection="column" :gap={isMobile.value ? 10 : 16} flexShrink="0">
         @each col0.value as pin {
-          <view width="100%" flexDirection="column" :backgroundColor={isDark.value ? '#18181e' : '#ffffff'} borderRadius="16" overflow="hidden" borderWidth="1" :borderColor={isDark.value ? '#262630' : '#e2e8f0'} flexShrink="0" @click="openPinModal(pin, $event)">
+          <view width="100%" flexDirection="column" :backgroundColor={isDark.value ? '#18181e' : '#ffffff'} borderRadius="16" overflow="hidden" borderWidth="1" :borderColor={isDark.value ? '#262630' : '#e2e8f0'} flexShrink="0" @click="handlePinClick(pin, $event)">
             <view width="100%" position="relative" flexShrink="0">
               <image :src="pin.src" width="100%" :height="pin.height" fit="cover" borderRadius="[16, 16, 0, 0]" :backgroundColor={isDark.value ? '#1f1f26' : '#f1f5f9'} />
               <view position="absolute" right="8" top="8">
@@ -430,7 +247,7 @@
       <!-- Column 1 -->
       <view :width="colWidth.value" flexDirection="column" :gap={isMobile.value ? 10 : 16} flexShrink="0">
         @each col1.value as pin {
-          <view width="100%" flexDirection="column" :backgroundColor={isDark.value ? '#18181e' : '#ffffff'} borderRadius="16" overflow="hidden" borderWidth="1" :borderColor={isDark.value ? '#262630' : '#e2e8f0'} flexShrink="0" @click="openPinModal(pin, $event)">
+          <view width="100%" flexDirection="column" :backgroundColor={isDark.value ? '#18181e' : '#ffffff'} borderRadius="16" overflow="hidden" borderWidth="1" :borderColor={isDark.value ? '#262630' : '#e2e8f0'} flexShrink="0" @click="handlePinClick(pin, $event)">
             <view width="100%" position="relative" flexShrink="0">
               <image :src="pin.src" width="100%" :height="pin.height" fit="cover" borderRadius="[16, 16, 0, 0]" :backgroundColor={isDark.value ? '#1f1f26' : '#f1f5f9'} />
               <view position="absolute" right="8" top="8">
@@ -466,7 +283,7 @@
       @if (columnCount.value >= 3) {
         <view :width="colWidth.value" flexDirection="column" :gap={isMobile.value ? 10 : 16} flexShrink="0">
           @each col2.value as pin {
-            <view width="100%" flexDirection="column" :backgroundColor={isDark.value ? '#18181e' : '#ffffff'} borderRadius="16" overflow="hidden" borderWidth="1" :borderColor={isDark.value ? '#262630' : '#e2e8f0'} flexShrink="0" @click="openPinModal(pin, $event)">
+            <view width="100%" flexDirection="column" :backgroundColor={isDark.value ? '#18181e' : '#ffffff'} borderRadius="16" overflow="hidden" borderWidth="1" :borderColor={isDark.value ? '#262630' : '#e2e8f0'} flexShrink="0" @click="handlePinClick(pin, $event)">
               <view width="100%" position="relative" flexShrink="0">
                 <image :src="pin.src" width="100%" :height="pin.height" fit="cover" borderRadius="[16, 16, 0, 0]" :backgroundColor={isDark.value ? '#1f1f26' : '#f1f5f9'} />
                 <view position="absolute" right="8" top="8">
@@ -503,7 +320,7 @@
       @if (columnCount.value >= 4) {
         <view :width="colWidth.value" flexDirection="column" :gap={isMobile.value ? 10 : 16} flexShrink="0">
           @each col3.value as pin {
-            <view width="100%" flexDirection="column" :backgroundColor={isDark.value ? '#18181e' : '#ffffff'} borderRadius="16" overflow="hidden" borderWidth="1" :borderColor={isDark.value ? '#262630' : '#e2e8f0'} flexShrink="0" @click="openPinModal(pin, $event)">
+            <view width="100%" flexDirection="column" :backgroundColor={isDark.value ? '#18181e' : '#ffffff'} borderRadius="16" overflow="hidden" borderWidth="1" :borderColor={isDark.value ? '#262630' : '#e2e8f0'} flexShrink="0" @click="handlePinClick(pin, $event)">
               <view width="100%" position="relative" flexShrink="0">
                 <image :src="pin.src" width="100%" :height="pin.height" fit="cover" borderRadius="[16, 16, 0, 0]" :backgroundColor={isDark.value ? '#1f1f26' : '#f1f5f9'} />
                 <view position="absolute" right="8" top="8">
@@ -540,7 +357,7 @@
       @if (columnCount.value >= 5) {
         <view :width="colWidth.value" flexDirection="column" :gap={isMobile.value ? 10 : 16} flexShrink="0">
           @each col4.value as pin {
-            <view width="100%" flexDirection="column" :backgroundColor={isDark.value ? '#18181e' : '#ffffff'} borderRadius="16" overflow="hidden" borderWidth="1" :borderColor={isDark.value ? '#262630' : '#e2e8f0'} flexShrink="0" @click="openPinModal(pin, $event)">
+            <view width="100%" flexDirection="column" :backgroundColor={isDark.value ? '#18181e' : '#ffffff'} borderRadius="16" overflow="hidden" borderWidth="1" :borderColor={isDark.value ? '#262630' : '#e2e8f0'} flexShrink="0" @click="handlePinClick(pin, $event)">
               <view width="100%" position="relative" flexShrink="0">
                 <image :src="pin.src" width="100%" :height="pin.height" fit="cover" borderRadius="[16, 16, 0, 0]" :backgroundColor={isDark.value ? '#1f1f26' : '#f1f5f9'} />
                 <view position="absolute" right="8" top="8">

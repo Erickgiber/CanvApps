@@ -39,15 +39,8 @@ export default defineConfig(({ mode }) => {
           lib: {
             entry: path.resolve(__dirname, 'CanvApps/index.ts'),
             name: 'CanvApps',
-            fileName: (format) =>
-              isUnminified
-                ? format === 'es'
-                  ? 'canvapps.unminified.js'
-                  : 'canvapps.unminified.umd.cjs'
-                : format === 'es'
-                ? 'canvapps.js'
-                : 'canvapps.umd.cjs',
-            formats: ['es', 'umd'],
+            fileName: () => 'canvapps.js',
+            formats: ['es'],
           },
           rollupOptions: {
             // Pure vanilla bundle with zero external dependencies

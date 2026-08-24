@@ -3,14 +3,13 @@
   "version": "0.1.0",
   "description": "High-performance 100% Canvas-based UI Framework for SPA, PWA, and Native Mobile via Capacitor",
   "type": "module",
-  "main": "./dist/canvapps.umd.cjs",
+  "main": "./dist/canvapps.js",
   "module": "./dist/canvapps.js",
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "import": "./dist/canvapps.js",
-      "require": "./dist/canvapps.umd.cjs"
+      "import": "./dist/canvapps.js"
     },
     "./core": {
       "types": "./dist/core/index.d.ts",
@@ -36,15 +35,9 @@
   },
   "scripts": {
     "dev": "vite",
-    "build": "npm run build:lib && npm run build:app && npm run build:preview-code",
-    "build:lib": "tsc --noEmit && vite build",
-    "build:unminified": "vite build --mode unminified && npm run build:app && npm run build:preview-code",
-    "build:lib:unminified": "vite build --mode unminified",
-    "build:app": "tsx CanvApps/cli/bin.ts build",
-    "build:preview-code": "tsx CanvApps/cli/bin.ts preview-code",
-    "package:extension": "tsx CanvApps/extension/package-vsix.ts",
+    "build": "tsc --noEmit && vite build && tsx CanvApps/cli/bin.ts build",
     "preview": "vite preview --outDir dist-app",
-    "preview:app": "vite preview --outDir dist-app"
+    "package:extension": "tsx CanvApps/extension/package-vsix.ts"
   },
   "keywords": [
     "canvas",

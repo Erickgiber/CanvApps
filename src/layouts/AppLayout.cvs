@@ -14,7 +14,7 @@
 </script>
 
 <!-- Persistent Application Master Layout -->
-<view width="100%" height="100%" flexDirection="column" overflow="auto" :backgroundColor={isDark.value ? '#101010' : '#f8fafc'} :padding={isMobile.value ? [8, 10] : [14, 20]} :gap={isMobile.value ? 8 : 12}>
+<view id="app-layout-scroll" width="100%" height="100%" flexDirection="column" overflow="auto" :backgroundColor={isDark.value ? '#101010' : '#f8fafc'} :padding={isMobile.value ? [8, 10] : [14, 20]} :gap={isMobile.value ? 8 : 12}>
 
   <!-- 1. Persistent Top Header -->
   <AppHeader :activeRoute="(props as any)?.activeRoute" @navigate="onHeaderNavigate" flexShrink="0" />

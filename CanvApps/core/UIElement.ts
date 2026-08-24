@@ -1,6 +1,8 @@
 import { Rect, Size, Insets } from '../types/geometry';
 import { VisualStyles, BorderRadius } from '../types/style';
 import { UIEventType, CanvasEventListener, CanvasPointerEvent } from '../events/types';
+import { Engine } from './Engine';
+import { animate, Easings } from '../animation/Tween';
 
 /**
  * Abstract base class for all renderable nodes in the CanvApps UI hierarchy.
@@ -545,6 +547,43 @@ export abstract class UIElement {
         child.updateWorldTransform(childOffsetX, childOffsetY);
       }
     }
+  }
+
+  /**
+   * Scrolls this container to the specified coordinates with optional smooth animation.
+   */
+  public scrollTo(options: { top?: number; left?: number; behavior?: 'smooth' | 'auto'; duration?: number } = {}): () => void {
+    const targetTop = options.top !== undefined ? Math.max(0, options.top) : this.scrollTop;
+    const targetLeft = options.left !== undefined ? Math.max(0, options.left) : this.scrollLeft;
+    const behavior = options.behavior ?? 'auto';
+    const duration = options.duration ?? 350;
+
+    if (behavior === 'auto' || duration <= 0 || typeof window === 'undefined') {
+      this.scrollTop = targetTop;
+      this.scrollLeft = targetLeft;
+      Engine.invalidateActive();
+      return () => {};
+    }
+
+    const startTop = this.scrollTop;
+    const startLeft = this.scrollLeft;
+
+    return animate({
+      from: 0,
+      to: 1,
+      duration,
+      easing: Easings.easeOutCubic,
+      onUpdate: (progress) => {
+        this.scrollTop = startTop + (targetTop - startTop) * progress;
+        this.scrollLeft = startLeft + (targetLeft - startLeft) * progress;
+        Engine.invalidateActive();
+      },
+      onComplete: () => {
+        this.scrollTop = targetTop;
+        this.scrollLeft = targetLeft;
+        Engine.invalidateActive();
+      },
+    });
   }
 
   // ---------------------------------------------------------------------------

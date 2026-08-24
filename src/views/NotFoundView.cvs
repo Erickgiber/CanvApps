@@ -1,0 +1,113 @@
+<script lang="ts">
+  import { sessionStore, navigateRoute } from '../stores/session.store';
+
+  // Responsive signals
+  const { isMobile } = useBreakpoints();
+  const isDark = computed(() => sessionStore.state.theme === 'dark');
+
+  function goHome() {
+    navigateRoute('/');
+  }
+
+  function goPintertest() {
+    navigateRoute('/pintertest');
+  }
+
+  function goAuth() {
+    navigateRoute('/auth');
+  }
+</script>
+
+<motion animation="scale-in" :duration="400">
+  <view width="100%" height="100%" flexDirection="column" alignItems="center" justifyContent="center" :padding={isMobile.value ? [20, 16] : [40, 24]} flexGrow="1">
+    
+    <!-- 404 Master Card -->
+    <view 
+      :width={isMobile.value ? '100%' : 640} 
+      flexDirection="column" 
+      alignItems="center" 
+      :padding={isMobile.value ? [24, 18] : [36, 32]} 
+      borderRadius="24" 
+      borderWidth="1" 
+      :backgroundColor={isDark.value ? '#18181f' : '#ffffff'} 
+      :borderColor={isDark.value ? '#282834' : '#e2e8f0'} 
+      :boxShadow={isDark.value ? { offsetX: 0, offsetY: 20, blur: 50, color: 'rgba(0,0,0,0.85)' } : { offsetX: 0, offsetY: 20, blur: 50, color: 'rgba(0,0,0,0.08)' }} 
+      :gap={isMobile.value ? 16 : 24} 
+      flexShrink="0"
+    >
+      
+      <!-- Glowing 404 Badge Icon -->
+      <view width="72" height="72" borderRadius="36" :backgroundColor={isDark.value ? '#232332' : '#f0f9ff'} borderWidth="1" :borderColor={isDark.value ? '#35354a' : '#bae6fd'} alignItems="center" justifyContent="center" flexShrink="0">
+        <text :fontSize={isMobile.value ? 28 : 34}>🛰️</text>
+      </view>
+
+      <!-- 404 Main Typography -->
+      <view flexDirection="column" alignItems="center" gap="8" flexShrink="0">
+        <text fontSize="48" fontWeight="bold" color="#0284c7" letterSpacing="2">404</text>
+        <text :fontSize={isMobile.value ? 18 : 22} fontWeight="bold" :color={isDark.value ? '#ffffff' : '#0f172a'}>Page Not Found</text>
+        <text :fontSize={isMobile.value ? 12 : 14} :color={isDark.value ? '#888899' : '#64748b'} textAlign="center" :wordWrap="true">
+          The requested Canvas scene does not exist or has moved.
+        </text>
+      </view>
+
+      <!-- Current Route Info Pill -->
+      <view :padding={isMobile.value ? [6, 12] : [8, 16]} borderRadius="12" :backgroundColor={isDark.value ? '#121217' : '#f1f5f9'} borderWidth="1" :borderColor={isDark.value ? '#232330' : '#e2e8f0'} flexDirection="row" alignItems="center" gap="8" flexShrink="0">
+        <text fontSize="12" :color={isDark.value ? '#777788' : '#94a3b8'}>Target URL:</text>
+        <text fontSize="12" fontWeight="bold" color="#0284c7">{{ sessionStore.state.activeRoute }}</text>
+      </view>
+
+      <!-- Action Navigation Buttons -->
+      <view width="100%" :flexDirection={isMobile.value ? 'column' : 'row'} alignItems="center" justifyContent="center" :gap={isMobile.value ? 10 : 14} flexShrink="0">
+        
+        <!-- 1. Home Dashboard Button -->
+        <button 
+          label="📊 Return to Dashboard" 
+          backgroundColor="#0284c7" 
+          hoverBackgroundColor="#0369a1" 
+          color="#ffffff" 
+          borderRadius="14" 
+          :padding={isMobile.value ? [10, 16] : [10, 20]} 
+          fontSize="13" 
+          fontWeight="bold" 
+          :width={isMobile.value ? '100%' : 'auto'} 
+          @click="goHome" 
+        />
+
+        <!-- 2. Pintertest Button -->
+        <button 
+          label="📌 Explore Pintertest" 
+          :backgroundColor={isDark.value ? '#282836' : '#f1f5f9'} 
+          :hoverBackgroundColor={isDark.value ? '#333346' : '#e2e8f0'} 
+          :color={isDark.value ? '#ffffff' : '#1e293b'} 
+          borderWidth="1" 
+          :borderColor={isDark.value ? '#3a3a4d' : '#cbd5e1'} 
+          borderRadius="14" 
+          :padding={isMobile.value ? [10, 16] : [10, 20]} 
+          fontSize="13" 
+          fontWeight="bold" 
+          :width={isMobile.value ? '100%' : 'auto'} 
+          @click="goPintertest" 
+        />
+
+        <!-- 3. Auth Button -->
+        <button 
+          label="🔑 Sign In" 
+          :backgroundColor={isDark.value ? '#282836' : '#f1f5f9'} 
+          :hoverBackgroundColor={isDark.value ? '#333346' : '#e2e8f0'} 
+          :color={isDark.value ? '#ffffff' : '#1e293b'} 
+          borderWidth="1" 
+          :borderColor={isDark.value ? '#3a3a4d' : '#cbd5e1'} 
+          borderRadius="14" 
+          :padding={isMobile.value ? [10, 16] : [10, 20]} 
+          fontSize="13" 
+          fontWeight="bold" 
+          :width={isMobile.value ? '100%' : 'auto'} 
+          @click="goAuth" 
+        />
+
+      </view>
+
+    </view>
+
+  </view>
+</motion>

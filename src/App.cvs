@@ -3,6 +3,7 @@
   import DashboardView from './views/DashboardView.cvs';
   import AuthView from './views/AuthView.cvs';
   import PintertestView from './views/PintertestView.cvs';
+  import NotFoundView from './views/NotFoundView.cvs';
   import AppLayout from './layouts/AppLayout.cvs';
   import { signal } from '@canvapps';
   import { sessionStore, navigateRoute } from './stores/session.store';
@@ -25,7 +26,7 @@
     <AppLayout @navigate="handleNavigate">
       
       <!-- Dynamic Scenes rendered inside AppLayout slot based on activeRoute -->
-      @if (sessionStore.state.activeRoute === '/') {
+      @if (sessionStore.state.activeRoute === '/' || sessionStore.state.activeRoute === '/dashboard') {
         <DashboardView />
       }
 
@@ -35,6 +36,11 @@
 
       @if (sessionStore.state.activeRoute === '/pintertest') {
         <PintertestView />
+      }
+
+      <!-- 404 Fallback Scene for unmapped routes -->
+      @if (sessionStore.state.activeRoute !== '/' && sessionStore.state.activeRoute !== '/dashboard' && sessionStore.state.activeRoute !== '/auth' && sessionStore.state.activeRoute !== '/pintertest') {
+        <NotFoundView />
       }
 
     </AppLayout>

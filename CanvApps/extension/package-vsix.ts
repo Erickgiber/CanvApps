@@ -28,7 +28,7 @@ const contentTypesXml = `<?xml version="1.0" encoding="utf-8"?>
   <Default Extension=".md" ContentType="text/markdown"/>
   <Default Extension=".png" ContentType="image/png"/>
   <Default Extension=".svg" ContentType="image/svg+xml"/>
-  <Default Extension=".ts" ContentType="video/mp2t"/>
+  <Default Extension=".ts" ContentType="text/plain"/>
   <Default Extension=".vsixmanifest" ContentType="text/xml"/>
 </Types>`;
 

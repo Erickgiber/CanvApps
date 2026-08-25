@@ -19,7 +19,7 @@
 </script>
 
 <motion animation="scale-in" :duration="400">
-  <view width="100%" height="100%" flexDirection="column" alignItems="center" justifyContent="center" :padding={isMobile.value ? [20, 16] : [40, 24]} flexGrow="1">
+  <view width="100%" flexDirection="column" alignItems="center" justifyContent="center" :padding={isMobile.value ? [20, 16] : [40, 24]} flexGrow="1">
     
     <!-- 404 Master Card -->
     <view 
@@ -88,27 +88,7 @@
           :width={isMobile.value ? '100%' : 'auto'} 
           @click="goGallery" 
         />
-
-        <!-- 3. Profile Button -->
-        <button 
-          label="👤 User Profile" 
-          :backgroundColor={isDark.value ? '#282836' : '#f1f5f9'} 
-          :hoverBackgroundColor={isDark.value ? '#333346' : '#e2e8f0'} 
-          :color={isDark.value ? '#ffffff' : '#1e293b'} 
-          borderWidth="1" 
-          :borderColor={isDark.value ? '#3a3a4d' : '#cbd5e1'} 
-          borderRadius="14" 
-          :padding={isMobile.value ? [10, 16] : [10, 20]} 
-          fontSize="13" 
-          fontWeight="bold" 
-          :width={isMobile.value ? '100%' : 'auto'} 
-          @click="goProfile" 
-        />
-
-
       </view>
-
     </view>
-
   </view>
 </motion>

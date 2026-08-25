@@ -1,7 +1,6 @@
 <script lang="ts">
   import SplashView from './views/SplashView.cvs';
   import DashboardView from './views/DashboardView.cvs';
-  import ProfileView from './views/ProfileView.cvs';
   import GalleryView from './views/GalleryView.cvs';
   import GalleryDetailView from './views/GalleryDetailView.cvs';
   import NotFoundView from './views/NotFoundView.cvs';
@@ -31,10 +30,6 @@
         <DashboardView />
       }
 
-      @if (sessionStore.state.activeRoute === '/profile') {
-        <ProfileView />
-      }
-
       @if (sessionStore.state.activeRoute === '/gallery') {
         <GalleryView />
       }
@@ -44,7 +39,7 @@
       }
 
       <!-- 404 Fallback Scene for unmapped routes -->
-      @if (sessionStore.state.activeRoute !== '/' && sessionStore.state.activeRoute !== '/profile' && sessionStore.state.activeRoute !== '/gallery' && !sessionStore.state.activeRoute.startsWith('/gallery/')) {
+      @if (sessionStore.state.activeRoute !== '/' && sessionStore.state.activeRoute !== '/gallery' && !sessionStore.state.activeRoute.startsWith('/gallery/')) {
         <NotFoundView />
       }
     </AppLayout>

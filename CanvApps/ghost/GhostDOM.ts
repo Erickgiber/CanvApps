@@ -44,7 +44,6 @@ export class GhostDOM {
   constructor(mountContainer?: HTMLElement) {
     this.container = document.createElement('div');
     this.container.id = 'canvapps-ghost-dom-overlay';
-    this.container.setAttribute('aria-hidden', 'false');
 
     // Make overlay absolute, overlaying the canvas without blocking unselected pointer events
     Object.assign(this.container.style, {
@@ -58,7 +57,7 @@ export class GhostDOM {
       zIndex: '1',
     });
 
-    // Inject global selection highlighting styles for GhostDOM text nodes
+    // Inject global styles for GhostDOM text and input nodes
     if (typeof document !== 'undefined' && !document.getElementById('canvapps-ghost-dom-styles')) {
       const style = document.createElement('style');
       style.id = 'canvapps-ghost-dom-styles';
@@ -67,6 +66,30 @@ export class GhostDOM {
         #canvapps-ghost-dom-overlay * {
           -webkit-tap-highlight-color: transparent !important;
           -webkit-touch-callout: none !important;
+        }
+        #canvapps-ghost-dom-overlay input,
+        #canvapps-ghost-dom-overlay textarea,
+        #canvapps-ghost-dom-overlay select {
+          color: transparent !important;
+          -webkit-text-fill-color: transparent !important;
+          caret-color: transparent !important;
+          background: transparent !important;
+        }
+        #canvapps-ghost-dom-overlay input::placeholder,
+        #canvapps-ghost-dom-overlay textarea::placeholder {
+          color: transparent !important;
+          -webkit-text-fill-color: transparent !important;
+          opacity: 0 !important;
+        }
+        #canvapps-ghost-dom-overlay input::selection,
+        #canvapps-ghost-dom-overlay textarea::selection {
+          background-color: transparent !important;
+          color: transparent !important;
+        }
+        #canvapps-ghost-dom-overlay input::-moz-selection,
+        #canvapps-ghost-dom-overlay textarea::-moz-selection {
+          background-color: transparent !important;
+          color: transparent !important;
         }
         #canvapps-ghost-dom-overlay .canvapps-ghost-text {
           color: transparent !important;
@@ -135,6 +158,24 @@ export class GhostDOM {
         // ignore
       }
     }
+  }
+
+  /**
+   * Resolves the effective background color of a ghost target by walking up
+   * the UI tree. Used to match the ghost input text color with the canvas background,
+   * rendering the HTML input fully opaque/visible to anti-phishing bots while
+   * seamlessly camouflaging with the Canvas render layer for human users.
+   */
+  public resolveEffectiveBackgroundColor(target: GhostTarget): string {
+    let current: UIElement | null = target;
+    while (current) {
+      const bg = (current.styles as any)?.backgroundColor;
+      if (bg && bg !== 'transparent') {
+        return bg;
+      }
+      current = current.parent;
+    }
+    return '#ffffff';
   }
 
   /**
@@ -248,19 +289,24 @@ export class GhostDOM {
       ghost.setAttribute('data-canvapps-id', elId);
 
       if (type !== 'text' && type !== 'anchor' && type !== 'link') {
-        // Invisible input/interactive
+        // Single Source of Truth: Canvas renders the visible text at 120 FPS.
+        // Ghost DOM input has opacity 1 and transparent text fill to capture native IME/keyboard
+        // events without double-rendering text or triggering anti-phishing transparent overlay heuristics.
         Object.assign(ghost.style, {
           position: 'absolute',
-          opacity: '0',
+          opacity: '1',
           pointerEvents: 'auto',
           border: 'none',
           outline: 'none',
           background: 'transparent',
           color: 'transparent',
+          WebkitTextFillColor: 'transparent',
+          caretColor: 'transparent',
           padding: '0',
           margin: '0',
           resize: 'none',
           cursor: 'text',
+          boxSizing: 'border-box',
           zIndex: '1',
         });
       }
@@ -309,11 +355,28 @@ export class GhostDOM {
       (typeof HTMLSpanElement !== 'undefined' && ghost instanceof HTMLSpanElement);
 
     if (isInputOrTextarea) {
+      const padding = target.getComputedPadding ? target.getComputedPadding() : { top: 0, right: 0, bottom: 0, left: 0 };
+      const styles = (target.styles ?? {}) as Record<string, any>;
+      const fontSize = styles.fontSize ?? 14;
+      const fontFamily = styles.fontFamily ?? 'system-ui, -apple-system, sans-serif';
+      const fontWeight = String(styles.fontWeight ?? 'normal');
+      const textAlign = styles.textAlign ?? 'left';
+
       Object.assign(ghost.style, {
         left: `${x}px`,
         top: `${y}px`,
         width: `${Math.max(1, width)}px`,
         height: `${Math.max(1, height)}px`,
+        padding: `${padding.top}px ${padding.right}px ${padding.bottom}px ${padding.left}px`,
+        fontSize: `${fontSize}px`,
+        fontFamily,
+        fontWeight,
+        textAlign,
+        color: 'transparent',
+        WebkitTextFillColor: 'transparent',
+        caretColor: 'transparent',
+        opacity: '1',
+        boxSizing: 'border-box',
         cursor: 'text',
         display: isVisible ? 'block' : 'none',
       });
@@ -331,8 +394,9 @@ export class GhostDOM {
           }
         }
       }
-      if (target.getPlaceholder) {
-        (ghost as any).placeholder = target.getPlaceholder() ?? '';
+      const placeholder = target.getPlaceholder ? target.getPlaceholder() : (target.styles as any)?.placeholder;
+      if (placeholder !== undefined) {
+        (ghost as any).placeholder = placeholder ?? '';
       }
     } else if (isAnchor) {
       const href = target.getHref ? target.getHref() : (target.styles as any)?.href || '';
@@ -519,11 +583,16 @@ export class GhostDOM {
         }
       });
 
-      inputEl.addEventListener('select', () => {
+      const syncSelection = () => {
         if (target.onSelectionChange && inputEl.selectionStart !== null && inputEl.selectionEnd !== null) {
           target.onSelectionChange(inputEl.selectionStart, inputEl.selectionEnd);
         }
-      });
+      };
+
+      inputEl.addEventListener('select', syncSelection);
+      inputEl.addEventListener('keyup', syncSelection);
+      inputEl.addEventListener('mouseup', syncSelection);
+      inputEl.addEventListener('pointerup', syncSelection);
     }
 
   }

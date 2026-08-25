@@ -75,7 +75,10 @@ export class UIInput extends UIElement implements GhostTarget {
 
   private setupPointerListeners(): void {
     const onGlobalPointerUp = () => {
-      this.isSelecting = false;
+      if (this.isSelecting) {
+        this.isSelecting = false;
+        this.syncGhostSelection();
+      }
     };
 
     if (typeof window !== 'undefined') {
@@ -92,6 +95,7 @@ export class UIInput extends UIElement implements GhostTarget {
       this.selectionEnd = index;
       this.isSelecting = true;
       this.resetCursorBlink();
+      this.syncGhostSelection();
       this.markRenderDirty();
     });
 
@@ -106,12 +110,47 @@ export class UIInput extends UIElement implements GhostTarget {
     });
 
     this.on('pointerup', () => {
-      this.isSelecting = false;
+      if (this.isSelecting) {
+        this.isSelecting = false;
+        this.syncGhostSelection();
+      }
     });
 
     this.on('dblclick', () => {
       this.selectAll();
     });
+  }
+
+  /**
+   * Synchronizes Canvas selection state into the active Ghost DOM input element.
+   */
+  public syncGhostSelection(): void {
+    if (typeof document !== 'undefined') {
+      const el = document.getElementById(this.id) as HTMLInputElement | HTMLTextAreaElement | null;
+      if (el && typeof el.setSelectionRange === 'function') {
+        try {
+          const start = Math.min(this.selectionStart, this.selectionEnd);
+          const end = Math.max(this.selectionStart, this.selectionEnd);
+          if (el.selectionStart !== start || el.selectionEnd !== end) {
+            el.setSelectionRange(start, end);
+          }
+        } catch {
+          // ignore
+        }
+      }
+    }
+  }
+
+  /**
+   * Synchronizes Canvas value state into the active Ghost DOM input element.
+   */
+  public syncGhostValue(): void {
+    if (typeof document !== 'undefined') {
+      const el = document.getElementById(this.id) as HTMLInputElement | HTMLTextAreaElement | null;
+      if (el && el.value !== this.value) {
+        el.value = this.value;
+      }
+    }
   }
 
   /**
@@ -123,11 +162,13 @@ export class UIInput extends UIElement implements GhostTarget {
     this.cursorIndex = this.value.length;
     this.resetCursorBlink();
     this.markRenderDirty();
+    this.syncGhostSelection();
   }
 
   public clearSelection(): void {
     this.selectionStart = this.cursorIndex;
     this.selectionEnd = this.cursorIndex;
+    this.syncGhostSelection();
   }
 
   public hasSelection(): boolean {
@@ -158,6 +199,7 @@ export class UIInput extends UIElement implements GhostTarget {
       this.value = val;
       this.cursorIndex = Math.min(this.cursorIndex, this.value.length);
       this.clearSelection();
+      this.syncGhostValue();
       this.markRenderDirty();
     }
   }
@@ -167,6 +209,10 @@ export class UIInput extends UIElement implements GhostTarget {
     this.styles.placeholder = text;
     this.markRenderDirty();
     return this;
+  }
+
+  public getPlaceholder(): string {
+    return this.placeholder || this.styles.placeholder || '';
   }
 
   public override setStyle(styles: Partial<InputStyles>): this {
@@ -215,34 +261,14 @@ export class UIInput extends UIElement implements GhostTarget {
     } else {
       this.cursorIndex = Math.min(this.cursorIndex, this.value.length);
     }
-    this.clearSelection();
+    this.selectionStart = this.cursorIndex;
+    this.selectionEnd = this.cursorIndex;
     this.resetCursorBlink();
     this.markRenderDirty();
     this.emit('input' as any, { target: this, currentTarget: this, value: val } as any);
   }
 
   public onNativeKeyDown(e: KeyboardEvent): void {
-    const isCmdOrCtrl = e.metaKey || e.ctrlKey;
-
-    // 1. Select All: Cmd+A / Ctrl+A
-    if (isCmdOrCtrl && (e.key === 'a' || e.key === 'A')) {
-      e.preventDefault();
-      this.selectAll();
-      return;
-    }
-
-    // 2. Backspace / Delete with selection
-    if (e.key === 'Backspace' && this.hasSelection()) {
-      e.preventDefault();
-      const { start, end } = this.getSelectionRange();
-      this.value = this.value.slice(0, start) + this.value.slice(end);
-      this.cursorIndex = start;
-      this.clearSelection();
-      this.markRenderDirty();
-      this.emit('input' as any, { target: this, currentTarget: this, value: this.value } as any);
-      return;
-    }
-
     if (e.key === 'Enter') {
       this.emit('submit' as any, { target: this, currentTarget: this, value: this.value } as any);
       this.emit('keydown' as any, e as any);
@@ -282,7 +308,7 @@ export class UIInput extends UIElement implements GhostTarget {
   private startCursorBlink(): void {
     this.stopCursorBlink();
     this.isCaretVisible = true;
-    if (typeof window !== 'undefined') {
+    if (typeof window !== 'undefined' && typeof window.setInterval === 'function') {
       this.blinkTimer = window.setInterval(() => {
         this.isCaretVisible = !this.isCaretVisible;
         this.markRenderDirty();
@@ -292,7 +318,11 @@ export class UIInput extends UIElement implements GhostTarget {
 
   private stopCursorBlink(): void {
     if (this.blinkTimer !== null) {
-      clearInterval(this.blinkTimer);
+      if (typeof window !== 'undefined' && typeof window.clearInterval === 'function') {
+        window.clearInterval(this.blinkTimer);
+      } else if (typeof clearInterval === 'function') {
+        clearInterval(this.blinkTimer);
+      }
       this.blinkTimer = null;
     }
     this.isCaretVisible = false;

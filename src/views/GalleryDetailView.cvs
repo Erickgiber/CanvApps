@@ -1,30 +1,30 @@
 <script lang="ts">
   import { sessionStore, navigateRoute } from '../stores/session.store';
-  import { pinsData, PinItem, toggleSavePin, toggleLikePin, resetScrollToTop, restorePintertestScroll } from '../stores/pintertest.store';
+  import { galleryData, GalleryItem, toggleSaveGalleryItem, toggleLikeGalleryItem, resetScrollToTop, restoreGalleryScroll } from '../stores/gallery.store';
 
   // 1. Responsive Viewport Signals
   const { isMobile, isTablet, isDesktop, width } = useBreakpoints();
   const isDark = computed(() => sessionStore.state.theme === 'dark');
 
-  // 2. Resolve Active Pin from Subroute Parameter (retaining last valid pin during transitions)
-  const pinId = computed(() => {
+  // 2. Resolve Active Item from Subroute Parameter (retaining last valid item during transitions)
+  const itemId = computed(() => {
     const route = sessionStore.state.activeRoute;
-    if (route.startsWith('/pintertest/')) {
-      return route.replace('/pintertest/', '').split('?')[0].split('#')[0].trim();
+    if (route.startsWith('/gallery/')) {
+      return route.replace('/gallery/', '').split('?')[0].split('#')[0].trim();
     }
     return '';
   });
 
-  let lastValidPin: PinItem | null = null;
-  const currentPin = computed(() => {
-    const id = pinId.value;
-    if (!id) return lastValidPin;
-    const found = pinsData.value.find((p) => p.id === id) || null;
-    if (found) lastValidPin = found;
-    return found || lastValidPin;
+  let lastValidItem: GalleryItem | null = null;
+  const currentItem = computed(() => {
+    const id = itemId.value;
+    if (!id) return lastValidItem;
+    const found = galleryData.value.find((p) => p.id === id) || null;
+    if (found) lastValidItem = found;
+    return found || lastValidItem;
   });
 
-  const pinTags = computed(() => currentPin.value?.tags || []);
+  const itemTags = computed(() => currentItem.value?.tags || []);
 
   // 3. Immediately reset scroll to top so entrance scale animation renders from top
   if (typeof window !== 'undefined') {
@@ -39,25 +39,25 @@
     if (typeof window !== 'undefined' && window.history && window.history.length > 1) {
       window.history.back();
     } else {
-      navigateRoute('/pintertest');
+      navigateRoute('/gallery');
     }
-    restorePintertestScroll();
+    restoreGalleryScroll();
   }
 
   function handleSave(e?: any) {
-    if (currentPin.value) {
-      toggleSavePin(currentPin.value, e);
+    if (currentItem.value) {
+      toggleSaveGalleryItem(currentItem.value, e);
     }
   }
 
   function handleLike(e?: any) {
-    if (currentPin.value) {
-      toggleLikePin(currentPin.value, e);
+    if (currentItem.value) {
+      toggleLikeGalleryItem(currentItem.value, e);
     }
   }
 </script>
 
-<!-- Mobile/Responsive Pin Detail View Container with Scale Animation -->
+<!-- Mobile/Responsive Gallery Detail View Container with Scale Animation -->
 <motion animation="scale-in" :duration="450">
   <view width="100%" flexDirection="column" :padding={isMobile.value ? [10, 8] : [20, 24]} :gap={isMobile.value ? 12 : 18} flexShrink="0">
 
@@ -65,7 +65,7 @@
     <view width="100%" flexDirection="row" alignItems="center" justifyContent="space-between" flexShrink="0">
       <view flexDirection="row" alignItems="center" gap="10">
         <button 
-          label="← Volver a Pintertest" 
+          label="← Volver a la Galería" 
           :backgroundColor={isDark.value ? '#22222a' : '#f1f5f9'} 
           :hoverBackgroundColor={isDark.value ? '#2c2c36' : '#e2e8f0'} 
           :color={isDark.value ? '#e0e0e0' : '#1e293b'} 
@@ -79,15 +79,15 @@
         />
       </view>
 
-      @if (currentPin.value) {
-        <view padding="[4, 10]" borderRadius="12" :backgroundColor={isDark.value ? '#1e293b' : '#e0f2fe'} borderWidth="1" :borderColor={isDark.value ? '#334155' : '#bae6fd'}>
-          <text fontSize="11" fontWeight="bold" :color={isDark.value ? '#38bdf8' : '#0284c7'}>{{ currentPin.value?.category }}</text>
+      @if (currentItem.value) {
+        <view padding="[4, 10]" borderRadius="12" :backgroundColor={isDark.value ? '#1e293b' : '#e0f2fe'} borderWidth="1" :borderColor={isDark.value ? '#333355' : '#bae6fd'}>
+          <text fontSize="11" fontWeight="bold" :color={isDark.value ? '#38bdf8' : '#0284c7'}>{{ currentItem.value?.category }}</text>
         </view>
       }
     </view>
 
-    <!-- 2. Main Pin Detail Card Scene -->
-    @if (currentPin.value) {
+    <!-- 2. Main Gallery Detail Card Scene -->
+    @if (currentItem.value) {
       <view 
         width="100%" 
         flexDirection="column" 
@@ -103,7 +103,7 @@
         <!-- Large High-Resolution Image -->
         <view width="100%" position="relative" flexShrink="0">
           <image 
-            :src="currentPin.value?.src" 
+            :src="currentItem.value?.src" 
             width="100%" 
             :height={isMobile.value ? 340 : 500} 
             fit="cover" 
@@ -114,9 +114,9 @@
           <!-- Floating Save Action on Top Right -->
           <view position="absolute" right="12" top="12">
             <button 
-              :label={currentPin.value?.isSaved ? 'Saved to Board ✓' : 'Save Pin'} 
-              :backgroundColor={currentPin.value?.isSaved ? (isDark.value ? '#111111' : '#e2e8f0') : '#0284c7'} 
-              :color={currentPin.value?.isSaved ? (isDark.value ? '#ffffff' : '#334155') : '#ffffff'} 
+              :label={currentItem.value?.isSaved ? 'Saved to Board ✓' : 'Save'} 
+              :backgroundColor={currentItem.value?.isSaved ? (isDark.value ? '#111111' : '#e2e8f0') : '#0284c7'} 
+              :color={currentItem.value?.isSaved ? (isDark.value ? '#ffffff' : '#334155') : '#ffffff'} 
               borderRadius="16" 
               padding="[7, 14]" 
               fontSize="12" 
@@ -132,16 +132,16 @@
           <!-- Title and Description -->
           <view width="100%" flexDirection="column" gap="6" flexShrink="0">
             <text :fontSize={isMobile.value ? 18 : 24} fontWeight="bold" :color={isDark.value ? '#ffffff' : '#0f172a'} :wordWrap="true">
-              {{ currentPin.value?.title }}
+              {{ currentItem.value?.title }}
             </text>
             <text :fontSize={isMobile.value ? 13 : 14} :color={isDark.value ? '#aaaaaa' : '#475569'} :lineHeight="20" :wordWrap="true">
-              {{ currentPin.value?.description }}
+              {{ currentItem.value?.description }}
             </text>
           </view>
 
           <!-- Tags List -->
           <view width="100%" flexDirection="row" gap="6" overflow="auto" padding="[2, 0]" flexShrink="0">
-            @each pinTags.value as tag {
+            @each itemTags.value as tag {
               <view padding="[3, 8]" borderRadius="8" :backgroundColor={isDark.value ? '#22222c' : '#f1f5f9'} borderWidth="1" :borderColor={isDark.value ? '#30303e' : '#e2e8f0'}>
                 <text fontSize="11" :color={isDark.value ? '#94a3b8' : '#64748b'}>{{ tag }}</text>
               </view>
@@ -151,12 +151,12 @@
           <!-- Author Info Card & Follow Action -->
           <view width="100%" flexDirection="row" alignItems="center" justifyContent="space-between" :padding={isMobile.value ? [10, 12] : [12, 16]} borderRadius="16" :backgroundColor={isDark.value ? '#20202a' : '#f8fafc'} borderWidth="1" :borderColor={isDark.value ? '#2e2e3c' : '#e2e8f0'} flexShrink="0">
             <view flexDirection="row" alignItems="center" gap="10">
-              <view width="40" height="40" :backgroundColor={currentPin.value?.avatarColor || '#e11d48'} borderRadius="20" alignItems="center" justifyContent="center">
-                <text fontSize="16" fontWeight="bold" color="#ffffff">{{ (currentPin.value?.author || 'P').charAt(0) }}</text>
+              <view width="40" height="40" :backgroundColor={currentItem.value?.avatarColor || '#e11d48'} borderRadius="20" alignItems="center" justifyContent="center">
+                <text fontSize="16" fontWeight="bold" color="#ffffff">{{ (currentItem.value?.author || 'A').charAt(0) }}</text>
               </view>
               <view flexDirection="column" gap="2">
-                <text :fontSize={isMobile.value ? 13 : 14} fontWeight="bold" :color={isDark.value ? '#ffffff' : '#0f172a'}>{{ currentPin.value?.author }}</text>
-                <text fontSize="11" :color={isDark.value ? '#888888' : '#64748b'}>{{ currentPin.value?.authorHandle }}</text>
+                <text :fontSize={isMobile.value ? 13 : 14} fontWeight="bold" :color={isDark.value ? '#ffffff' : '#0f172a'}>{{ currentItem.value?.author }}</text>
+                <text fontSize="11" :color={isDark.value ? '#888888' : '#64748b'}>{{ currentItem.value?.authorHandle }}</text>
               </view>
             </view>
             <button label="Follow" :backgroundColor={isDark.value ? '#323240' : '#e2e8f0'} :color={isDark.value ? '#f0f0f0' : '#1e293b'} borderRadius="14" padding="[6, 14]" fontSize="11" fontWeight="bold" />
@@ -165,8 +165,8 @@
           <!-- Footer Actions: Interactive Like Button & Category Info -->
           <view width="100%" flexDirection="row" alignItems="center" justifyContent="space-between" flexShrink="0" padding="[4, 0]">
             <button 
-              :label={currentPin.value?.isLiked ? '♥ Liked (' + (currentPin.value?.likes || 0) + ')' : '♡ Like (' + (currentPin.value?.likes || 0) + ')'} 
-              :color={currentPin.value?.isLiked ? '#ff4d6d' : (isDark.value ? '#ffffff' : '#1e293b')} 
+              :label={currentItem.value?.isLiked ? '♥ Liked (' + (currentItem.value?.likes || 0) + ')' : '♡ Like (' + (currentItem.value?.likes || 0) + ')'} 
+              :color={currentItem.value?.isLiked ? '#ff4d6d' : (isDark.value ? '#ffffff' : '#1e293b')} 
               :backgroundColor={isDark.value ? '#282834' : '#f1f5f9'} 
               borderRadius="14" 
               padding="[6, 14]" 
@@ -181,12 +181,12 @@
 
       </view>
     } else {
-      <!-- 3. Fallback: Pin Not Found State -->
+      <!-- 3. Fallback: Item Not Found State -->
       <view width="100%" :backgroundColor={isDark.value ? '#18181f' : '#ffffff'} borderRadius="20" borderWidth="1" :borderColor={isDark.value ? '#282834' : '#e2e8f0'} padding="[32, 20]" flexDirection="column" alignItems="center" justifyContent="center" gap="14" flexShrink="0">
         <text fontSize="32">🔍</text>
         <view flexDirection="column" alignItems="center" gap="4">
-          <text fontSize="16" fontWeight="bold" :color={isDark.value ? '#ffffff' : '#0f172a'}>Pin no encontrado</text>
-          <text fontSize="12" :color={isDark.value ? '#888888' : '#64748b'} textAlign="center">No pudimos encontrar los detalles para el pin especificado en la ruta.</text>
+          <text fontSize="16" fontWeight="bold" :color={isDark.value ? '#ffffff' : '#0f172a'}>Elemento no encontrado</text>
+          <text fontSize="12" :color={isDark.value ? '#888888' : '#64748b'} textAlign="center">No pudimos encontrar los detalles para el elemento especificado en la ruta.</text>
         </view>
         <button label="Volver a la Galería" backgroundColor="#0284c7" hoverBackgroundColor="#0369a1" color="#ffffff" borderRadius="12" padding="[8, 16]" fontSize="12" fontWeight="bold" @click="goBack" />
       </view>

@@ -88,28 +88,27 @@ export class CLIBuilder {
 <html>
   <head>
     <meta charset="utf-8">
-    <title>CanvApps</title>
+    <title>CanvApps - Redirecting...</title>
     <script>
-      // Single Page Apps for GitHub Pages - Clean Path Routing
-      var path = window.location.pathname;
-      var pathParts = path.split('/').filter(Boolean);
-      var isProject = window.location.hostname.endsWith('github.io') && pathParts.length > 0;
+      // Single Page Apps for GitHub Pages - Clean Path Routing (Safe Relative Redirect)
+      var l = window.location;
+      var pathParts = l.pathname.split('/').filter(Boolean);
+      var isProject = l.hostname.endsWith('github.io') && pathParts.length > 0;
       var repoPrefix = isProject ? '/' + pathParts[0] : '';
-      var routePath = isProject ? '/' + pathParts.slice(1).join('/') : path;
+      var routePath = isProject ? '/' + pathParts.slice(1).join('/') : l.pathname;
       if (!routePath || routePath === '/') routePath = '/';
 
-      var target = window.location.protocol + '//' + window.location.hostname +
-        (window.location.port ? ':' + window.location.port : '') +
-        repoPrefix + '/?p=' + encodeURIComponent(routePath) +
-        (window.location.search ? '&q=' + encodeURIComponent(window.location.search.slice(1)) : '') +
-        window.location.hash;
+      var target = (repoPrefix || '') + '/?p=' + encodeURIComponent(routePath) +
+        (l.search ? '&q=' + encodeURIComponent(l.search.slice(1)) : '') +
+        l.hash;
 
-      window.location.replace(target);
+      l.replace(target);
     </script>
   </head>
   <body></body>
 </html>`;
     fs.writeFileSync(path.resolve(outputDir, '404.html'), github404Html, 'utf-8');
+
 
     // Netlify _redirects rule
     const redirectsComment = includeBanner

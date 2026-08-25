@@ -46,12 +46,21 @@
     <!-- Container wrapper for optimal layout readability -->
     <view width="100%" flexDirection="column" :gap={isMobile.value ? 10 : 14}>
 
+      <!-- 0. Open Source Demo Disclaimer Banner -->
+      <view width="100%" :backgroundColor={isDark.value ? '#182438' : '#eff6ff'} borderRadius="12" borderWidth="1" :borderColor={isDark.value ? '#223854' : '#bfdbfe'} :padding={isMobile.value ? [10, 12] : [12, 16]} flexDirection="row" alignItems="center" gap="10">
+        <text fontSize="18">💡</text>
+        <view flexDirection="column" gap="2" flexGrow="1">
+          <text fontSize="12" fontWeight="bold" :color={isDark.value ? '#93c5fd' : '#1e40af'}>CanvApps Open Source Framework Demo</text>
+          <text fontSize="11" :color={isDark.value ? '#cbd5e1' : '#475569'}>This is an in-memory state demonstration of CanvApps Stores & Signals. No credentials or personal data are collected.</text>
+        </view>
+      </view>
+
       <!-- 1. Session Status Overview Card -->
       <view width="100%" :backgroundColor={isDark.value ? '#181818' : '#ffffff'} borderRadius="16" borderWidth="1" :borderColor={isDark.value ? '#282828' : '#e2e8f0'} :padding={isMobile.value ? [12, 14] : [16, 20]} flexDirection="column" gap="10">
         
         <!-- Clean Title Header -->
         <view width="100%" flexDirection="row" alignItems="center">
-          <text :fontSize={isMobile.value ? 14 : 16} fontWeight="bold" :color={isDark.value ? '#f5f5f5' : '#0f172a'}>🔑 Authentication & Session</text>
+          <text :fontSize={isMobile.value ? 14 : 16} fontWeight="bold" :color={isDark.value ? '#f5f5f5' : '#0f172a'}>👤 Reactive User Profile State</text>
         </view>
 
         @if (isUserLoggedIn.value) {
@@ -126,13 +135,14 @@
         } else {
           <!-- Logged Out View -->
           <view width="100%" :backgroundColor={isDark.value ? '#181818' : '#f8fafc'} borderRadius="12" borderWidth="1" :borderColor={isDark.value ? '#282828' : '#e2e8f0'} :padding={isMobile.value ? [18, 14] : [24, 20]} flexDirection="column" alignItems="center" justifyContent="center" gap="14">
-            <text fontSize="32">🔒</text>
+            <text fontSize="32">👤</text>
             <view flexDirection="column" alignItems="center" gap="4">
-              <text fontSize="15" fontWeight="bold" :color={isDark.value ? '#f5f5f5' : '#0f172a'}>Session Currently Inactive</text>
-              <text fontSize="11" :color={isDark.value ? '#888888' : '#64748b'} textAlign="center">The user session was cleared from memory. Re-authenticate below to restore access.</text>
+              <text fontSize="15" fontWeight="bold" :color={isDark.value ? '#f5f5f5' : '#0f172a'}>Demo State Cleared</text>
+              <text fontSize="11" :color={isDark.value ? '#888888' : '#64748b'} textAlign="center">The demo session was cleared from memory. Load mock profile to test reactivity.</text>
             </view>
-            <button label="🔑 Re-Authenticate as Julian Vance" backgroundColor="#2563eb" hoverBackgroundColor="#1d4ed8" labelColor="#ffffff" :padding={isMobile.value ? [10, 16] : [12, 22]} fontSize="12" fontWeight="bold" borderRadius="8" @click="handleLogin" />
+            <button label="👤 Load Demo Profile (Julian Vance)" backgroundColor="#2563eb" hoverBackgroundColor="#1d4ed8" labelColor="#ffffff" :padding={isMobile.value ? [10, 16] : [12, 22]} fontSize="12" fontWeight="bold" borderRadius="8" @click="handleLogin" />
           </view>
+
         }
       </view>
 

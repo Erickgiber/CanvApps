@@ -1,9 +1,9 @@
 <script lang="ts">
   import SplashView from './views/SplashView.cvs';
   import DashboardView from './views/DashboardView.cvs';
-  import AuthView from './views/AuthView.cvs';
-  import PintertestView from './views/PintertestView.cvs';
-  import PinDetailView from './views/PinDetailView.cvs';
+  import ProfileView from './views/ProfileView.cvs';
+  import GalleryView from './views/GalleryView.cvs';
+  import GalleryDetailView from './views/GalleryDetailView.cvs';
   import NotFoundView from './views/NotFoundView.cvs';
   import AppLayout from './layouts/AppLayout.cvs';
   import { signal } from '@canvapps';
@@ -26,29 +26,29 @@
   @if (!isSplashActive.value) {
     <AppLayout @navigate="handleNavigate">
       
-      <!-- Dynamic Scenes rendered inside AppLayout slot based on activeRoute -->
-      @if (sessionStore.state.activeRoute === '/' || sessionStore.state.activeRoute === '/dashboard') {
+      <!-- Strict Canonical Scenes rendered inside AppLayout slot based on activeRoute -->
+      @if (sessionStore.state.activeRoute === '/') {
         <DashboardView />
       }
 
-      @if (sessionStore.state.activeRoute === '/auth') {
-        <AuthView />
+      @if (sessionStore.state.activeRoute === '/profile') {
+        <ProfileView />
       }
 
-      @if (sessionStore.state.activeRoute === '/pintertest') {
-        <PintertestView />
+      @if (sessionStore.state.activeRoute === '/gallery') {
+        <GalleryView />
       }
 
-      @if (sessionStore.state.activeRoute.startsWith('/pintertest/')) {
-        <PinDetailView />
+      @if (sessionStore.state.activeRoute.startsWith('/gallery/')) {
+        <GalleryDetailView />
       }
 
       <!-- 404 Fallback Scene for unmapped routes -->
-      @if (sessionStore.state.activeRoute !== '/' && sessionStore.state.activeRoute !== '/dashboard' && sessionStore.state.activeRoute !== '/auth' && sessionStore.state.activeRoute !== '/pintertest' && !sessionStore.state.activeRoute.startsWith('/pintertest/')) {
+      @if (sessionStore.state.activeRoute !== '/' && sessionStore.state.activeRoute !== '/profile' && sessionStore.state.activeRoute !== '/gallery' && !sessionStore.state.activeRoute.startsWith('/gallery/')) {
         <NotFoundView />
       }
-
     </AppLayout>
+
   } else {
     <!-- 2. Cinematic Intro Splash Screen (Full-Screen Overlay) -->
     <view width="100%" height="100%" position="absolute" left="0" top="0">

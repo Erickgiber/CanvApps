@@ -1,6 +1,6 @@
 <script lang="ts">
   import { sessionStore, navigateRoute } from '../stores/session.store';
-  import { pinsData, PinItem, toggleSavePin as storeToggleSavePin, toggleLikePin as storeToggleLikePin, savePintertestScroll, restorePintertestScroll, pintertestScrollPosition, resetScrollToTop, activeCategory, searchQuery, categories } from '../stores/pintertest.store';
+  import { galleryData, GalleryItem, toggleSaveGalleryItem, toggleLikeGalleryItem, saveGalleryScroll, restoreGalleryScroll, galleryScrollPosition, resetScrollToTop, activeCategory, searchQuery, categories } from '../stores/gallery.store';
 
   const isDark = computed(() => sessionStore.state.theme === 'dark');
 
@@ -17,39 +17,39 @@
 
   // 2. State Signals
   const isModalOpen = signal(false);
-  const selectedPin = signal<PinItem | null>(null);
+  const selectedItem = signal<GalleryItem | null>(null);
 
-  // 4. Reactive Filtered Data
-  const filteredPins = computed(() => {
+  // 3. Reactive Filtered Data
+  const filteredItems = computed(() => {
     const cat = activeCategory.value;
     const q = searchQuery.value.trim().toLowerCase();
 
-    return pinsData.value.filter((pin) => {
-      const matchCat = cat === 'All' || pin.category === cat;
+    return galleryData.value.filter((item) => {
+      const matchCat = cat === 'All' || item.category === cat;
       const matchSearch =
         !q ||
-        pin.title.toLowerCase().includes(q) ||
-        pin.author.toLowerCase().includes(q) ||
-        pin.tags.some((t) => t.toLowerCase().includes(q));
+        item.title.toLowerCase().includes(q) ||
+        item.author.toLowerCase().includes(q) ||
+        item.tags.some((t) => t.toLowerCase().includes(q));
       return matchCat && matchSearch;
     });
   });
 
-  // 5. True Greedy Shortest-Column Masonry Algorithm
+  // 4. True Greedy Shortest-Column Masonry Algorithm
   const columns = computed(() => {
     const count = columnCount.value;
-    const cols: PinItem[][] = Array.from({ length: count }, () => []);
+    const cols: GalleryItem[][] = Array.from({ length: count }, () => []);
     const heights = Array.from({ length: count }, () => 0);
 
-    filteredPins.value.forEach((pin) => {
+    filteredItems.value.forEach((item) => {
       let minCol = 0;
       for (let i = 1; i < count; i++) {
         if (heights[i] < heights[minCol]) {
           minCol = i;
         }
       }
-      cols[minCol].push(pin);
-      heights[minCol] += (pin.height || 220) + 60;
+      cols[minCol].push(item);
+      heights[minCol] += (item.height || 220) + 60;
     });
 
     return cols;
@@ -63,7 +63,7 @@
 
   const colWidth = computed(() => isMobile.value ? '48.5%' : columnCount.value === 3 ? '32%' : columnCount.value === 4 ? '23.8%' : '18.8%');
 
-  // 6. User Interaction Handlers
+  // 5. User Interaction Handlers
   function selectCategory(cat: string) {
     activeCategory.value = cat;
   }
@@ -72,43 +72,43 @@
     searchQuery.value = val;
   }
 
-  function toggleSavePin(pin: PinItem, e?: any) {
-    storeToggleSavePin(pin, e);
-    if (selectedPin.value && selectedPin.value.id === pin.id) {
-      selectedPin.value = { ...selectedPin.value, isSaved: pin.isSaved };
+  function toggleSaveItem(item: GalleryItem, e?: any) {
+    toggleSaveGalleryItem(item, e);
+    if (selectedItem.value && selectedItem.value.id === item.id) {
+      selectedItem.value = { ...selectedItem.value, isSaved: item.isSaved };
     }
   }
 
-  function toggleLikePin(pin: PinItem, e?: any) {
-    storeToggleLikePin(pin, e);
-    if (selectedPin.value && selectedPin.value.id === pin.id) {
-      selectedPin.value = { ...selectedPin.value, likes: pin.likes, isLiked: pin.isLiked };
+  function toggleLikeItem(item: GalleryItem, e?: any) {
+    toggleLikeGalleryItem(item, e);
+    if (selectedItem.value && selectedItem.value.id === item.id) {
+      selectedItem.value = { ...selectedItem.value, likes: item.likes, isLiked: item.isLiked };
     }
   }
 
-  function handlePinClick(pin: PinItem, e?: any) {
+  function handleItemClick(item: GalleryItem, e?: any) {
     if (isMobile.value) {
-      savePintertestScroll();
+      saveGalleryScroll();
       resetScrollToTop();
-      navigateRoute('/pintertest/' + pin.id);
+      navigateRoute('/gallery/' + item.id);
     } else {
-      openPinModal(pin, e);
+      openModal(item, e);
     }
   }
 
   // Restore previous scroll position on mobile return
   if (typeof window !== 'undefined') {
     queueMicrotask(() => {
-      if (pintertestScrollPosition.value > 0) {
-        restorePintertestScroll();
+      if (galleryScrollPosition.value > 0) {
+        restoreGalleryScroll();
       }
     });
   }
 
   const modalOriginRect = signal<{ x: number; y: number; width: number; height: number } | null>(null);
 
-  function openPinModal(pin: PinItem, e?: any) {
-    selectedPin.value = pin;
+  function openModal(item: GalleryItem, e?: any) {
+    selectedItem.value = item;
     let rect: { x: number; y: number; width: number; height: number } | null = null;
     const target = e?.target;
     const currentTarget = e?.currentTarget;
@@ -127,7 +127,7 @@
       };
     } else if (e && typeof e.x === 'number' && typeof e.y === 'number') {
       const w = 240;
-      const h = pin.height || 260;
+      const h = item.height || 260;
       rect = {
         x: Math.max(0, e.x - w / 2),
         y: Math.max(0, e.y - h / 2),
@@ -144,7 +144,7 @@
   }
 </script>
 
-<!-- Pintertest Canvas View Container -->
+<!-- Visual Gallery Canvas View Container -->
 <motion animation="scale-in" :duration="450">
   <view width="100%" flexDirection="column" :padding={isMobile.value ? [10, 6] : [16, 20]} :gap={isMobile.value ? 14 : 20} flexShrink="0">
 
@@ -154,11 +154,11 @@
       <!-- Title & Brand Badge -->
       <view flexDirection="row" alignItems="center" gap="10" flexShrink="0">
         <view width="36" height="36" backgroundColor="#0284c7" borderRadius="18" alignItems="center" justifyContent="center">
-          <text fontSize="20" fontWeight="bold" color="#ffffff">P</text>
+          <text fontSize="20" fontWeight="bold" color="#ffffff">🎨</text>
         </view>
         <view flexDirection="column" gap="1">
-          <text fontSize="20" fontWeight="bold" :color={isDark.value ? '#ffffff' : '#0f172a'}>Pintertest Canvas</text>
-          <text fontSize="11" :color={isDark.value ? '#888888' : '#64748b'}>Hardware-accelerated sub-pixel visual grid</text>
+          <text fontSize="20" fontWeight="bold" :color={isDark.value ? '#ffffff' : '#0f172a'}>CanvApps Visual Gallery</text>
+          <text fontSize="11" :color={isDark.value ? '#888888' : '#64748b'}>Hardware-accelerated sub-pixel masonry grid</text>
         </view>
       </view>
 
@@ -207,33 +207,33 @@
 
       <!-- Column 0 -->
       <view :width="colWidth.value" flexDirection="column" :gap={isMobile.value ? 10 : 16} flexShrink="0">
-        @each col0.value as pin {
-          <view width="100%" flexDirection="column" :backgroundColor={isDark.value ? '#18181e' : '#ffffff'} borderRadius="16" overflow="hidden" borderWidth="1" :borderColor={isDark.value ? '#262630' : '#e2e8f0'} flexShrink="0" @click="handlePinClick(pin, $event)">
+        @each col0.value as item {
+          <view width="100%" flexDirection="column" :backgroundColor={isDark.value ? '#18181e' : '#ffffff'} borderRadius="16" overflow="hidden" borderWidth="1" :borderColor={isDark.value ? '#262630' : '#e2e8f0'} flexShrink="0" @click="handleItemClick(item, $event)">
             <view width="100%" position="relative" flexShrink="0">
-              <image :src="pin.src" width="100%" :height="pin.height" fit="cover" borderRadius="[16, 16, 0, 0]" :backgroundColor={isDark.value ? '#1f1f26' : '#f1f5f9'} />
+              <image :src="item.src" width="100%" :height="item.height" fit="cover" borderRadius="[16, 16, 0, 0]" :backgroundColor={isDark.value ? '#1f1f26' : '#f1f5f9'} />
               <view position="absolute" right="8" top="8">
                 <button 
-                  :label={pin.isSaved ? 'Saved ✓' : 'Save'} 
-                  :backgroundColor={pin.isSaved ? (isDark.value ? '#111111' : '#e2e8f0') : '#0284c7'} 
-                  :color={pin.isSaved ? (isDark.value ? '#ffffff' : '#334155') : '#ffffff'} 
+                  :label={item.isSaved ? 'Saved ✓' : 'Save'} 
+                  :backgroundColor={item.isSaved ? (isDark.value ? '#111111' : '#e2e8f0') : '#0284c7'} 
+                  :color={item.isSaved ? (isDark.value ? '#ffffff' : '#334155') : '#ffffff'} 
                   borderRadius="14" 
                   padding="[4, 10]" 
                   fontSize="11" 
                   fontWeight="bold" 
-                  @click="toggleSavePin(pin, $event)" 
+                  @click="toggleSaveItem(item, $event)" 
                 />
               </view>
             </view>
             <view width="100%" padding="[10, 12]" flexDirection="column" gap="6" flexShrink="0">
-              <text fontSize="14" fontWeight="bold" :color={isDark.value ? '#f0f0f0' : '#0f172a'} textOverflow="ellipsis">{{ pin.title }}</text>
+              <text fontSize="14" fontWeight="bold" :color={isDark.value ? '#f0f0f0' : '#0f172a'} textOverflow="ellipsis">{{ item.title }}</text>
               <view width="100%" flexDirection="row" alignItems="center" justifyContent="space-between">
                 <view flexDirection="row" alignItems="center" gap="6">
-                  <view width="20" height="20" :backgroundColor="pin.avatarColor" borderRadius="10" alignItems="center" justifyContent="center">
-                    <text fontSize="10" fontWeight="bold" color="#ffffff">{{ pin.author.charAt(0) }}</text>
+                  <view width="20" height="20" :backgroundColor="item.avatarColor" borderRadius="10" alignItems="center" justifyContent="center">
+                    <text fontSize="10" fontWeight="bold" color="#ffffff">{{ item.author.charAt(0) }}</text>
                   </view>
-                  <text fontSize="11" :color={isDark.value ? '#999999' : '#64748b'}>{{ pin.author }}</text>
+                  <text fontSize="11" :color={isDark.value ? '#999999' : '#64748b'}>{{ item.author }}</text>
                 </view>
-                <button :label={pin.isLiked ? '♥ ' + pin.likes : '♡ ' + pin.likes} :color={pin.isLiked ? '#ff4d6d' : (isDark.value ? '#888888' : '#64748b')} backgroundColor="transparent" fontSize="11" @click="toggleLikePin(pin, $event)" />
+                <button :label={item.isLiked ? '♥ ' + item.likes : '♡ ' + item.likes} :color={item.isLiked ? '#ff4d6d' : (isDark.value ? '#888888' : '#64748b')} backgroundColor="transparent" fontSize="11" @click="toggleLikeItem(item, $event)" />
               </view>
             </view>
           </view>
@@ -242,33 +242,33 @@
 
       <!-- Column 1 -->
       <view :width="colWidth.value" flexDirection="column" :gap={isMobile.value ? 10 : 16} flexShrink="0">
-        @each col1.value as pin {
-          <view width="100%" flexDirection="column" :backgroundColor={isDark.value ? '#18181e' : '#ffffff'} borderRadius="16" overflow="hidden" borderWidth="1" :borderColor={isDark.value ? '#262630' : '#e2e8f0'} flexShrink="0" @click="handlePinClick(pin, $event)">
+        @each col1.value as item {
+          <view width="100%" flexDirection="column" :backgroundColor={isDark.value ? '#18181e' : '#ffffff'} borderRadius="16" overflow="hidden" borderWidth="1" :borderColor={isDark.value ? '#262630' : '#e2e8f0'} flexShrink="0" @click="handleItemClick(item, $event)">
             <view width="100%" position="relative" flexShrink="0">
-              <image :src="pin.src" width="100%" :height="pin.height" fit="cover" borderRadius="[16, 16, 0, 0]" :backgroundColor={isDark.value ? '#1f1f26' : '#f1f5f9'} />
+              <image :src="item.src" width="100%" :height="item.height" fit="cover" borderRadius="[16, 16, 0, 0]" :backgroundColor={isDark.value ? '#1f1f26' : '#f1f5f9'} />
               <view position="absolute" right="8" top="8">
                 <button 
-                  :label={pin.isSaved ? 'Saved ✓' : 'Save'} 
-                  :backgroundColor={pin.isSaved ? (isDark.value ? '#111111' : '#e2e8f0') : '#0284c7'} 
-                  :color={pin.isSaved ? (isDark.value ? '#ffffff' : '#334155') : '#ffffff'} 
+                  :label={item.isSaved ? 'Saved ✓' : 'Save'} 
+                  :backgroundColor={item.isSaved ? (isDark.value ? '#111111' : '#e2e8f0') : '#0284c7'} 
+                  :color={item.isSaved ? (isDark.value ? '#ffffff' : '#334155') : '#ffffff'} 
                   borderRadius="14" 
                   padding="[4, 10]" 
                   fontSize="11" 
                   fontWeight="bold" 
-                  @click="toggleSavePin(pin, $event)" 
+                  @click="toggleSaveItem(item, $event)" 
                 />
               </view>
             </view>
             <view width="100%" padding="[10, 12]" flexDirection="column" gap="6" flexShrink="0">
-              <text fontSize="14" fontWeight="bold" :color={isDark.value ? '#f0f0f0' : '#0f172a'} textOverflow="ellipsis">{{ pin.title }}</text>
+              <text fontSize="14" fontWeight="bold" :color={isDark.value ? '#f0f0f0' : '#0f172a'} textOverflow="ellipsis">{{ item.title }}</text>
               <view width="100%" flexDirection="row" alignItems="center" justifyContent="space-between">
                 <view flexDirection="row" alignItems="center" gap="6">
-                  <view width="20" height="20" :backgroundColor="pin.avatarColor" borderRadius="10" alignItems="center" justifyContent="center">
-                    <text fontSize="10" fontWeight="bold" color="#ffffff">{{ pin.author.charAt(0) }}</text>
+                  <view width="20" height="20" :backgroundColor="item.avatarColor" borderRadius="10" alignItems="center" justifyContent="center">
+                    <text fontSize="10" fontWeight="bold" color="#ffffff">{{ item.author.charAt(0) }}</text>
                   </view>
-                  <text fontSize="11" :color={isDark.value ? '#999999' : '#64748b'}>{{ pin.author }}</text>
+                  <text fontSize="11" :color={isDark.value ? '#999999' : '#64748b'}>{{ item.author }}</text>
                 </view>
-                <button :label={pin.isLiked ? '♥ ' + pin.likes : '♡ ' + pin.likes} :color={pin.isLiked ? '#ff4d6d' : (isDark.value ? '#888888' : '#64748b')} backgroundColor="transparent" fontSize="11" @click="toggleLikePin(pin, $event)" />
+                <button :label={item.isLiked ? '♥ ' + item.likes : '♡ ' + item.likes} :color={item.isLiked ? '#ff4d6d' : (isDark.value ? '#888888' : '#64748b')} backgroundColor="transparent" fontSize="11" @click="toggleLikeItem(item, $event)" />
               </view>
             </view>
           </view>
@@ -278,33 +278,33 @@
       <!-- Column 2 (Tablet / Desktop) -->
       @if (columnCount.value >= 3) {
         <view :width="colWidth.value" flexDirection="column" :gap={isMobile.value ? 10 : 16} flexShrink="0">
-          @each col2.value as pin {
-            <view width="100%" flexDirection="column" :backgroundColor={isDark.value ? '#18181e' : '#ffffff'} borderRadius="16" overflow="hidden" borderWidth="1" :borderColor={isDark.value ? '#262630' : '#e2e8f0'} flexShrink="0" @click="handlePinClick(pin, $event)">
+          @each col2.value as item {
+            <view width="100%" flexDirection="column" :backgroundColor={isDark.value ? '#18181e' : '#ffffff'} borderRadius="16" overflow="hidden" borderWidth="1" :borderColor={isDark.value ? '#262630' : '#e2e8f0'} flexShrink="0" @click="handleItemClick(item, $event)">
               <view width="100%" position="relative" flexShrink="0">
-                <image :src="pin.src" width="100%" :height="pin.height" fit="cover" borderRadius="[16, 16, 0, 0]" :backgroundColor={isDark.value ? '#1f1f26' : '#f1f5f9'} />
+                <image :src="item.src" width="100%" :height="item.height" fit="cover" borderRadius="[16, 16, 0, 0]" :backgroundColor={isDark.value ? '#1f1f26' : '#f1f5f9'} />
                 <view position="absolute" right="8" top="8">
                   <button 
-                    :label={pin.isSaved ? 'Saved ✓' : 'Save'} 
-                    :backgroundColor={pin.isSaved ? (isDark.value ? '#111111' : '#e2e8f0') : '#0284c7'} 
-                    :color={pin.isSaved ? (isDark.value ? '#ffffff' : '#334155') : '#ffffff'} 
+                    :label={item.isSaved ? 'Saved ✓' : 'Save'} 
+                    :backgroundColor={item.isSaved ? (isDark.value ? '#111111' : '#e2e8f0') : '#0284c7'} 
+                    :color={item.isSaved ? (isDark.value ? '#ffffff' : '#334155') : '#ffffff'} 
                     borderRadius="14" 
                     padding="[4, 10]" 
                     fontSize="11" 
                     fontWeight="bold" 
-                    @click="toggleSavePin(pin, $event)" 
+                    @click="toggleSaveItem(item, $event)" 
                   />
                 </view>
               </view>
               <view width="100%" padding="[10, 12]" flexDirection="column" gap="6" flexShrink="0">
-                <text fontSize="14" fontWeight="bold" :color={isDark.value ? '#f0f0f0' : '#0f172a'} textOverflow="ellipsis">{{ pin.title }}</text>
+                <text fontSize="14" fontWeight="bold" :color={isDark.value ? '#f0f0f0' : '#0f172a'} textOverflow="ellipsis">{{ item.title }}</text>
                 <view width="100%" flexDirection="row" alignItems="center" justifyContent="space-between">
                   <view flexDirection="row" alignItems="center" gap="6">
-                    <view width="20" height="20" :backgroundColor="pin.avatarColor" borderRadius="10" alignItems="center" justifyContent="center">
-                      <text fontSize="10" fontWeight="bold" color="#ffffff">{{ pin.author.charAt(0) }}</text>
+                    <view width="20" height="20" :backgroundColor="item.avatarColor" borderRadius="10" alignItems="center" justifyContent="center">
+                      <text fontSize="10" fontWeight="bold" color="#ffffff">{{ item.author.charAt(0) }}</text>
                     </view>
-                    <text fontSize="11" :color={isDark.value ? '#999999' : '#64748b'}>{{ pin.author }}</text>
+                    <text fontSize="11" :color={isDark.value ? '#999999' : '#64748b'}>{{ item.author }}</text>
                   </view>
-                  <button :label={pin.isLiked ? '♥ ' + pin.likes : '♡ ' + pin.likes} :color={pin.isLiked ? '#ff4d6d' : (isDark.value ? '#888888' : '#64748b')} backgroundColor="transparent" fontSize="11" @click="toggleLikePin(pin, $event)" />
+                  <button :label={item.isLiked ? '♥ ' + item.likes : '♡ ' + item.likes} :color={item.isLiked ? '#ff4d6d' : (isDark.value ? '#888888' : '#64748b')} backgroundColor="transparent" fontSize="11" @click="toggleLikeItem(item, $event)" />
                 </view>
               </view>
             </view>
@@ -315,33 +315,33 @@
       <!-- Column 3 (Desktop) -->
       @if (columnCount.value >= 4) {
         <view :width="colWidth.value" flexDirection="column" :gap={isMobile.value ? 10 : 16} flexShrink="0">
-          @each col3.value as pin {
-            <view width="100%" flexDirection="column" :backgroundColor={isDark.value ? '#18181e' : '#ffffff'} borderRadius="16" overflow="hidden" borderWidth="1" :borderColor={isDark.value ? '#262630' : '#e2e8f0'} flexShrink="0" @click="handlePinClick(pin, $event)">
+          @each col3.value as item {
+            <view width="100%" flexDirection="column" :backgroundColor={isDark.value ? '#18181e' : '#ffffff'} borderRadius="16" overflow="hidden" borderWidth="1" :borderColor={isDark.value ? '#262630' : '#e2e8f0'} flexShrink="0" @click="handleItemClick(item, $event)">
               <view width="100%" position="relative" flexShrink="0">
-                <image :src="pin.src" width="100%" :height="pin.height" fit="cover" borderRadius="[16, 16, 0, 0]" :backgroundColor={isDark.value ? '#1f1f26' : '#f1f5f9'} />
+                <image :src="item.src" width="100%" :height="item.height" fit="cover" borderRadius="[16, 16, 0, 0]" :backgroundColor={isDark.value ? '#1f1f26' : '#f1f5f9'} />
                 <view position="absolute" right="8" top="8">
                   <button 
-                    :label={pin.isSaved ? 'Saved ✓' : 'Save'} 
-                    :backgroundColor={pin.isSaved ? (isDark.value ? '#111111' : '#e2e8f0') : '#0284c7'} 
-                    :color={pin.isSaved ? (isDark.value ? '#ffffff' : '#334155') : '#ffffff'} 
+                    :label={item.isSaved ? 'Saved ✓' : 'Save'} 
+                    :backgroundColor={item.isSaved ? (isDark.value ? '#111111' : '#e2e8f0') : '#0284c7'} 
+                    :color={item.isSaved ? (isDark.value ? '#ffffff' : '#334155') : '#ffffff'} 
                     borderRadius="14" 
                     padding="[4, 10]" 
                     fontSize="11" 
                     fontWeight="bold" 
-                    @click="toggleSavePin(pin, $event)" 
+                    @click="toggleSaveItem(item, $event)" 
                   />
                 </view>
               </view>
               <view width="100%" padding="[10, 12]" flexDirection="column" gap="6" flexShrink="0">
-                <text fontSize="14" fontWeight="bold" :color={isDark.value ? '#f0f0f0' : '#0f172a'} textOverflow="ellipsis">{{ pin.title }}</text>
+                <text fontSize="14" fontWeight="bold" :color={isDark.value ? '#f0f0f0' : '#0f172a'} textOverflow="ellipsis">{{ item.title }}</text>
                 <view width="100%" flexDirection="row" alignItems="center" justifyContent="space-between">
                   <view flexDirection="row" alignItems="center" gap="6">
-                    <view width="20" height="20" :backgroundColor="pin.avatarColor" borderRadius="10" alignItems="center" justifyContent="center">
-                      <text fontSize="10" fontWeight="bold" color="#ffffff">{{ pin.author.charAt(0) }}</text>
+                    <view width="20" height="20" :backgroundColor="item.avatarColor" borderRadius="10" alignItems="center" justifyContent="center">
+                      <text fontSize="10" fontWeight="bold" color="#ffffff">{{ item.author.charAt(0) }}</text>
                     </view>
-                    <text fontSize="11" :color={isDark.value ? '#999999' : '#64748b'}>{{ pin.author }}</text>
+                    <text fontSize="11" :color={isDark.value ? '#999999' : '#64748b'}>{{ item.author }}</text>
                   </view>
-                  <button :label={pin.isLiked ? '♥ ' + pin.likes : '♡ ' + pin.likes} :color={pin.isLiked ? '#ff4d6d' : (isDark.value ? '#888888' : '#64748b')} backgroundColor="transparent" fontSize="11" @click="toggleLikePin(pin, $event)" />
+                  <button :label={item.isLiked ? '♥ ' + item.likes : '♡ ' + item.likes} :color={item.isLiked ? '#ff4d6d' : (isDark.value ? '#888888' : '#64748b')} backgroundColor="transparent" fontSize="11" @click="toggleLikeItem(item, $event)" />
                 </view>
               </view>
             </view>
@@ -352,33 +352,33 @@
       <!-- Column 4 (Wide Screen) -->
       @if (columnCount.value >= 5) {
         <view :width="colWidth.value" flexDirection="column" :gap={isMobile.value ? 10 : 16} flexShrink="0">
-          @each col4.value as pin {
-            <view width="100%" flexDirection="column" :backgroundColor={isDark.value ? '#18181e' : '#ffffff'} borderRadius="16" overflow="hidden" borderWidth="1" :borderColor={isDark.value ? '#262630' : '#e2e8f0'} flexShrink="0" @click="handlePinClick(pin, $event)">
+          @each col4.value as item {
+            <view width="100%" flexDirection="column" :backgroundColor={isDark.value ? '#18181e' : '#ffffff'} borderRadius="16" overflow="hidden" borderWidth="1" :borderColor={isDark.value ? '#262630' : '#e2e8f0'} flexShrink="0" @click="handleItemClick(item, $event)">
               <view width="100%" position="relative" flexShrink="0">
-                <image :src="pin.src" width="100%" :height="pin.height" fit="cover" borderRadius="[16, 16, 0, 0]" :backgroundColor={isDark.value ? '#1f1f26' : '#f1f5f9'} />
+                <image :src="item.src" width="100%" :height="item.height" fit="cover" borderRadius="[16, 16, 0, 0]" :backgroundColor={isDark.value ? '#1f1f26' : '#f1f5f9'} />
                 <view position="absolute" right="8" top="8">
                   <button 
-                    :label={pin.isSaved ? 'Saved ✓' : 'Save'} 
-                    :backgroundColor={pin.isSaved ? (isDark.value ? '#111111' : '#e2e8f0') : '#0284c7'} 
-                    :color={pin.isSaved ? (isDark.value ? '#ffffff' : '#334155') : '#ffffff'} 
+                    :label={item.isSaved ? 'Saved ✓' : 'Save'} 
+                    :backgroundColor={item.isSaved ? (isDark.value ? '#111111' : '#e2e8f0') : '#0284c7'} 
+                    :color={item.isSaved ? (isDark.value ? '#ffffff' : '#334155') : '#ffffff'} 
                     borderRadius="14" 
                     padding="[4, 10]" 
                     fontSize="11" 
                     fontWeight="bold" 
-                    @click="toggleSavePin(pin, $event)" 
+                    @click="toggleSaveItem(item, $event)" 
                   />
                 </view>
               </view>
               <view width="100%" padding="[10, 12]" flexDirection="column" gap="6" flexShrink="0">
-                <text fontSize="14" fontWeight="bold" :color={isDark.value ? '#f0f0f0' : '#0f172a'} textOverflow="ellipsis">{{ pin.title }}</text>
+                <text fontSize="14" fontWeight="bold" :color={isDark.value ? '#f0f0f0' : '#0f172a'} textOverflow="ellipsis">{{ item.title }}</text>
                 <view width="100%" flexDirection="row" alignItems="center" justifyContent="space-between">
                   <view flexDirection="row" alignItems="center" gap="6">
-                    <view width="20" height="20" :backgroundColor="pin.avatarColor" borderRadius="10" alignItems="center" justifyContent="center">
-                      <text fontSize="10" fontWeight="bold" color="#ffffff">{{ pin.author.charAt(0) }}</text>
+                    <view width="20" height="20" :backgroundColor="item.avatarColor" borderRadius="10" alignItems="center" justifyContent="center">
+                      <text fontSize="10" fontWeight="bold" color="#ffffff">{{ item.author.charAt(0) }}</text>
                     </view>
-                    <text fontSize="11" :color={isDark.value ? '#999999' : '#64748b'}>{{ pin.author }}</text>
+                    <text fontSize="11" :color={isDark.value ? '#999999' : '#64748b'}>{{ item.author }}</text>
                   </view>
-                  <button :label={pin.isLiked ? '♥ ' + pin.likes : '♡ ' + pin.likes} :color={pin.isLiked ? '#ff4d6d' : (isDark.value ? '#888888' : '#64748b')} backgroundColor="transparent" fontSize="11" @click="toggleLikePin(pin, $event)" />
+                  <button :label={item.isLiked ? '♥ ' + item.likes : '♡ ' + item.likes} :color={item.isLiked ? '#ff4d6d' : (isDark.value ? '#888888' : '#64748b')} backgroundColor="transparent" fontSize="11" @click="toggleLikeItem(item, $event)" />
                 </view>
               </view>
             </view>
@@ -388,14 +388,14 @@
 
     </view>
 
-    <!-- 4. Interactive Fullscreen Pin Lightbox Modal -->
+    <!-- 4. Interactive Fullscreen Lightbox Modal -->
     <modal :open="isModalOpen.value" :originRect="modalOriginRect.value" animation="hero" :duration="340" @close="closeModal">
-      @if (selectedPin.value) {
+      @if (selectedItem.value) {
         <view :width={isMobile.value ? '92%' : 780} :flexDirection={isMobile.value ? 'column' : 'row'} :backgroundColor={isDark.value ? '#1b1b22' : '#ffffff'} borderRadius="24" overflow="hidden" borderWidth="1" :borderColor={isDark.value ? '#333342' : '#e2e8f0'} :boxShadow={isDark.value ? { offsetX: 0, offsetY: 20, blur: 50, color: 'rgba(0,0,0,0.85)' } : { offsetX: 0, offsetY: 20, blur: 50, color: 'rgba(0,0,0,0.18)' }}>
           
           <!-- Left: Large Image View -->
           <view :width={isMobile.value ? '100%' : 400} :height={isMobile.value ? 220 : 480} :backgroundColor={isDark.value ? '#111115' : '#f1f5f9'} flexShrink="0">
-            <image :src="selectedPin.value?.src" width="100%" height="100%" fit="cover" />
+            <image :src="selectedItem.value?.src" width="100%" height="100%" fit="cover" />
           </view>
 
           <!-- Right: Details & Actions -->
@@ -405,32 +405,32 @@
             <view width="100%" flexDirection="row" justifyContent="space-between" alignItems="center" flexShrink="0">
               <button label="✕ Close" :backgroundColor={isDark.value ? '#282834' : '#f1f5f9'} :color={isDark.value ? '#bbbbbb' : '#475569'} borderRadius="16" padding="[6, 12]" fontSize="12" @click="closeModal" />
               <button 
-                :label={selectedPin.value?.isSaved ? 'Saved to Board ✓' : 'Save Pin'} 
-                :backgroundColor={selectedPin.value?.isSaved ? (isDark.value ? '#22222a' : '#e2e8f0') : '#0284c7'} 
-                :color={selectedPin.value?.isSaved ? (isDark.value ? '#ffffff' : '#334155') : '#ffffff'} 
+                :label={selectedItem.value?.isSaved ? 'Saved to Board ✓' : 'Save'} 
+                :backgroundColor={selectedItem.value?.isSaved ? (isDark.value ? '#22222a' : '#e2e8f0') : '#0284c7'} 
+                :color={selectedItem.value?.isSaved ? (isDark.value ? '#ffffff' : '#334155') : '#ffffff'} 
                 borderRadius="18" 
                 padding="[6, 16]" 
                 fontSize="12" 
                 fontWeight="bold" 
-                @click="toggleSavePin(selectedPin.value!, $event)" 
+                @click="toggleSaveItem(selectedItem.value!, $event)" 
               />
             </view>
 
-            <!-- Pin Content Info -->
+            <!-- Item Content Info -->
             <view width="100%" flexDirection="column" gap="6" flexShrink="0">
-              <text :fontSize={isMobile.value ? 16 : 22} fontWeight="bold" :color={isDark.value ? '#ffffff' : '#0f172a'} :wordWrap="true">{{ selectedPin.value?.title }}</text>
-              <text :fontSize={isMobile.value ? 12 : 13} :color={isDark.value ? '#aaaaaa' : '#475569'} :lineHeight="18" :wordWrap="true">{{ selectedPin.value?.description }}</text>
+              <text :fontSize={isMobile.value ? 16 : 22} fontWeight="bold" :color={isDark.value ? '#ffffff' : '#0f172a'} :wordWrap="true">{{ selectedItem.value?.title }}</text>
+              <text :fontSize={isMobile.value ? 12 : 13} :color={isDark.value ? '#aaaaaa' : '#475569'} :lineHeight="18" :wordWrap="true">{{ selectedItem.value?.description }}</text>
             </view>
 
             <!-- Author Info & Follow Action Card -->
             <view width="100%" flexDirection="row" alignItems="center" justifyContent="space-between" :padding={isMobile.value ? [8, 10] : [10, 12]} borderRadius="16" :backgroundColor={isDark.value ? '#20202a' : '#f8fafc'} borderWidth="1" :borderColor={isDark.value ? '#2e2e3c' : '#e2e8f0'} flexShrink="0">
               <view flexDirection="row" alignItems="center" gap="10">
-                <view width="36" height="36" :backgroundColor={selectedPin.value?.avatarColor || '#e11d48'} borderRadius="18" alignItems="center" justifyContent="center">
-                  <text fontSize="14" fontWeight="bold" color="#ffffff">{{ (selectedPin.value?.author || 'P').charAt(0) }}</text>
+                <view width="36" height="36" :backgroundColor={selectedItem.value?.avatarColor || '#e11d48'} borderRadius="18" alignItems="center" justifyContent="center">
+                  <text fontSize="14" fontWeight="bold" color="#ffffff">{{ (selectedItem.value?.author || 'A').charAt(0) }}</text>
                 </view>
                 <view flexDirection="column" gap="1">
-                  <text fontSize="13" fontWeight="bold" :color={isDark.value ? '#ffffff' : '#0f172a'}>{{ selectedPin.value?.author }}</text>
-                  <text fontSize="10" :color={isDark.value ? '#888888' : '#64748b'}>{{ selectedPin.value?.authorHandle }}</text>
+                  <text fontSize="13" fontWeight="bold" :color={isDark.value ? '#ffffff' : '#0f172a'}>{{ selectedItem.value?.author }}</text>
+                  <text fontSize="10" :color={isDark.value ? '#888888' : '#64748b'}>{{ selectedItem.value?.authorHandle }}</text>
                 </view>
               </view>
               <button label="Follow" :backgroundColor={isDark.value ? '#323240' : '#e2e8f0'} :color={isDark.value ? '#f0f0f0' : '#1e293b'} borderRadius="14" padding="[6, 14]" fontSize="11" fontWeight="bold" />
@@ -438,8 +438,8 @@
 
             <!-- Footer Stats & Tags -->
             <view width="100%" flexDirection="row" alignItems="center" justifyContent="space-between" flexShrink="0">
-              <button :label={selectedPin.value?.isLiked ? '♥ Liked (' + (selectedPin.value?.likes || 0) + ')' : '♡ Like (' + (selectedPin.value?.likes || 0) + ')'} :color={selectedPin.value?.isLiked ? '#ff4d6d' : (isDark.value ? '#ffffff' : '#1e293b')} :backgroundColor={isDark.value ? '#282834' : '#f1f5f9'} borderRadius="14" padding="[4, 12]" fontSize="11" @click="toggleLikePin(selectedPin.value!, $event)" />
-              <text fontSize="11" :color={isDark.value ? '#666677' : '#94a3b8'}>Category: {{ selectedPin.value?.category }}</text>
+              <button :label={selectedItem.value?.isLiked ? '♥ Liked (' + (selectedItem.value?.likes || 0) + ')' : '♡ Like (' + (selectedItem.value?.likes || 0) + ')'} :color={selectedItem.value?.isLiked ? '#ff4d6d' : (isDark.value ? '#ffffff' : '#1e293b')} :backgroundColor={isDark.value ? '#282834' : '#f1f5f9'} borderRadius="14" padding="[4, 12]" fontSize="11" @click="toggleLikeItem(selectedItem.value!, $event)" />
+              <text fontSize="11" :color={isDark.value ? '#666677' : '#94a3b8'}>Category: {{ selectedItem.value?.category }}</text>
             </view>
 
           </view>

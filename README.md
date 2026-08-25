@@ -574,8 +574,17 @@ export default defineConfig({
   title: 'CanvApps Production App',
   outDir: 'dist-app',
 
-  // Open-source build watermark comments in output JS/HTML (true by default)
+  // Open-source build watermark comments in output JS/HTML (default: true)
   banner: true,
+
+  // Automatic Safe Area Inset calculations (Notch, Dynamic Island, Status Bar). Default: true
+  safeArea: true,
+
+  // Dynamic Theme Color & Status Bar sync for light/dark modes. Default: true
+  themeColor: {
+    light: '#f8fafc',
+    dark: '#090d16',
+  },
 
   // Automated PWA Assets & Offline Service Worker
   pwa: {
@@ -594,6 +603,107 @@ export default defineConfig({
   },
 });
 ```
+
+---
+
+## 📱 Topnav, Safe Area Insets & Status Bar Integration
+
+CanvApps provides native-grade status bar and top navigation bar (`topnav`) integration across **PWA** (Desktop macOS/Windows & Mobile iOS/Android), **SPA**, and **Capacitor Mobile** builds with `viewport-fit=cover`. The Canvas rendering engine renders edge-to-edge behind the device notch, Dynamic Island, and status bar, while automatically adapting padding so that top navigation headers remain perfectly spaced.
+
+### 1. Declarative `<view safeArea="top">` Prop
+
+Simply add `safeArea="top"` (or `"all"`, `"bottom"`, `"horizontal"`, `"vertical"`) to your layout or navigation container. CanvApps automatically computes `env(safe-area-inset-top)` and `env(titlebar-area-height)` and offsets padding:
+
+```html
+<!-- Top navigation header with automatic notch / status bar spacing -->
+<view width="100%" safeArea="top" padding={[12, 20]} :backgroundColor={isDark.value ? '#101010' : '#ffffff'}>
+  <text fontSize="18" fontWeight="bold">🎨 CanvApps</text>
+  <button label="Menu" @click="toggleMenu" />
+</view>
+```
+
+### 2. Reactive `useSafeArea()` Hook
+
+Access fine-grained reactive signals for device insets:
+
+```ts
+import { useSafeArea } from '@canvapps/core';
+
+const { top, bottom, left, right, insets } = useSafeArea();
+
+// top.value => e.g. 47 on iPhone 15 Pro, 24 on Android punch hole, 0 on desktop
+```
+
+### 3. Dynamic Status Bar & Theme Color Management (`setThemeColor`)
+
+When the user switches themes (e.g. Light ↔ Dark or custom themes), `setThemeColor` dynamically synchronizes the entire OS and browser window chrome in real time without reloading the page:
+
+- **Desktop PWA Titlebars (macOS / Windows / Chrome / Edge)**: Updates `<meta name="theme-color">` and `<meta name="color-scheme">`, instantly changing the macOS window titlebar and traffic-light control contrast.
+- **Mobile Status Bars (Android Chrome & iOS Safari)**: Adjusts status bar background and icon contrast (light/dark icons).
+- **Overscroll Rubber-Band Bounds**: Synchronizes `document.documentElement` and `document.body` background colors to match your canvas background seamlessly.
+
+```ts
+import { setThemeColor, configureThemePalette } from '@canvapps/core';
+
+// 1. Define custom palette (optional)
+configureThemePalette({
+  light: '#f8fafc',
+  dark: '#101010',
+  midnight: '#07090e',
+  emerald: '#064e3b',
+});
+
+// 2. Switch theme anywhere in your code or stores
+setThemeColor({
+  light: '#f8fafc',
+  dark: '#101010',
+  midnight: '#07090e',
+}, currentTheme.value);
+
+// Or simply pass a direct color string:
+setThemeColor('#101010');
+```
+
+### 4. Custom Multi-Theme Example with Store
+
+```ts
+import { createStore, setThemeColor } from '@canvapps/core';
+
+export const appTheme = createStore({
+  current: 'dark' as 'light' | 'dark' | 'midnight',
+});
+
+// Switch theme action
+export function switchTheme(mode: 'light' | 'dark' | 'midnight') {
+  appTheme.set({ current: mode });
+  
+  const palette = {
+    light: '#ffffff',
+    dark: '#121212',
+    midnight: '#05070f',
+  };
+  
+  // Updates status bar, macOS window titlebar, and document background
+  setThemeColor(palette, mode);
+}
+```
+
+### 5. Configuration & Disabling
+
+By default, Safe Area Inset measurement and Status Bar Theme Color sync are enabled (`true`). To customize or disable:
+
+- In `canvapps.config.ts`:
+  ```ts
+  export default defineConfig({
+    safeArea: false, // Disables automatic safe area inset calculation
+    themeColor: false, // Disables automatic status bar meta tag synchronization
+  });
+  ```
+- In `new Engine({ safeArea: false, themeColor: false })`.
+- On elements: `UIElement.enableSafeArea = false`.
+
+
+---
 
 ### Build Branding & Watermark Banners
 
@@ -637,6 +747,7 @@ export default defineConfig({
   ],
 });
 ```
+
 
 
 ---
@@ -687,8 +798,12 @@ windsurf --install-extension canvapps-vscode-0.1.0.vsix
 | `KineticFX` | Curved parabolic flight tokens, stardust trails, and radial shockwave particle bursts. |
 | `signal(val)` / `computed(fn)` | Fine-grained reactive state primitives. |
 | `effect(fn)` / `batch(fn)` | Reactive subscriptions and batch frame invalidations. |
+| `useSafeArea()` | Fine-grained reactive signals for device notch, status bar, and home indicator insets. |
+| `getSafeAreaInsets()` | Synchronously measures current device safe area insets in logical pixels. |
+| `setThemeColor(color, mode?)` | Dynamically synchronizes HTML5 `<meta name="theme-color">`, iOS status bar, and document backgrounds. |
 | `animate(options)` | 60–120 FPS hardware-timed animation tween with standard and advanced easing curves (`Easings`). |
 | `defineConfig(config)` | Helper for typed `canvapps.config.ts` configuration. |
+
 
 ---
 

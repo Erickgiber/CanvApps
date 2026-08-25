@@ -475,6 +475,17 @@ export function activate(context: vscode.ExtensionContext): void {
         '@click': '### `@click="handler"`\n\nFires on pointer release when coordinates match element bounding box.',
         '@input': '### `@input="handler"`\n\nFires in real-time when text input value changes.',
         '@submit': '### `@submit="handler"`\n\nFires when user presses Enter in an input element.',
+        safeArea: '### `safeArea` (Topnav & Status Bar Inset)\n\nAutomatically applies device safe-area insets (notch, status bar, home indicator, desktop PWA titlebar) to element padding.\n\n**Values**: `"top"`, `"bottom"`, `"left"`, `"right"`, `"all"`, `"horizontal"`, `"vertical"`, or `true`.',
+        safeAreaTop: '### `safeAreaTop` (Custom Top Safe Area Inset)\n\nOverrides or sets top safe area inset padding in pixels or boolean.',
+        safeAreaBottom: '### `safeAreaBottom` (Custom Bottom Safe Area Inset)\n\nOverrides or sets bottom safe area inset padding in pixels or boolean.',
+        safeAreaLeft: '### `safeAreaLeft` (Custom Left Safe Area Inset)\n\nOverrides or sets left safe area inset padding in pixels or boolean.',
+        safeAreaRight: '### `safeAreaRight` (Custom Right Safe Area Inset)\n\nOverrides or sets right safe area inset padding in pixels or boolean.',
+        useSafeArea: '### `useSafeArea()`\n\nReactive hook returning signals for device safe-area insets (`top`, `bottom`, `left`, `right`, `insets`).',
+        getSafeAreaInsets: '### `getSafeAreaInsets()`\n\nSynchronously measures current device safe area insets in logical pixels.',
+        setThemeColor: '### `setThemeColor(color, mode?)`\n\nDynamically synchronizes HTML5 `<meta name="theme-color">`, `<meta name="color-scheme">`, Apple status bar style, and document background across desktop and mobile in real time.',
+        configureThemePalette: '### `configureThemePalette(palette)`\n\nRegisters a global named theme palette (e.g. `{ light: "#fff", dark: "#101010" }`).',
+        getThemeColor: '### `getThemeColor()`\n\nReturns the currently active theme color hex string.',
+        getThemeMode: '### `getThemeMode()`\n\nReturns the currently active theme mode key.',
         signal: '### `signal(initialValue)`\n\nCreates a fine-grained reactive Signal in direct memory. Access or mutate via `.value`.',
         computed: '### `computed(() => expr)`\n\nCreates a memoized reactive value that updates only when dependencies change.',
         effect: '### `effect(() => fn)`\n\nExecutes a side-effect whenever reactive signals accessed inside change.',
@@ -488,6 +499,7 @@ export function activate(context: vscode.ExtensionContext): void {
       return null;
     },
   });
+
 
   // 3. Completion Item Provider (Suggesting events, directives, attributes, and tags)
   const completionProvider = vscode.languages.registerCompletionItemProvider(
@@ -565,7 +577,15 @@ export function activate(context: vscode.ExtensionContext): void {
             { name: 'scrollTop', doc: 'Reactive vertical scroll offset alias.' },
             { name: 'scrollLeft', doc: 'Reactive horizontal scroll offset alias.' },
 
+            // Safe Area Insets (Topnav, Status Bar & Home Indicator)
+            { name: 'safeArea', doc: 'Dynamic safe-area padding for notch, status bar, or titlebar ("top" | "bottom" | "all" | "horizontal" | "vertical" | boolean).' },
+            { name: 'safeAreaTop', doc: 'Dynamic top safe-area padding in pixels or boolean.' },
+            { name: 'safeAreaBottom', doc: 'Dynamic bottom safe-area padding in pixels or boolean.' },
+            { name: 'safeAreaLeft', doc: 'Dynamic left safe-area padding in pixels or boolean.' },
+            { name: 'safeAreaRight', doc: 'Dynamic right safe-area padding in pixels or boolean.' },
+
             // Standard bindings
+
             { name: 'value', doc: 'Two-way reactive value binding for UIInput.' },
             { name: 'text', doc: 'Dynamic text content binding.' },
             { name: 'label', doc: 'Dynamic button label binding.' },
@@ -678,7 +698,13 @@ export function activate(context: vscode.ExtensionContext): void {
           { name: 'flexShrink', doc: 'Flex shrink factor.', snippet: 'flexShrink="${1:0}"' },
           { name: 'flexWrap', doc: 'Flex item wrapping behavior.', snippet: 'flexWrap="${1|nowrap,wrap,wrap-reverse|}"' },
           { name: 'padding', doc: 'Inner padding (number, [top, right, bottom, left], or [vertical, horizontal]).', snippet: 'padding="${1:16}"' },
+          { name: 'safeArea', doc: 'Applies device safe-area insets for notch, status bar, and desktop PWA titlebar ("top", "bottom", "all", "horizontal", "vertical", true).', snippet: 'safeArea="${1|top,all,bottom,horizontal,vertical,true|}"', tags: ['view', 'uiview', 'scroll-view', 'uiscrollview'] },
+          { name: 'safeAreaTop', doc: 'Custom top safe-area padding override (number or boolean).', snippet: 'safeAreaTop="${1:true}"', tags: ['view', 'uiview', 'scroll-view', 'uiscrollview'] },
+          { name: 'safeAreaBottom', doc: 'Custom bottom safe-area padding override (number or boolean).', snippet: 'safeAreaBottom="${1:true}"', tags: ['view', 'uiview', 'scroll-view', 'uiscrollview'] },
+          { name: 'safeAreaLeft', doc: 'Custom left safe-area padding override (number or boolean).', snippet: 'safeAreaLeft="${1:true}"', tags: ['view', 'uiview', 'scroll-view', 'uiscrollview'] },
+          { name: 'safeAreaRight', doc: 'Custom right safe-area padding override (number or boolean).', snippet: 'safeAreaRight="${1:true}"', tags: ['view', 'uiview', 'scroll-view', 'uiscrollview'] },
           { name: 'margin', doc: 'Outer margin (number, [top, right, bottom, left], or [vertical, horizontal]).', snippet: 'margin="${1:0}"' },
+
           { name: 'gap', doc: 'Gap spacing between flex children in pixels.', snippet: 'gap="${1:12}"' },
           { name: 'rowGap', doc: 'Row gap spacing in pixels.', snippet: 'rowGap="${1:12}"' },
           { name: 'columnGap', doc: 'Column gap spacing in pixels.', snippet: 'columnGap="${1:12}"' },

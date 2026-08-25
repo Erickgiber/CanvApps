@@ -9,10 +9,18 @@ export default defineConfig({
   // Build Watermark Banner: Set to false to disable auto-generated open-source attribution banners in JS/HTML
   banner: true,
 
+  // Automatic Safe Area Insets Support (Notch / Dynamic Island / Status Bar). Default: true
+  safeArea: true,
 
+  // Theme Color & Status Bar auto-synchronization for light and dark modes. Default: true
+  themeColor: {
+    light: '#f8fafc',
+    dark: '#090d16',
+  },
 
   // Global Text Selection Strategy (false = zero Ghost DOM overhead; developers opt-in per component)
   selectable: false,
+
 
 
   // Optional: Uncomment to configure Progressive Web App (target: 'PWA')
@@ -20,10 +28,11 @@ export default defineConfig({
     name: 'CanvApps Canvas Application',
     shortName: 'CanvApps',
     description: 'High performance 100% Canvas UI Framework application',
-    themeColor: '#090d16',
-    backgroundColor: '#090d16',
+    themeColor: '#f8fafc',
+    backgroundColor: '#f8fafc',
     display: 'standalone',
   },
+
 
   // Optional: Uncomment to configure Capacitor Native Container (target: 'CAPACITOR')
   // capacitor: {

@@ -30,14 +30,36 @@ export class PWATargetBuilder {
     if (fs.existsSync(indexPath)) {
       let html = fs.readFileSync(indexPath, 'utf-8');
 
+      // Ensure viewport-fit=cover is configured for edge-to-edge status bar rendering
+      if (!html.includes('viewport-fit=cover')) {
+        html = html.replace(
+          /<meta\s+name=["']viewport["'][^>]*>/i,
+          '<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />'
+        );
+      }
+
+      const initialThemeColor = typeof config.themeColor === 'object'
+        ? config.themeColor.light
+        : (typeof config.themeColor === 'string' ? config.themeColor : (pwa.themeColor || '#f8fafc'));
+
       const pwaMetaTags = `
-    <!-- CanvApps PWA Metadata -->
+    <!-- CanvApps PWA Metadata & Safe Area Insets -->
     <link rel="manifest" href="./manifest.json" />
-    <meta name="theme-color" content="${pwa.themeColor || '#0f172a'}" />
+    <meta name="theme-color" content="${initialThemeColor}" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="${pwa.shortName || config.title || 'CanvApps'}" />
+    <meta name="msapplication-TileColor" content="${initialThemeColor}" />
+    <meta name="msapplication-navbutton-color" content="${initialThemeColor}" />
+    <style id="canvapps-pwa-safearea">
+      :root {
+        --sat: max(env(safe-area-inset-top, 0px), env(titlebar-area-height, 0px));
+        --sar: max(env(safe-area-inset-right, 0px), env(titlebar-area-width, 0px));
+        --sab: env(safe-area-inset-bottom, 0px);
+        --sal: max(env(safe-area-inset-left, 0px), env(titlebar-area-x, 0px));
+      }
+    </style>
     <script>
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
@@ -62,15 +84,20 @@ export class PWATargetBuilder {
   }
 
   private static generateManifest(config: CanvAppsConfig, pwa: PWAConfig): Record<string, any> {
+    const defaultColor = typeof config.themeColor === 'object'
+      ? config.themeColor.light
+      : (typeof config.themeColor === 'string' ? config.themeColor : '#f8fafc');
+
     return {
       name: pwa.name || config.title || 'CanvApps Application',
       short_name: pwa.shortName || config.title || 'CanvApps',
       description: pwa.description || 'High-performance Canvas UI Application built with CanvApps',
       start_url: pwa.startUrl || './index.html',
       display: pwa.display || 'standalone',
-      background_color: pwa.backgroundColor || '#0f172a',
-      theme_color: pwa.themeColor || '#0f172a',
+      background_color: pwa.backgroundColor || defaultColor,
+      theme_color: pwa.themeColor || defaultColor,
       orientation: pwa.orientation || 'any',
+
       icons: pwa.icons || [
         {
           src: './favicon.svg',

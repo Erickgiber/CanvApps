@@ -112,9 +112,17 @@ export interface LayoutStyles {
   marginBottom?: number;
   marginLeft?: number;
 
+  // Safe Area Inset Support (Notch, Status Bar & Home Indicator)
+  safeArea?: boolean | 'top' | 'bottom' | 'left' | 'right' | 'all' | 'horizontal' | 'vertical';
+  safeAreaTop?: number | boolean;
+  safeAreaBottom?: number | boolean;
+  safeAreaLeft?: number | boolean;
+  safeAreaRight?: number | boolean;
+
   aspectRatio?: number;
   zIndex?: number;
 }
+
 
 /**
  * Direction of scroll allowed on a scrollable container.

@@ -3,6 +3,7 @@ import { VisualStyles, BorderRadius } from '../types/style';
 import { UIEventType, CanvasEventListener, CanvasPointerEvent } from '../events/types';
 import { Engine } from './Engine';
 import { animate, Easings } from '../animation/Tween';
+import { getSafeAreaInsets } from './safeArea';
 
 /**
  * Abstract base class for all renderable nodes in the CanvApps UI hierarchy.
@@ -75,6 +76,11 @@ export abstract class UIElement {
   public static defaultSelectable = false;
 
   /**
+   * Global switch for enabling automatic device safe-area calculations (defaults to true).
+   */
+  public static enableSafeArea = true;
+
+  /**
    * Registers an element into the global ID lookup registry.
    */
   public static registerElement(id: string, element: UIElement): void {
@@ -91,7 +97,7 @@ export abstract class UIElement {
   }
 
   /**
-   * Retrieves a UIElement by its unique or custom ID.
+   * Retrieves an element by its ID.
    */
   public static getElementById(id: string): UIElement | null {
     const cleanId = id.startsWith('#') ? id.slice(1) : id;
@@ -144,12 +150,7 @@ export abstract class UIElement {
   // Hierarchy Management
   // ---------------------------------------------------------------------------
 
-  /**
-   * Appends a child element to this node.
-   *
-   * @param child The child element to add.
-   * @returns This instance for chaining.
-   */
+
   public addChild(child: UIElement): this {
     if (child.parent === this) {
       return this;
@@ -170,31 +171,32 @@ export abstract class UIElement {
    * Inserts a child element at a specific index.
    *
    * @param child The child element to insert.
-   * @param index Zero-based index at which to insert the child.
+   * @param index The 0-based index to insert at.
    * @returns This instance for chaining.
    */
   public insertChild(child: UIElement, index: number): this {
     if (child.parent === this) {
-      const currentIndex = this.children.indexOf(child);
-      if (currentIndex !== -1) {
-        this.children.splice(currentIndex, 1);
+      const currIndex = this.children.indexOf(child);
+      if (currIndex !== -1) {
+        this.children.splice(currIndex, 1);
       }
     } else if (child.parent) {
       child.parent.removeChild(child);
     }
 
     child.parent = this;
-    const targetIndex = Math.max(0, Math.min(index, this.children.length));
-    this.children.splice(targetIndex, 0, child);
+    const clampedIndex = Math.max(0, Math.min(index, this.children.length));
+    this.children.splice(clampedIndex, 0, child);
+    child.markLayoutDirty();
     this.markLayoutDirty();
     return this;
   }
 
   /**
-   * Removes a specific child element from this node.
+   * Removes a child element from this node.
    *
    * @param child The child element to remove.
-   * @returns The removed child or null if not found.
+   * @returns The removed child, or null if not found.
    */
   public removeChild(child: UIElement): UIElement | null {
     const index = this.children.indexOf(child);
@@ -208,18 +210,12 @@ export abstract class UIElement {
     return child;
   }
 
-  /**
-   * Removes this element from its current parent.
-   */
   public removeFromParent(): void {
     if (this.parent) {
       this.parent.removeChild(this);
     }
   }
 
-  /**
-   * Removes all children from this element.
-   */
   public removeAllChildren(): void {
     for (const child of this.children) {
       child.parent = null;
@@ -245,6 +241,11 @@ export abstract class UIElement {
     'marginRight',
     'marginBottom',
     'marginLeft',
+    'safeArea',
+    'safeAreaTop',
+    'safeAreaBottom',
+    'safeAreaLeft',
+    'safeAreaRight',
     'flexDirection',
     'flexWrap',
     'justifyContent',
@@ -275,18 +276,10 @@ export abstract class UIElement {
     'label',
   ]);
 
-
   // ---------------------------------------------------------------------------
   // Style and Invalidation
   // ---------------------------------------------------------------------------
 
-  /**
-   * Updates styles and marks the element dirty for layout or rendering with zero-overhead discrimination.
-   * Render-only properties (opacity, scale, translate, color, etc.) bypass FlexLayout completely.
-   *
-   * @param styles Partial style overrides.
-   * @returns This instance for chaining.
-   */
   public setStyle(styles: Partial<VisualStyles>): this {
     if (styles.scrollTop !== undefined) {
       this.scrollTop = Math.max(0, styles.scrollTop);
@@ -319,9 +312,6 @@ export abstract class UIElement {
     return this;
   }
 
-  /**
-   * Marks this element and its ancestor path as requiring layout recalculation.
-   */
   public markLayoutDirty(): void {
     this.isLayoutDirty = true;
     this.isRenderDirty = true;
@@ -334,9 +324,6 @@ export abstract class UIElement {
     }
   }
 
-  /**
-   * Marks this element as requiring canvas repaint without invalidating layout.
-   */
   public markRenderDirty(): void {
     this.isRenderDirty = true;
 
@@ -352,47 +339,63 @@ export abstract class UIElement {
   // ---------------------------------------------------------------------------
 
   /**
-   * Resolves the 4-directional computed padding insets.
+   * Resolves the 4-directional computed padding insets including safe-area insets.
    */
   public getComputedPadding(): Insets {
     const { padding, paddingTop, paddingRight, paddingBottom, paddingLeft } = this.styles;
 
-    if (typeof padding === 'number') {
-      return {
-        top: paddingTop ?? padding,
-        right: paddingRight ?? padding,
-        bottom: paddingBottom ?? padding,
-        left: paddingLeft ?? padding,
-      };
-    }
-
-    if (Array.isArray(padding)) {
-      if (padding.length === 2) {
-        const [vertical, horizontal] = padding;
-        return {
-          top: paddingTop ?? vertical,
-          right: paddingRight ?? horizontal,
-          bottom: paddingBottom ?? vertical,
-          left: paddingLeft ?? horizontal,
-        };
-      }
-      if (padding.length === 4) {
-        const [top, right, bottom, left] = padding;
-        return {
-          top: paddingTop ?? top,
-          right: paddingRight ?? right,
-          bottom: paddingBottom ?? bottom,
-          left: paddingLeft ?? left,
-        };
-      }
-    }
-
-    return {
+    const insets: Insets = {
       top: paddingTop ?? 0,
       right: paddingRight ?? 0,
       bottom: paddingBottom ?? 0,
       left: paddingLeft ?? 0,
     };
+
+    if (typeof padding === 'number') {
+      insets.top = paddingTop ?? padding;
+      insets.right = paddingRight ?? padding;
+      insets.bottom = paddingBottom ?? padding;
+      insets.left = paddingLeft ?? padding;
+    } else if (Array.isArray(padding)) {
+      if (padding.length === 2) {
+        const [vertical, horizontal] = padding;
+        insets.top = paddingTop ?? vertical;
+        insets.right = paddingRight ?? horizontal;
+        insets.bottom = paddingBottom ?? vertical;
+        insets.left = paddingLeft ?? horizontal;
+      } else if (padding.length === 4) {
+        const [top, right, bottom, left] = padding;
+        insets.top = paddingTop ?? top;
+        insets.right = paddingRight ?? right;
+        insets.bottom = paddingBottom ?? bottom;
+        insets.left = paddingLeft ?? left;
+      }
+    }
+
+    // Apply safe area insets (Notch, Status Bar, Home Indicator) if configured
+    if (
+      UIElement.enableSafeArea &&
+      (this.styles.safeArea ||
+        this.styles.safeAreaTop !== undefined ||
+        this.styles.safeAreaBottom !== undefined ||
+        this.styles.safeAreaLeft !== undefined ||
+        this.styles.safeAreaRight !== undefined)
+    ) {
+      const deviceInsets = getSafeAreaInsets();
+      const sa = this.styles.safeArea;
+
+      const addTop = sa === true || sa === 'top' || sa === 'all' || sa === 'vertical' || Boolean(this.styles.safeAreaTop);
+      const addBottom = sa === true || sa === 'bottom' || sa === 'all' || sa === 'vertical' || Boolean(this.styles.safeAreaBottom);
+      const addLeft = sa === true || sa === 'left' || sa === 'all' || sa === 'horizontal' || Boolean(this.styles.safeAreaLeft);
+      const addRight = sa === true || sa === 'right' || sa === 'all' || sa === 'horizontal' || Boolean(this.styles.safeAreaRight);
+
+      if (addTop) insets.top += typeof this.styles.safeAreaTop === 'number' ? this.styles.safeAreaTop : deviceInsets.top;
+      if (addBottom) insets.bottom += typeof this.styles.safeAreaBottom === 'number' ? this.styles.safeAreaBottom : deviceInsets.bottom;
+      if (addLeft) insets.left += typeof this.styles.safeAreaLeft === 'number' ? this.styles.safeAreaLeft : deviceInsets.left;
+      if (addRight) insets.right += typeof this.styles.safeAreaRight === 'number' ? this.styles.safeAreaRight : deviceInsets.right;
+    }
+
+    return insets;
   }
 
   /**

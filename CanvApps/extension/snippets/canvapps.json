@@ -123,7 +123,18 @@
       "</motion>"
     ],
     "description": "Create a UIMotion GPU-timed animated wrapper"
+  },
+  "Topnav Header with Safe Area": {
+    "prefix": "cvs-topnav",
+    "body": [
+      "<view width=\"100%\" safeArea=\"top\" flexDirection=\"row\" alignItems=\"center\" justifyContent=\"space-between\" padding=\"[12, 20]\" :backgroundColor=\"${1:isDark.value ? '#181818' : '#ffffff'}\" borderRadius=\"14\">",
+      "  <text fontSize=\"18\" fontWeight=\"bold\" color=\"${2:#ffffff}\">${3:🎨 CanvApps}</text>",
+      "  <button label=\"Menu\" @click=\"${4:toggleMenu}\" />",
+      "</view>"
+    ],
+    "description": "Create a Topnav header with automatic Notch, Status Bar, and Titlebar Safe Area insets"
   }
 }
+
 
 

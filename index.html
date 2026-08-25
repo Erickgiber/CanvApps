@@ -16,7 +16,9 @@
       var pathParts = l.pathname.split('/').filter(Boolean);
       var isProject = l.hostname.endsWith('github.io') && pathParts.length > 0;
       var repoPrefix = isProject ? '/' + pathParts[0] + '/' : '/';
-      d.write('<base href="' + l.origin + repoPrefix + '">');
+      var base = d.createElement('base');
+      base.href = l.origin + repoPrefix;
+      d.head.appendChild(base);
 
       if (l.search && l.search.indexOf('p=') !== -1) {
         try {
@@ -31,6 +33,7 @@
         } catch(e) {}
       }
     }(window.location, document));
+
   </script>
   <style>
     :root {

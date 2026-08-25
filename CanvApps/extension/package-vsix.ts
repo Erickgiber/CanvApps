@@ -9,7 +9,7 @@ const VSIX_OUTPUT = path.resolve(ROOT_DIR, 'canvapps-vscode-0.1.0.vsix');
 console.log('📦 Building CanvApps VS Code Extension...');
 
 // 1. Bundle extension.ts with esbuild
-execSync('npx esbuild src/extension.ts --bundle --outfile=dist/extension.js --external:vscode --format=cjs --platform=node', {
+execSync('npx esbuild src/extension.ts --bundle --outfile=dist/extension.js --external:vscode --external:typescript --format=cjs --platform=node --minify', {
   cwd: EXTENSION_DIR,
   stdio: 'inherit',
 });
@@ -48,7 +48,6 @@ const vsixManifest = `<?xml version="1.0" encoding="utf-8"?>
       <Property Id="Microsoft.VisualStudio.Code.ExtensionKind" Value="workspace" />
       <Property Id="Microsoft.VisualStudio.Code.LocalizedLanguages" Value="" />
       <Property Id="Microsoft.VisualStudio.Code.EnabledApiProposals" Value="" />
-      <Property Id="Microsoft.VisualStudio.Code.ExecutesCode" Value="true" />
       <Property Id="Microsoft.VisualStudio.Services.Links.Source" Value="https://github.com/Erickgiber/CanvApps.git" />
       <Property Id="Microsoft.VisualStudio.Services.Links.Getstarted" Value="https://github.com/Erickgiber/CanvApps.git" />
       <Property Id="Microsoft.VisualStudio.Services.Links.GitHub" Value="https://github.com/Erickgiber/CanvApps.git" />
@@ -57,6 +56,7 @@ const vsixManifest = `<?xml version="1.0" encoding="utf-8"?>
       <Property Id="Microsoft.VisualStudio.Services.GitHubFlavoredMarkdown" Value="true" />
       <Property Id="Microsoft.VisualStudio.Services.Content.Pricing" Value="Free"/>
     </Properties>
+
     <Icon>extension/icon.png</Icon>
   </Metadata>
   <Installation>

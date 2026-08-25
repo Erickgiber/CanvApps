@@ -1,7 +1,13 @@
 import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
-import * as ts from 'typescript';
+
+let tsModule: any = null;
+try {
+  tsModule = require('typescript');
+} catch {
+  // Optional in minimal environments
+}
 
 /**
  * Resolves a module specifier to an absolute file path on disk.
@@ -16,6 +22,7 @@ function resolveImportPath(baseDir: string, importPath: string): string | null {
   }
   return null;
 }
+
 
 /**
  * Checks if a target file exports a given symbol name.
@@ -84,34 +91,41 @@ function validateCanvAppsDocument(document: vscode.TextDocument): vscode.Diagnos
     const scriptContent = scriptMatch[2];
     const scriptStartIndex = scriptMatch.index + scriptMatch[0].indexOf(scriptContent);
 
-    // TypeScript syntax diagnostics on script block
-    const sourceFile = ts.createSourceFile(
-      'component.ts',
-      scriptContent,
-      ts.ScriptTarget.Latest,
-      true,
-      ts.ScriptKind.TS
-    );
-
-    // Report parse/syntax errors from TypeScript
-    const parseDiagnostics = (sourceFile as any).parseDiagnostics || [];
-    for (const diag of parseDiagnostics) {
-      if (typeof diag.start === 'number' && typeof diag.length === 'number') {
-        const absStart = scriptStartIndex + diag.start;
-        const absEnd = absStart + diag.length;
-        const startPos = document.positionAt(absStart);
-        const endPos = document.positionAt(absEnd);
-        const messageText = typeof diag.messageText === 'string' ? diag.messageText : diag.messageText?.messageText || 'TypeScript syntax error';
-
-        diagnostics.push(
-          new vscode.Diagnostic(
-            new vscode.Range(startPos, endPos),
-            `[CanvApps TS] ${messageText}`,
-            vscode.DiagnosticSeverity.Error
-          )
+    // TypeScript syntax diagnostics on script block (if TS engine available)
+    if (tsModule) {
+      try {
+        const sourceFile = tsModule.createSourceFile(
+          'component.ts',
+          scriptContent,
+          tsModule.ScriptTarget?.Latest || 99,
+          true,
+          tsModule.ScriptKind?.TS || 3
         );
+
+        // Report parse/syntax errors from TypeScript
+        const parseDiagnostics = (sourceFile as any).parseDiagnostics || [];
+        for (const diag of parseDiagnostics) {
+          if (typeof diag.start === 'number' && typeof diag.length === 'number') {
+            const absStart = scriptStartIndex + diag.start;
+            const absEnd = absStart + diag.length;
+            const startPos = document.positionAt(absStart);
+            const endPos = document.positionAt(absEnd);
+            const messageText = typeof diag.messageText === 'string' ? diag.messageText : diag.messageText?.messageText || 'TypeScript syntax error';
+
+            diagnostics.push(
+              new vscode.Diagnostic(
+                new vscode.Range(startPos, endPos),
+                `[CanvApps TS] ${messageText}`,
+                vscode.DiagnosticSeverity.Error
+              )
+            );
+          }
+        }
+      } catch {
+        // Ignore AST parser errors
       }
     }
+
 
     // Validate Import Statements
     const importRegex = /import\s+([\s\S]*?)\s+from\s+(['"])([^'"]+)\2/g;

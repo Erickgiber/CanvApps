@@ -240,35 +240,12 @@ export class CVSParser {
    * Preprocesses conditional and iteration blocks:
    * - @if (condition) { ... } else { ... }
    * - @each rows as row { ... }
-   * - {#if condition} ... {:else} ... {/if}
-   * - {#each items as item} ... {/each}
    */
   private static preprocessControlBlocks(src: string): string {
-    // 1. Svelte-style: {#if cond} ... {:else} ... {/if}
-    let result = src.replace(
-      /\{#if\s+([\s\S]*?)\}([\s\S]*?)(?:\{:else\}([\s\S]*?))?\{\/if\}/g,
-      (_match, cond, thenPart, elsePart) => {
-        const cleanCond = cond.trim().replace(/"/g, '&quot;');
-        return `<canvapps-if condition="${cleanCond}"><canvapps-then>${thenPart}</canvapps-then>${
-          elsePart !== undefined ? `<canvapps-else>${elsePart}</canvapps-else>` : ''
-        }</canvapps-if>`;
-      }
-    );
+    // 1. Block-style @if ... { ... } else { ... }
+    let result = this.transformIfBlocks(src);
 
-    // 2. Svelte-style: {#each iterable as item, index} ... {/each}
-    result = result.replace(
-      /\{#each\s+([\s\S]*?)\}([\s\S]*?)\{\/each\}/g,
-      (_match, expr, body) => {
-        const parsed = this.parseForDirective(expr);
-        const safeIterable = parsed.iterable.trim().replace(/"/g, '&quot;');
-        return `<canvapps-each iterable="${safeIterable}" item="${parsed.item}" index="${parsed.index || ''}">${body}</canvapps-each>`;
-      }
-    );
-
-    // 3. Block-style @if ... { ... } else { ... }
-    result = this.transformIfBlocks(result);
-
-    // 4. Block-style @each ... as ... { ... }
+    // 2. Block-style @each ... as ... { ... }
     result = this.transformEachBlocks(result);
 
     return result;
@@ -547,7 +524,7 @@ export class CVSParser {
    * Helper to parse *for="item in items" or @each="items as item, index"
    */
   private static parseForDirective(value: string): { item: string; index?: string; iterable: string } {
-    // 1. Support Svelte-style "iterable as item" or "iterable as item, index" or "iterable as (item, index)"
+    // 1. Support "iterable as item" or "iterable as item, index" or "iterable as (item, index)"
     if (/\bas\b/.test(value)) {
       const parts = value.split(/\bas\b/);
       const iterable = parts[0].trim();

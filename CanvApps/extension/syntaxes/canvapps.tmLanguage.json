@@ -135,40 +135,6 @@
           }
         },
         {
-          "name": "meta.control.svelte.if.canvapps",
-          "begin": "(\\{#if)\\s+([^{}]+)(\\})",
-          "beginCaptures": {
-            "1": { "name": "keyword.control.directive.canvapps" },
-            "2": { "patterns": [{ "include": "source.ts" }, { "include": "#ts-embedded" }] },
-            "3": { "name": "punctuation.section.curly.end.canvapps" }
-          },
-          "end": "(?<=\\})"
-        },
-        {
-          "name": "meta.control.svelte.each.canvapps",
-          "begin": "(\\{#each)\\s+([^{}]+)(\\})",
-          "beginCaptures": {
-            "1": { "name": "keyword.control.directive.canvapps" },
-            "2": { "patterns": [{ "include": "source.ts" }, { "include": "#ts-embedded" }] },
-            "3": { "name": "punctuation.section.curly.end.canvapps" }
-          },
-          "end": "(?<=\\})"
-        },
-        {
-          "name": "meta.control.svelte.else.canvapps",
-          "match": "(\\{:else\\})",
-          "captures": {
-            "1": { "name": "keyword.control.directive.canvapps" }
-          }
-        },
-        {
-          "name": "meta.control.svelte.close.canvapps",
-          "match": "(\\{/(?:if|each)\\})",
-          "captures": {
-            "1": { "name": "keyword.control.directive.canvapps" }
-          }
-        },
-        {
           "name": "punctuation.section.curly.end.canvapps",
           "match": "(\\})"
         }

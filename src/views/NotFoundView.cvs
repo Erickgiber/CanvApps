@@ -9,12 +9,12 @@
     navigateRoute('/');
   }
 
-  function goPintertest() {
-    navigateRoute('/pintertest');
+  function goGallery() {
+    navigateRoute('/gallery');
   }
 
-  function goAuth() {
-    navigateRoute('/auth');
+  function goProfile() {
+    navigateRoute('/profile');
   }
 </script>
 
@@ -73,9 +73,9 @@
           @click="goHome" 
         />
 
-        <!-- 2. Pintertest Button -->
+        <!-- 2. Gallery Button -->
         <button 
-          label="📌 Explore Pintertest" 
+          label="🖼️ Explore Gallery" 
           :backgroundColor={isDark.value ? '#282836' : '#f1f5f9'} 
           :hoverBackgroundColor={isDark.value ? '#333346' : '#e2e8f0'} 
           :color={isDark.value ? '#ffffff' : '#1e293b'} 
@@ -86,12 +86,12 @@
           fontSize="13" 
           fontWeight="bold" 
           :width={isMobile.value ? '100%' : 'auto'} 
-          @click="goPintertest" 
+          @click="goGallery" 
         />
 
-        <!-- 3. Auth Button -->
+        <!-- 3. Profile Button -->
         <button 
-          label="🔑 Sign In" 
+          label="👤 User Profile" 
           :backgroundColor={isDark.value ? '#282836' : '#f1f5f9'} 
           :hoverBackgroundColor={isDark.value ? '#333346' : '#e2e8f0'} 
           :color={isDark.value ? '#ffffff' : '#1e293b'} 
@@ -102,8 +102,9 @@
           fontSize="13" 
           fontWeight="bold" 
           :width={isMobile.value ? '100%' : 'auto'} 
-          @click="goAuth" 
+          @click="goProfile" 
         />
+
 
       </view>
 

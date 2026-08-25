@@ -1,6 +1,6 @@
 import { signal, UIElement, Engine, animate, Easings } from '@canvapps';
 
-export interface PinItem {
+export interface GalleryItem {
   id: string;
   title: string;
   author: string;
@@ -17,9 +17,10 @@ export interface PinItem {
   description: string;
 }
 
-export const initialPinsData: PinItem[] = [
+export const initialGalleryData: GalleryItem[] = [
+
   {
-    id: 'pin-1',
+    id: 'art-1',
     title: 'Minimalist Bauhaus Villa',
     author: 'Elena Rostova',
     authorHandle: '@elena.arch',
@@ -33,7 +34,7 @@ export const initialPinsData: PinItem[] = [
     description: 'Monolithic raw concrete lines contrasting with warm natural wood interior aesthetics.',
   },
   {
-    id: 'pin-2',
+    id: 'art-2',
     title: 'Neo-Tokyo Cyberpunk Rain',
     author: 'Kenji Sato',
     authorHandle: '@kenji.visuals',
@@ -47,7 +48,7 @@ export const initialPinsData: PinItem[] = [
     description: 'Atmospheric neon drenched alleyway in Shinjuku during midnight rainstorm.',
   },
   {
-    id: 'pin-3',
+    id: 'art-3',
     title: 'Fluid Iridescent Glasswave',
     author: 'Maya Lin',
     authorHandle: '@maya.design',
@@ -61,7 +62,7 @@ export const initialPinsData: PinItem[] = [
     description: 'Organic caustic refractions simulated in high precision sub-pixel shaders.',
   },
   {
-    id: 'pin-4',
+    id: 'art-4',
     title: 'Misty Alpine Pine Ridge',
     author: 'Lukas Steiner',
     authorHandle: '@lukas.nature',
@@ -75,7 +76,7 @@ export const initialPinsData: PinItem[] = [
     description: 'Sunrise fog rolls over dense alpine evergreen canopies in the Dolomites.',
   },
   {
-    id: 'pin-5',
+    id: 'art-5',
     title: 'High-Fashion Minimal Trench',
     author: 'Clara Dupont',
     authorHandle: '@clara.vogue',
@@ -89,7 +90,7 @@ export const initialPinsData: PinItem[] = [
     description: 'Autumn runway statement piece with structured geometry and bold saffron tones.',
   },
   {
-    id: 'pin-6',
+    id: 'art-6',
     title: 'Futuristic Spiral Atrium',
     author: 'Zaha Studio',
     authorHandle: '@zaha.forms',
@@ -98,123 +99,122 @@ export const initialPinsData: PinItem[] = [
     height: 280,
     aspectRatio: 0.68,
     category: 'Architecture',
-    likes: 2415,
-    tags: ['#parametric', '#spiral', '#atrium'],
-    description: 'Continuous parametric spiral connecting 8 levels of light-filled open gallery space.',
+    likes: 2450,
+    tags: ['#parametric', '#interior', '#parametric'],
+    description: 'Dynamic curving parametric bridges creating natural lighting shafts through center volume.',
   },
   {
-    id: 'pin-7',
-    title: 'Vibrant Acrylic Chromatics',
-    author: 'Gabriel Ross',
-    authorHandle: '@gabriel.art',
-    avatarColor: '#3b82f6',
-    src: 'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?w=700&auto=format&fit=crop&q=80',
-    height: 260,
-    aspectRatio: 0.7,
-    category: 'Art & Design',
-    likes: 1240,
-    tags: ['#acrylic', '#colorplay', '#abstract'],
-    description: 'Macro pigment suspension capturing microscopic eddies of saturated cobalt and magenta.',
-  },
-  {
-    id: 'pin-8',
-    title: 'Cyber Mech Core Reactor',
-    author: 'Aoi Kuroda',
-    authorHandle: '@aoi.mecha',
-    avatarColor: '#14b8a6',
-    src: 'https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?w=700&auto=format&fit=crop&q=80',
-    height: 190,
-    aspectRatio: 1.1,
-    category: 'Cyberpunk',
-    likes: 3820,
-    tags: ['#mecha', '#scifi', '#hardedge'],
-    description: 'High-density computational core housing quantum stabilization chambers.',
-  },
-  {
-    id: 'pin-9',
-    title: 'Golden Hour Dolomite Peak',
-    author: 'Marco Bellini',
-    authorHandle: '@marco.peaks',
-    avatarColor: '#f97316',
-    src: 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=700&auto=format&fit=crop&q=80',
-    height: 175,
-    aspectRatio: 1.3,
-    category: 'Nature',
-    likes: 4190,
-    tags: ['#dolomites', '#goldenhour', '#alps'],
-    description: 'Last rays of alpine sun illuminating jagged limestone cliffs above the cloud layer.',
-  },
-  {
-    id: 'pin-10',
-    title: 'Anime Sunset Twilight Cloud',
-    author: 'Sora Hayashi',
-    authorHandle: '@sora.sky',
-    avatarColor: '#a855f7',
-    src: 'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=700&auto=format&fit=crop&q=80',
-    height: 285,
-    aspectRatio: 0.7,
-    category: 'Anime',
-    likes: 5620,
-    tags: ['#makoto', '#clouds', '#sunset'],
-    description: 'Dreamlike cumulus towers glowing under pastel twilight skies.',
-  },
-  {
-    id: 'pin-11',
-    title: 'Glass Horizon Infinity Villa',
-    author: 'Elena Rostova',
-    authorHandle: '@elena.arch',
-    avatarColor: '#e11d48',
-    src: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=700&auto=format&fit=crop&q=80',
-    height: 185,
-    aspectRatio: 1.25,
-    category: 'Architecture',
-    likes: 2130,
-    tags: ['#villa', '#infinity', '#luxury'],
-    description: 'Seamless glass boundaries connecting interior living spaces directly with ocean vistas.',
-  },
-  {
-    id: 'pin-12',
-    title: 'Deep Space Nebula Cluster',
-    author: 'Cosmo Lab',
-    authorHandle: '@cosmo.deep',
+    id: 'art-7',
+    title: 'Chromatic Cyber Samurai',
+    author: 'Hiroshi Tanaka',
+    authorHandle: '@hiroshi.art',
     avatarColor: '#6366f1',
-    src: 'https://images.unsplash.com/photo-1534447677768-be436bb09401?w=700&auto=format&fit=crop&q=80',
-    height: 270,
-    aspectRatio: 0.75,
+    src: 'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=700&auto=format&fit=crop&q=80',
+    height: 340,
+    aspectRatio: 0.6,
+    category: 'Anime',
+    likes: 4120,
+    tags: ['#katana', '#hologram', '#synthwave'],
+    description: 'Cybernetic ronin navigating the high altitude skyways of Neo-Kyoto.',
+  },
+  {
+    id: 'art-8',
+    title: 'Orbital Habitat Centrifuge',
+    author: 'Dr. Sarah Vance',
+    authorHandle: '@sarah.orbit',
+    avatarColor: '#14b8a6',
+    src: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=700&auto=format&fit=crop&q=80',
+    height: 200,
+    aspectRatio: 1.1,
     category: 'Sci-Fi',
-    likes: 3490,
-    tags: ['#nebula', '#astronomy', '#deepspace'],
-    description: 'Stellar nursery glowing in ionized hydrogen and oxygen emission spectrums.',
+    likes: 3670,
+    tags: ['#space', '#station', '#earth'],
+    description: 'Rotating torus station providing artificial gravity over low Earth orbit aurora lights.',
+  },
+  {
+    id: 'art-9',
+    title: 'Nordic Slate & Glass Cabin',
+    author: 'Freja Lindqvist',
+    authorHandle: '@freja.nordic',
+    avatarColor: '#0ea5e9',
+    src: 'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=700&auto=format&fit=crop&q=80',
+    height: 260,
+    aspectRatio: 0.77,
+    category: 'Architecture',
+    likes: 1980,
+    tags: ['#nordic', '#cabin', '#norway'],
+    description: 'Cantilevered glass pavilion facing the dramatic peaks of the Lofoten archipelago.',
+  },
+  {
+    id: 'art-10',
+    title: 'Emerald Forest Waterfall Mist',
+    author: 'Mateo Rossi',
+    authorHandle: '@mateo.wild',
+    avatarColor: '#84cc16',
+    src: 'https://images.unsplash.com/photo-1433086966358-54859d0ed716?w=700&auto=format&fit=crop&q=80',
+    height: 310,
+    aspectRatio: 0.65,
+    category: 'Nature',
+    likes: 2780,
+    tags: ['#waterfall', '#moss', '#jungle'],
+    description: 'Cascading pristine glacial river cutting through ancient temperate rain forest gorge.',
+  },
+  {
+    id: 'art-11',
+    title: 'Abstract Kinetic Sculpture',
+    author: 'Solomon K.',
+    authorHandle: '@solomon.kinetic',
+    avatarColor: '#a855f7',
+    src: 'https://images.unsplash.com/photo-1541701494587-cb58502866ab?w=700&auto=format&fit=crop&q=80',
+    height: 220,
+    aspectRatio: 1.0,
+    category: 'Art & Design',
+    likes: 1340,
+    tags: ['#acrylic', '#motion', '#fluid'],
+    description: 'Continuous smooth surface deformations computed in real time on canvas.',
+  },
+  {
+    id: 'art-12',
+    title: 'Vaporwave Neon Horizon',
+    author: 'Kira Thorne',
+    authorHandle: '@kira.wave',
+    avatarColor: '#f43f5e',
+    src: 'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?w=700&auto=format&fit=crop&q=80',
+    height: 280,
+    aspectRatio: 0.71,
+    category: 'Cyberpunk',
+    likes: 3890,
+    tags: ['#vaporwave', '#sunset', '#grid'],
+    description: 'Retro-futuristic perspective wireframe plane receding into neon magenta sunset.',
   },
 ];
 
-export const pinsData = signal<PinItem[]>([...initialPinsData]);
+export const galleryData = signal<GalleryItem[]>(initialGalleryData);
 
-export function getPinById(id: string): PinItem | undefined {
-  return pinsData.value.find((p) => p.id === id);
-}
-
-export function toggleSavePin(pinOrId: PinItem | string, e?: any): void {
+export function toggleSaveGalleryItem(itemOrId: GalleryItem | string, e?: any): void {
   if (e && typeof e.stopPropagation === 'function') {
     e.stopPropagation();
   }
-  const id = typeof pinOrId === 'string' ? pinOrId : pinOrId.id;
-  pinsData.update((pins) =>
-    pins.map((p) => (p.id === id ? { ...p, isSaved: !p.isSaved } : p))
+  const id = typeof itemOrId === 'string' ? itemOrId : itemOrId.id;
+  galleryData.update((items) =>
+    items.map((item) => {
+      if (item.id !== id) return item;
+      return { ...item, isSaved: !item.isSaved };
+    })
   );
 }
 
-export function toggleLikePin(pinOrId: PinItem | string, e?: any): void {
+export function toggleLikeGalleryItem(itemOrId: GalleryItem | string, e?: any): void {
   if (e && typeof e.stopPropagation === 'function') {
     e.stopPropagation();
   }
-  const id = typeof pinOrId === 'string' ? pinOrId : pinOrId.id;
-  pinsData.update((pins) =>
-    pins.map((p) => {
-      if (p.id !== id) return p;
-      const isLiked = !p.isLiked;
-      const likes = isLiked ? p.likes + 1 : Math.max(0, p.likes - 1);
-      return { ...p, isLiked, likes };
+  const id = typeof itemOrId === 'string' ? itemOrId : itemOrId.id;
+  galleryData.update((items) =>
+    items.map((item) => {
+      if (item.id !== id) return item;
+      const isLiked = !item.isLiked;
+      const likes = isLiked ? item.likes + 1 : Math.max(0, item.likes - 1);
+      return { ...item, isLiked, likes };
     })
   );
 }
@@ -223,13 +223,13 @@ export const categories = ['All', 'Architecture', 'Cyberpunk', 'Art & Design', '
 export const activeCategory = signal<string>('All');
 export const searchQuery = signal<string>('');
 
-export const pintertestScrollPosition = signal<number>(0);
+export const galleryScrollPosition = signal<number>(0);
 let activeScrollTween: (() => void) | null = null;
 
-export function savePintertestScroll(): void {
+export function saveGalleryScroll(): void {
   const scrollEl = UIElement.getElementById('app-layout-scroll');
   if (scrollEl) {
-    pintertestScrollPosition.value = scrollEl.scrollTop;
+    galleryScrollPosition.value = scrollEl.scrollTop;
   }
 }
 
@@ -275,7 +275,7 @@ export function smoothScrollToTop(duration = 420): void {
   });
 }
 
-export function restorePintertestScroll(duration = 0): void {
+export function restoreGalleryScroll(duration = 0): void {
   const scrollEl = UIElement.getElementById('app-layout-scroll');
   if (!scrollEl) return;
 
@@ -284,7 +284,7 @@ export function restorePintertestScroll(duration = 0): void {
     activeScrollTween = null;
   }
 
-  const target = pintertestScrollPosition.value;
+  const target = galleryScrollPosition.value;
   if (duration <= 0) {
     scrollEl.scrollTop = target;
     Engine.invalidateActive();
@@ -307,3 +307,4 @@ export function restorePintertestScroll(duration = 0): void {
     });
   }
 }
+

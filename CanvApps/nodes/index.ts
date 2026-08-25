@@ -5,4 +5,6 @@ export * from './UIInput';
 export * from './UIModal';
 export * from './UIMotion';
 export * from './UIImage';
+export * from './UIScrollView';
+
 

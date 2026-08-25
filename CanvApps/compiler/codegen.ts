@@ -39,7 +39,7 @@ export class CVSCodeGenerator {
     }
 
     return `
-import { UIView, UIText, UIButton, UIInput, UIModal, UIMotion, UIImage, UIElement, KineticFX, Motion, createRouter, useRouter, effect, signal, computed, batch, untrack, createStore, persistentSignal, useBreakpoints, useMediaQuery, useWindowSize } from '@canvapps';
+import { UIView, UIText, UIButton, UIInput, UIModal, UIMotion, UIImage, UIScrollView, UIElement, KineticFX, Motion, createRouter, useRouter, effect, signal, computed, batch, untrack, createStore, persistentSignal, useBreakpoints, useMediaQuery, useWindowSize } from '@canvapps';
 ${importLines.join('\n')}
 
 export function createComponent(props: Record<string, any> = {}): UIElement {
@@ -353,12 +353,14 @@ ${itemCode}
       codeLines.push(`  const ${elVar} = new UIModal(${JSON.stringify(staticStyles)});`);
     } else if (element.tag === 'motion' || element.tag === 'Motion') {
       codeLines.push(`  const ${elVar} = new UIMotion(${JSON.stringify(staticStyles)});`);
+    } else if (element.tag === 'scroll-view' || element.tag === 'UIScrollView' || element.tag === 'ScrollView') {
+      codeLines.push(`  const ${elVar} = new UIScrollView(${JSON.stringify(staticStyles)});`);
     } else {
       // Default to UIView container
       codeLines.push(`  const ${elVar} = new UIView(${JSON.stringify(staticStyles)});`);
     }
 
-    // 2. Attach Event Handlers (@click, @pointerdown, @submit, @close, etc.)
+    // 2. Attach Event Handlers (@click, @pointerdown, @submit, @close, @scroll, etc.)
     for (const evt of events) {
       const val = evt.value.trim();
       if (val.includes('=>')) {
@@ -391,6 +393,14 @@ ${itemCode}
           codeLines.push(`  ${elVar}.setSelectable(Boolean(${dyn.value}));`);
         } else if (element.tag === 'button' && dyn.name === 'label') {
           codeLines.push(`  ${elVar}.setLabel(String(${dyn.value} ?? ''));`);
+        } else if ((element.tag === 'scroll-view' || element.tag === 'UIScrollView' || element.tag === 'ScrollView') && (dyn.name === 'scroll' || dyn.name === 'scrollDirection')) {
+          codeLines.push(`  ${elVar}.setScroll((${dyn.value}) as any);`);
+        } else if ((element.tag === 'scroll-view' || element.tag === 'UIScrollView' || element.tag === 'ScrollView') && dyn.name === 'showScrollbar') {
+          codeLines.push(`  ${elVar}.setShowScrollbar((${dyn.value}) as any);`);
+        } else if (dyn.name === 'scrollY' || dyn.name === 'scrollTop') {
+          codeLines.push(`  ${elVar}.scrollTop = Number(${dyn.value} ?? 0);`);
+        } else if (dyn.name === 'scrollX' || dyn.name === 'scrollLeft') {
+          codeLines.push(`  ${elVar}.scrollLeft = Number(${dyn.value} ?? 0);`);
         } else {
           codeLines.push(`  ${elVar}.setStyle({ [${JSON.stringify(dyn.name)}]: ${dyn.value} });`);
         }
@@ -439,6 +449,26 @@ ${itemCode}
           codeLines.push(`
   effect(() => {
     ${elVar}.setLabel(String(${dyn.value} ?? ''));
+  });`);
+        } else if ((element.tag === 'scroll-view' || element.tag === 'UIScrollView' || element.tag === 'ScrollView') && (dyn.name === 'scroll' || dyn.name === 'scrollDirection')) {
+          codeLines.push(`
+  effect(() => {
+    ${elVar}.setScroll((${dyn.value}) as any);
+  });`);
+        } else if ((element.tag === 'scroll-view' || element.tag === 'UIScrollView' || element.tag === 'ScrollView') && dyn.name === 'showScrollbar') {
+          codeLines.push(`
+  effect(() => {
+    ${elVar}.setShowScrollbar((${dyn.value}) as any);
+  });`);
+        } else if (dyn.name === 'scrollY' || dyn.name === 'scrollTop') {
+          codeLines.push(`
+  effect(() => {
+    ${elVar}.scrollTop = Number(${dyn.value} ?? 0);
+  });`);
+        } else if (dyn.name === 'scrollX' || dyn.name === 'scrollLeft') {
+          codeLines.push(`
+  effect(() => {
+    ${elVar}.scrollLeft = Number(${dyn.value} ?? 0);
   });`);
         } else {
           codeLines.push(`

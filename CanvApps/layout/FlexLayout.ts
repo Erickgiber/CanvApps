@@ -319,10 +319,24 @@ export class FlexLayout {
 
     calcBounds(element);
 
-    const isScrollContainer = !element.parent || element.styles.overflow === 'scroll' || element.styles.overflow === 'auto';
+    const isScrollContainer =
+      !element.parent ||
+      element.styles.overflow === 'scroll' ||
+      element.styles.overflow === 'auto' ||
+      Boolean(element.styles.scroll);
+
+    const scrollDirection = element.styles.scroll ?? element.styles.scrollDirection ?? 'both';
+
     if (isScrollContainer) {
-      element.maxScrollLeft = Math.max(0, maxContentX + padding.right - availableWidth);
-      element.maxScrollTop = Math.max(0, maxContentY + padding.bottom - availableHeight);
+      const allowX = scrollDirection === 'both' || scrollDirection === 'horizontal';
+      const allowY = scrollDirection === 'both' || scrollDirection === 'vertical';
+
+      element.maxScrollLeft = allowX ? Math.max(0, maxContentX + padding.right - availableWidth) : 0;
+      element.maxScrollTop = allowY ? Math.max(0, maxContentY + padding.bottom - availableHeight) : 0;
+
+      // Clamp existing scroll positions within newly calculated maximums
+      element.scrollLeft = Math.max(0, Math.min(element.maxScrollLeft, element.scrollLeft));
+      element.scrollTop = Math.max(0, Math.min(element.maxScrollTop, element.scrollTop));
     } else {
       element.maxScrollLeft = 0;
       element.maxScrollTop = 0;

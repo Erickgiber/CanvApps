@@ -81,7 +81,6 @@ function validateCanvAppsDocument(document: vscode.TextDocument): vscode.Diagnos
 
   while ((scriptMatch = scriptRegex.exec(text)) !== null) {
     scriptCount++;
-    const scriptTagAttrs = scriptMatch[1];
     const scriptContent = scriptMatch[2];
     const scriptStartIndex = scriptMatch.index + scriptMatch[0].indexOf(scriptContent);
 
@@ -120,7 +119,6 @@ function validateCanvAppsDocument(document: vscode.TextDocument): vscode.Diagnos
 
     while ((impMatch = importRegex.exec(scriptContent)) !== null) {
       const fullImportClause = impMatch[1].trim();
-      const quoteChar = impMatch[2];
       const importSource = impMatch[3].trim();
       const matchOffsetInScript = impMatch.index;
       const sourceOffsetInScript = matchOffsetInScript + impMatch[0].lastIndexOf(importSource);
@@ -205,102 +203,107 @@ function validateCanvAppsDocument(document: vscode.TextDocument): vscode.Diagnos
   }
 
   // ---------------------------------------------------------------------------
-  // 2. Template Structure & Tag Pairing Diagnostics
+  // 2. Robust Template Structure & Tag Matching Diagnostics
   // ---------------------------------------------------------------------------
-  // Remove script block for template checking
-  const templateText = text.replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, (m) => ' '.repeat(m.length));
+  // Step A: Mask <script> blocks with whitespace of equal length
+  let cleanTemplate = text.replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, (m) => ' '.repeat(m.length));
 
-  // Check tag matching stack
-  const tagStack: { name: string; pos: vscode.Position; index: number }[] = [];
+  // Step B: Mask HTML comments <!-- ... -->
+  cleanTemplate = cleanTemplate.replace(/<!--[\s\S]*?-->/g, (m) => ' '.repeat(m.length));
+
+  // Step C: Mask mustache interpolations {{ ... }} to protect JS expressions (<, >, =>)
+  cleanTemplate = cleanTemplate.replace(/\{\{[\s\S]*?\}\}/g, (m) => ' '.repeat(m.length));
+
+  // Step D: Mask control directive headers (@if, @else if, @each, etc.) before the body "{"
+  cleanTemplate = cleanTemplate.replace(/(@(?:if|else\s+if|each))\b[^{]*\{/g, (m) => ' '.repeat(m.length - 1) + '{');
+  cleanTemplate = cleanTemplate.replace(/\{#(?:if|each)\b[^}]*\}/g, (m) => ' '.repeat(m.length));
+  cleanTemplate = cleanTemplate.replace(/\{:else\}/g, (m) => ' '.repeat(m.length));
+  cleanTemplate = cleanTemplate.replace(/\{\/(?:if|each)\}/g, (m) => ' '.repeat(m.length));
+
+  // Step E: Parse and match tags
+  const tagStack: { name: string; pos: vscode.Position; index: number; length: number }[] = [];
   const voidTags = new Set(['slot', 'image', 'input', 'br', 'hr', 'img']);
 
   let i = 0;
-  const len = templateText.length;
+  const len = cleanTemplate.length;
 
   while (i < len) {
-    if (templateText[i] === '<') {
-      if (templateText.slice(i, i + 4) === '<!--') {
-        const commentEnd = templateText.indexOf('-->', i + 4);
-        i = commentEnd === -1 ? len : commentEnd + 3;
-        continue;
-      }
-
-      const isClosing = templateText[i + 1] === '/';
+    if (cleanTemplate[i] === '<') {
+      const isClosing = cleanTemplate[i + 1] === '/';
       const startName = isClosing ? i + 2 : i + 1;
-      let nameEnd = startName;
-      while (nameEnd < len && /[a-zA-Z0-9_-]/.test(templateText[nameEnd])) {
-        nameEnd++;
-      }
-      const tagName = templateText.slice(startName, nameEnd).trim();
-      if (!tagName) {
-        i++;
-        continue;
-      }
 
-      // Find true tag end ignoring quotes and braces
-      let inQuotes = false;
-      let quoteChar = '';
-      let braceDepth = 0;
-      let tagEnd = -1;
+      // Ensure tag name begins with a valid ASCII alphabetic character
+      if (startName < len && /[a-zA-Z]/.test(cleanTemplate[startName])) {
+        let nameEnd = startName + 1;
+        while (nameEnd < len && /[a-zA-Z0-9_.-]/.test(cleanTemplate[nameEnd])) {
+          nameEnd++;
+        }
+        const tagName = cleanTemplate.slice(startName, nameEnd);
 
-      for (let j = nameEnd; j < len; j++) {
-        const ch = templateText[j];
-        if ((ch === '"' || ch === "'") && braceDepth === 0) {
-          if (!inQuotes) {
+        // Find matching tag end '>' while respecting quotes, template literals, and nested braces
+        let inQuotes = false;
+        let quoteChar = '';
+        let braceDepth = 0;
+        let tagEnd = -1;
+
+        for (let j = nameEnd; j < len; j++) {
+          const ch = cleanTemplate[j];
+          if ((ch === '"' || ch === "'" || ch === '`') && !inQuotes) {
             inQuotes = true;
             quoteChar = ch;
-          } else if (ch === quoteChar) {
+          } else if (inQuotes && ch === quoteChar && cleanTemplate[j - 1] !== '\\') {
             inQuotes = false;
             quoteChar = '';
+          } else if (!inQuotes && ch === '{') {
+            braceDepth++;
+          } else if (!inQuotes && ch === '}' && braceDepth > 0) {
+            braceDepth--;
+          } else if (!inQuotes && braceDepth === 0 && ch === '>') {
+            tagEnd = j;
+            break;
           }
-        } else if (ch === '{' && !inQuotes) {
-          braceDepth++;
-        } else if (ch === '}' && !inQuotes && braceDepth > 0) {
-          braceDepth--;
-        } else if (ch === '>' && !inQuotes && braceDepth === 0) {
-          tagEnd = j;
-          break;
         }
-      }
 
-      if (tagEnd !== -1) {
-        const matchLength = tagEnd - i + 1;
-        const tagInner = templateText.slice(nameEnd, tagEnd).trimEnd();
-        const isSelfClosing = tagInner.endsWith('/') || voidTags.has(tagName.toLowerCase());
+        if (tagEnd !== -1) {
+          const matchLength = tagEnd - i + 1;
+          const tagInner = cleanTemplate.slice(nameEnd, tagEnd).trim();
+          const isSelfClosing = tagInner.endsWith('/') || voidTags.has(tagName.toLowerCase());
 
-        if (isClosing) {
-          if (tagStack.length === 0) {
-            const pos = document.positionAt(i);
-            diagnostics.push(
-              new vscode.Diagnostic(
-                new vscode.Range(pos, document.positionAt(i + matchLength)),
-                `Unexpected closing tag </${tagName}> without matching opening tag.`,
-                vscode.DiagnosticSeverity.Error
-              )
-            );
-          } else {
-            const last = tagStack.pop()!;
-            if (last.name.toLowerCase() !== tagName.toLowerCase()) {
+          if (isClosing) {
+            if (tagStack.length === 0) {
               const pos = document.positionAt(i);
               diagnostics.push(
                 new vscode.Diagnostic(
                   new vscode.Range(pos, document.positionAt(i + matchLength)),
-                  `Mismatched closing tag </${tagName}>. Expected </${last.name}> (opened on line ${last.pos.line + 1}).`,
+                  `Unexpected closing tag </${tagName}> without matching opening tag.`,
                   vscode.DiagnosticSeverity.Error
                 )
               );
+            } else {
+              const last = tagStack.pop()!;
+              if (last.name.toLowerCase() !== tagName.toLowerCase()) {
+                const pos = document.positionAt(i);
+                diagnostics.push(
+                  new vscode.Diagnostic(
+                    new vscode.Range(pos, document.positionAt(i + matchLength)),
+                    `Mismatched closing tag </${tagName}>. Expected </${last.name}> (opened on line ${last.pos.line + 1}).`,
+                    vscode.DiagnosticSeverity.Error
+                  )
+                );
+              }
             }
+          } else if (!isSelfClosing) {
+            tagStack.push({
+              name: tagName,
+              pos: document.positionAt(i),
+              index: i,
+              length: matchLength,
+            });
           }
-        } else if (!isSelfClosing) {
-          tagStack.push({
-            name: tagName,
-            pos: document.positionAt(i),
-            index: i,
-          });
-        }
 
-        i = tagEnd + 1;
-        continue;
+          i = tagEnd + 1;
+          continue;
+        }
       }
     }
     i++;
@@ -308,28 +311,13 @@ function validateCanvAppsDocument(document: vscode.TextDocument): vscode.Diagnos
 
   // Report any remaining unclosed tags
   for (const unclosed of tagStack) {
+    const startPos = unclosed.pos;
+    const endPos = document.positionAt(unclosed.index + unclosed.name.length + 1);
     diagnostics.push(
       new vscode.Diagnostic(
-        new vscode.Range(unclosed.pos, document.positionAt(unclosed.index + unclosed.name.length + 1)),
+        new vscode.Range(startPos, endPos),
         `Unclosed opening tag <${unclosed.name}>. Missing closing </${unclosed.name}> tag.`,
         vscode.DiagnosticSeverity.Error
-      )
-    );
-  }
-
-  // ---------------------------------------------------------------------------
-  // 3. Directive Validation (@if, @each)
-  // ---------------------------------------------------------------------------
-  // Check malformed @if without parentheses
-  const malformedIfRegex = /@if\s+([^({\n][^{]*)\{/g;
-  let malformedIfMatch: RegExpExecArray | null;
-  while ((malformedIfMatch = malformedIfRegex.exec(templateText)) !== null) {
-    const pos = document.positionAt(malformedIfMatch.index);
-    diagnostics.push(
-      new vscode.Diagnostic(
-        new vscode.Range(pos, document.positionAt(malformedIfMatch.index + malformedIfMatch[0].length)),
-        "@if directive requires condition inside parentheses, e.g. @if (condition) { ... }",
-        vscode.DiagnosticSeverity.Warning
       )
     );
   }
@@ -455,19 +443,23 @@ export function activate(context: vscode.ExtensionContext): void {
       const word = document.getText(wordRange);
 
       const docs: Record<string, string> = {
-        view: '### `<view>` (Pure Canvas 2D Flexbox Container)\n\nUniversal layout container rendered directly on Canvas 2D using sub-pixel flexbox math.',
-        text: '### `<text>` (Direct Canvas Text Node)\n\nHardware-accelerated text rendering with automatic line-breaking and sub-pixel glyph alignment.',
-        button: '### `<button>` (Interactive Canvas Button)\n\nZero-DOM interactive button with built-in hover, active, and focus states.',
-        image: '### `<image>` (Pure Canvas Image Node)\n\nHardware-accelerated bitmap rendering with automatic loader spinners, error fallbacks, and off-thread GPU decode.',
-        input: '### `<input>` (Ghost DOM Input Node)\n\nCombines native IME touch keyboard entry and clipboard support with Pure Canvas rendering.',
-        modal: '### `<modal>` (Fullscreen Canvas Dialog Overlay)\n\nFrosted glass blur, backdrop dimming, and Smart Hero morph animations with zero DOM overhead.',
-        motion: '### `<motion>` (GPU-Timed Motion Wrapper)\n\nSpring physics and timeline animations (`scale-in`, `fade`, `slide-up`, `cinematic-splash`).',
+        view: '### `<view>` (Pure Canvas 2D Flexbox Container)\n\nUniversal layout container rendered directly on Canvas 2D using sub-pixel flexbox math.\n\n**Props**: `width`, `height`, `flexDirection`, `alignItems`, `justifyContent`, `gap`, `padding`, `backgroundColor`, `borderRadius`, `borderColor`, `borderWidth`, `boxShadow`, `opacity`, `position`, `zIndex`.',
+        text: '### `<text>` (Direct Canvas Text Node)\n\nHardware-accelerated text rendering with automatic line-breaking and sub-pixel glyph alignment.\n\n**Props**: `fontSize`, `fontWeight`, `fontFamily`, `color`, `lineHeight`, `textAlign`, `selectable`.',
+        button: '### `<button>` (Interactive Canvas Button)\n\nZero-DOM interactive button with built-in hover, active, and focus states.\n\n**Props**: `label`, `labelColor`, `backgroundColor`, `hoverBackgroundColor`, `activeBackgroundColor`, `borderRadius`, `padding`, `@click`.',
+        image: '### `<image>` (Pure Canvas Image Node)\n\nHardware-accelerated bitmap rendering with automatic loader spinners, error fallbacks, and off-thread GPU decode.\n\n**Props**: `src`, `fit`, `width`, `height`, `borderRadius`, `showLoader`, `showErrorIcon`.',
+        input: '### `<input>` (Ghost DOM Input Node)\n\nCombines native IME touch keyboard entry and clipboard support with Pure Canvas rendering.\n\n**Props**: `placeholder`, `placeholderColor`, `:value`, `focusBorderColor`, `@input`, `@submit`, `@change`.',
+        modal: '### `<modal>` (Fullscreen Canvas Dialog Overlay)\n\nFrosted glass blur, backdrop dimming, and Smart Hero morph animations with zero DOM overhead.\n\n**Props**: `:open`, `animation`, `@close`, `originRect`.',
+        motion: '### `<motion>` (GPU-Timed Motion Wrapper)\n\nSpring physics and timeline animations (`scale-in`, `fade`, `slide-up`, `cinematic-splash`).\n\n**Props**: `animation`, `duration`, `delay`, `spring`.',
         slot: '### `<slot />` (Dynamic Layout Outlet)\n\nRenders child scene content injected from parent layouts.',
         '@if': '### `@if (condition) { ... }`\n\nConditional directive that dynamically mounts or unmounts branches based on reactive signals.',
         '@each': '### `@each array as item, index { ... }`\n\nReactive iteration directive that projects an array of items without Virtual DOM diffing.',
         '@click': '### `@click="handler"`\n\nFires on pointer release when coordinates match element bounding box.',
-        signal: '### `signal(initialValue)`\n\nCreates a fine-grained reactive Signal in direct memory.',
+        '@input': '### `@input="handler"`\n\nFires in real-time when text input value changes.',
+        '@submit': '### `@submit="handler"`\n\nFires when user presses Enter in an input element.',
+        signal: '### `signal(initialValue)`\n\nCreates a fine-grained reactive Signal in direct memory. Access or mutate via `.value`.',
         computed: '### `computed(() => expr)`\n\nCreates a memoized reactive value that updates only when dependencies change.',
+        effect: '### `effect(() => fn)`\n\nExecutes a side-effect whenever reactive signals accessed inside change.',
+        batch: '### `batch(() => fn)`\n\nBatches multiple reactive signal mutations into a single draw frame.',
       };
 
       if (docs[word]) {
@@ -601,3 +593,4 @@ export function activate(context: vscode.ExtensionContext): void {
 }
 
 export function deactivate(): void {}
+

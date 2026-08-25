@@ -8,7 +8,8 @@
   "icon": "icon.png",
   "main": "./dist/extension.js",
   "activationEvents": [
-    "onLanguage:canvapps"
+    "onLanguage:canvapps",
+    "workspaceContains:**/*.cvs"
   ],
   "repository": {
     "type": "git",
@@ -58,7 +59,6 @@
         "embeddedLanguages": {
           "source.ts": "typescript",
           "source.js": "javascript",
-          "text.html": "html",
           "meta.script.canvapps": "typescript"
         }
       }

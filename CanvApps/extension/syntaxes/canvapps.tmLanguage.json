@@ -13,12 +13,10 @@
   "repository": {
     "script-block": {
       "name": "meta.script.canvapps",
-      "begin": "(<)(script)(\\b[^>]*)(>)",
+      "begin": "(<)(script)",
       "beginCaptures": {
         "1": { "name": "punctuation.definition.tag.begin.html" },
-        "2": { "name": "entity.name.tag.html" },
-        "3": { "name": "meta.attribute.script.canvapps" },
-        "4": { "name": "punctuation.definition.tag.end.html" }
+        "2": { "name": "entity.name.tag.html" }
       },
       "end": "(</)(script)(>)",
       "endCaptures": {
@@ -28,13 +26,25 @@
       },
       "patterns": [
         {
-          "include": "source.ts"
+          "begin": "(>)",
+          "beginCaptures": {
+            "1": { "name": "punctuation.definition.tag.end.html" }
+          },
+          "end": "(?=(</)(script)(>))",
+          "patterns": [
+            {
+              "include": "source.ts"
+            },
+            {
+              "include": "source.js"
+            },
+            {
+              "include": "#ts-embedded"
+            }
+          ]
         },
         {
-          "include": "source.js"
-        },
-        {
-          "include": "#ts-embedded"
+          "include": "#tag-attributes"
         }
       ]
     },
@@ -62,7 +72,7 @@
     "control-blocks": {
       "patterns": [
         {
-          "name": "meta.control.if.canvapps",
+          "name": "meta.control.if.paren.canvapps",
           "begin": "(@if|@else\\s+if)\\s*(\\()",
           "beginCaptures": {
             "1": { "name": "keyword.control.directive.canvapps" },
@@ -79,7 +89,32 @@
           ]
         },
         {
-          "name": "meta.control.each.canvapps",
+          "name": "meta.control.if.unparen.canvapps",
+          "begin": "(@if|@else\\s+if)\\s+([^{]+)(\\{)",
+          "beginCaptures": {
+            "1": { "name": "keyword.control.directive.canvapps" },
+            "2": { "patterns": [{ "include": "source.ts" }, { "include": "#ts-embedded" }] },
+            "3": { "name": "punctuation.section.curly.begin.canvapps" }
+          },
+          "end": "(?<=\\{)"
+        },
+        {
+          "name": "meta.control.each.paren.canvapps",
+          "begin": "(@each)\\s*(\\()\\s*([^\\s)]+(?:\\.[^\\s)]+)*)\\s+(as)\\s+([a-zA-Z_$][a-zA-Z0-9_$]*)(?:\\s*,\\s*([a-zA-Z_$][a-zA-Z0-9_$]*))?\\s*(\\))\\s*(\\{)",
+          "beginCaptures": {
+            "1": { "name": "keyword.control.directive.canvapps" },
+            "2": { "name": "punctuation.section.parens.begin.canvapps" },
+            "3": { "name": "variable.other.readwrite.ts" },
+            "4": { "name": "keyword.control.as.canvapps" },
+            "5": { "name": "variable.parameter.item.canvapps" },
+            "6": { "name": "variable.parameter.index.canvapps" },
+            "7": { "name": "punctuation.section.parens.end.canvapps" },
+            "8": { "name": "punctuation.section.curly.begin.canvapps" }
+          },
+          "end": "(?<=\\{)"
+        },
+        {
+          "name": "meta.control.each.unparen.canvapps",
           "begin": "(@each)\\s+([^\\s{]+(?:\\.[^\\s{]+)*)\\s+(as)\\s+([a-zA-Z_$][a-zA-Z0-9_$]*)(?:\\s*,\\s*([a-zA-Z_$][a-zA-Z0-9_$]*))?\\s*(\\{)",
           "beginCaptures": {
             "1": { "name": "keyword.control.directive.canvapps" },
@@ -97,6 +132,40 @@
           "captures": {
             "1": { "name": "keyword.control.directive.canvapps" },
             "2": { "name": "punctuation.section.curly.begin.canvapps" }
+          }
+        },
+        {
+          "name": "meta.control.svelte.if.canvapps",
+          "begin": "(\\{#if)\\s+([^{}]+)(\\})",
+          "beginCaptures": {
+            "1": { "name": "keyword.control.directive.canvapps" },
+            "2": { "patterns": [{ "include": "source.ts" }, { "include": "#ts-embedded" }] },
+            "3": { "name": "punctuation.section.curly.end.canvapps" }
+          },
+          "end": "(?<=\\})"
+        },
+        {
+          "name": "meta.control.svelte.each.canvapps",
+          "begin": "(\\{#each)\\s+([^{}]+)(\\})",
+          "beginCaptures": {
+            "1": { "name": "keyword.control.directive.canvapps" },
+            "2": { "patterns": [{ "include": "source.ts" }, { "include": "#ts-embedded" }] },
+            "3": { "name": "punctuation.section.curly.end.canvapps" }
+          },
+          "end": "(?<=\\})"
+        },
+        {
+          "name": "meta.control.svelte.else.canvapps",
+          "match": "(\\{:else\\})",
+          "captures": {
+            "1": { "name": "keyword.control.directive.canvapps" }
+          }
+        },
+        {
+          "name": "meta.control.svelte.close.canvapps",
+          "match": "(\\{/(?:if|each)\\})",
+          "captures": {
+            "1": { "name": "keyword.control.directive.canvapps" }
           }
         },
         {
@@ -128,7 +197,7 @@
       "patterns": [
         {
           "name": "meta.tag.canvapps",
-          "begin": "(<)(/)?([a-zA-Z0-9_-]+)",
+          "begin": "(<)(/)?([a-zA-Z][a-zA-Z0-9_.-]*)",
           "beginCaptures": {
             "1": { "name": "punctuation.definition.tag.begin.html" },
             "2": { "name": "punctuation.definition.tag.begin.html" },
@@ -151,14 +220,14 @@
     "tag-attributes": {
       "patterns": [
         {
-          "name": "meta.directive.if.canvapps",
-          "begin": "(@if|\\*if)\\s*(=)\\s*(\"|')",
+          "name": "meta.directive.if.double.canvapps",
+          "begin": "(@if|\\*if)\\s*(=)\\s*(\")",
           "beginCaptures": {
             "1": { "name": "keyword.control.directive.canvapps" },
             "2": { "name": "punctuation.separator.key-value.html" },
             "3": { "name": "punctuation.definition.string.begin.html" }
           },
-          "end": "(\"|')",
+          "end": "(\")",
           "endCaptures": {
             "1": { "name": "punctuation.definition.string.end.html" }
           },
@@ -168,14 +237,14 @@
           ]
         },
         {
-          "name": "meta.directive.each.canvapps",
-          "begin": "(@each|\\*each|@for|\\*for)\\s*(=)\\s*(\"|')",
+          "name": "meta.directive.if.single.canvapps",
+          "begin": "(@if|\\*if)\\s*(=)\\s*(')",
           "beginCaptures": {
             "1": { "name": "keyword.control.directive.canvapps" },
             "2": { "name": "punctuation.separator.key-value.html" },
             "3": { "name": "punctuation.definition.string.begin.html" }
           },
-          "end": "(\"|')",
+          "end": "(')",
           "endCaptures": {
             "1": { "name": "punctuation.definition.string.end.html" }
           },
@@ -185,14 +254,48 @@
           ]
         },
         {
-          "name": "meta.event-binding.canvapps",
-          "begin": "(@[a-zA-Z0-9_-]+)\\s*(=)\\s*(\"|'|\\{)",
+          "name": "meta.directive.each.double.canvapps",
+          "begin": "(@each|\\*each|@for|\\*for)\\s*(=)\\s*(\")",
+          "beginCaptures": {
+            "1": { "name": "keyword.control.directive.canvapps" },
+            "2": { "name": "punctuation.separator.key-value.html" },
+            "3": { "name": "punctuation.definition.string.begin.html" }
+          },
+          "end": "(\")",
+          "endCaptures": {
+            "1": { "name": "punctuation.definition.string.end.html" }
+          },
+          "patterns": [
+            { "include": "source.ts" },
+            { "include": "#ts-embedded" }
+          ]
+        },
+        {
+          "name": "meta.directive.each.single.canvapps",
+          "begin": "(@each|\\*each|@for|\\*for)\\s*(=)\\s*(')",
+          "beginCaptures": {
+            "1": { "name": "keyword.control.directive.canvapps" },
+            "2": { "name": "punctuation.separator.key-value.html" },
+            "3": { "name": "punctuation.definition.string.begin.html" }
+          },
+          "end": "(')",
+          "endCaptures": {
+            "1": { "name": "punctuation.definition.string.end.html" }
+          },
+          "patterns": [
+            { "include": "source.ts" },
+            { "include": "#ts-embedded" }
+          ]
+        },
+        {
+          "name": "meta.event-binding.double.canvapps",
+          "begin": "(@[a-zA-Z0-9_-]+)\\s*(=)\\s*(\")",
           "beginCaptures": {
             "1": { "name": "entity.other.attribute-name.event.canvapps" },
             "2": { "name": "punctuation.separator.key-value.html" },
             "3": { "name": "punctuation.definition.string.begin.html" }
           },
-          "end": "(\"|'|\\})",
+          "end": "(\")",
           "endCaptures": {
             "1": { "name": "punctuation.definition.string.end.html" }
           },
@@ -202,14 +305,48 @@
           ]
         },
         {
-          "name": "meta.dynamic-binding.canvapps",
-          "begin": "(:[a-zA-Z0-9_-]+)\\s*(=)\\s*(\\{|\"|')",
+          "name": "meta.event-binding.single.canvapps",
+          "begin": "(@[a-zA-Z0-9_-]+)\\s*(=)\\s*(')",
+          "beginCaptures": {
+            "1": { "name": "entity.other.attribute-name.event.canvapps" },
+            "2": { "name": "punctuation.separator.key-value.html" },
+            "3": { "name": "punctuation.definition.string.begin.html" }
+          },
+          "end": "(')",
+          "endCaptures": {
+            "1": { "name": "punctuation.definition.string.end.html" }
+          },
+          "patterns": [
+            { "include": "source.ts" },
+            { "include": "#ts-embedded" }
+          ]
+        },
+        {
+          "name": "meta.event-binding.brace.canvapps",
+          "begin": "(@[a-zA-Z0-9_-]+)\\s*(=)\\s*(\\{)",
+          "beginCaptures": {
+            "1": { "name": "entity.other.attribute-name.event.canvapps" },
+            "2": { "name": "punctuation.separator.key-value.html" },
+            "3": { "name": "punctuation.definition.string.begin.html" }
+          },
+          "end": "(\\})",
+          "endCaptures": {
+            "1": { "name": "punctuation.definition.string.end.html" }
+          },
+          "patterns": [
+            { "include": "source.ts" },
+            { "include": "#ts-embedded" }
+          ]
+        },
+        {
+          "name": "meta.dynamic-binding.double.canvapps",
+          "begin": "(:[a-zA-Z0-9_-]+)\\s*(=)\\s*(\")",
           "beginCaptures": {
             "1": { "name": "entity.other.attribute-name.binding.canvapps" },
             "2": { "name": "punctuation.separator.key-value.html" },
             "3": { "name": "punctuation.definition.string.begin.html" }
           },
-          "end": "(\\}|\"|')",
+          "end": "(\")",
           "endCaptures": {
             "1": { "name": "punctuation.definition.string.end.html" }
           },
@@ -219,12 +356,72 @@
           ]
         },
         {
-          "name": "meta.attribute.standard.canvapps",
-          "match": "([a-zA-Z0-9_-]+)\\s*(?:(=)\\s*(\"[^\"]*\"|'[^']*'|[^\\s>]+))?",
-          "captures": {
+          "name": "meta.dynamic-binding.single.canvapps",
+          "begin": "(:[a-zA-Z0-9_-]+)\\s*(=)\\s*(')",
+          "beginCaptures": {
+            "1": { "name": "entity.other.attribute-name.binding.canvapps" },
+            "2": { "name": "punctuation.separator.key-value.html" },
+            "3": { "name": "punctuation.definition.string.begin.html" }
+          },
+          "end": "(')",
+          "endCaptures": {
+            "1": { "name": "punctuation.definition.string.end.html" }
+          },
+          "patterns": [
+            { "include": "source.ts" },
+            { "include": "#ts-embedded" }
+          ]
+        },
+        {
+          "name": "meta.dynamic-binding.brace.canvapps",
+          "begin": "(:[a-zA-Z0-9_-]+)\\s*(=)\\s*(\\{)",
+          "beginCaptures": {
+            "1": { "name": "entity.other.attribute-name.binding.canvapps" },
+            "2": { "name": "punctuation.separator.key-value.html" },
+            "3": { "name": "punctuation.definition.string.begin.html" }
+          },
+          "end": "(\\})",
+          "endCaptures": {
+            "1": { "name": "punctuation.definition.string.end.html" }
+          },
+          "patterns": [
+            { "include": "source.ts" },
+            { "include": "#ts-embedded" }
+          ]
+        },
+        {
+          "name": "meta.attribute.standard.double.canvapps",
+          "begin": "([a-zA-Z0-9_.-]+)\\s*(=)\\s*(\")",
+          "beginCaptures": {
             "1": { "name": "entity.other.attribute-name.html" },
             "2": { "name": "punctuation.separator.key-value.html" },
-            "3": { "name": "string.quoted.double.html" }
+            "3": { "name": "punctuation.definition.string.begin.html" }
+          },
+          "end": "(\")",
+          "endCaptures": {
+            "1": { "name": "punctuation.definition.string.end.html" }
+          },
+          "contentName": "string.quoted.double.html"
+        },
+        {
+          "name": "meta.attribute.standard.single.canvapps",
+          "begin": "([a-zA-Z0-9_.-]+)\\s*(=)\\s*(')",
+          "beginCaptures": {
+            "1": { "name": "entity.other.attribute-name.html" },
+            "2": { "name": "punctuation.separator.key-value.html" },
+            "3": { "name": "punctuation.definition.string.begin.html" }
+          },
+          "end": "(')",
+          "endCaptures": {
+            "1": { "name": "punctuation.definition.string.end.html" }
+          },
+          "contentName": "string.quoted.single.html"
+        },
+        {
+          "name": "meta.attribute.boolean.canvapps",
+          "match": "([a-zA-Z0-9_.-]+)",
+          "captures": {
+            "1": { "name": "entity.other.attribute-name.html" }
           }
         }
       ]

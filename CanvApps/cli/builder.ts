@@ -33,7 +33,11 @@ export class CLIBuilder {
 
     // 1. Execute Vite Application Bundling
     console.log(`⚡ [Step 1/2]: Compiling Canvas Application & .cvs Components with Vite...`);
-    const canvappsSourcePath = path.resolve(cwd, 'CanvApps');
+    const localCanvAppsPath = path.resolve(cwd, 'CanvApps');
+    const aliasConfig: Record<string, string> = {};
+    if (fs.existsSync(localCanvAppsPath)) {
+      aliasConfig['@canvapps'] = localCanvAppsPath;
+    }
 
     await viteBuild({
       configFile: false,
@@ -50,9 +54,7 @@ export class CLIBuilder {
         sourcemap: false,
       },
       resolve: {
-        alias: {
-          '@canvapps': canvappsSourcePath,
-        },
+        alias: aliasConfig,
       },
     });
     console.log(`  ✓ Application build succeeded!\n`);

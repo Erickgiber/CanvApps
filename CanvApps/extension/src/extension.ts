@@ -444,13 +444,32 @@ export function activate(context: vscode.ExtensionContext): void {
 
       const docs: Record<string, string> = {
         view: '### `<view>` (Pure Canvas 2D Flexbox Container)\n\nUniversal layout container rendered directly on Canvas 2D using sub-pixel flexbox math.\n\n**Props**: `width`, `height`, `flexDirection`, `alignItems`, `justifyContent`, `gap`, `padding`, `backgroundColor`, `borderRadius`, `borderColor`, `borderWidth`, `boxShadow`, `opacity`, `position`, `zIndex`.',
-        text: '### `<text>` (Direct Canvas Text Node)\n\nHardware-accelerated text rendering with automatic line-breaking and sub-pixel glyph alignment.\n\n**Props**: `fontSize`, `fontWeight`, `fontFamily`, `color`, `lineHeight`, `textAlign`, `selectable`.',
-        button: '### `<button>` (Interactive Canvas Button)\n\nZero-DOM interactive button with built-in hover, active, and focus states.\n\n**Props**: `label`, `labelColor`, `backgroundColor`, `hoverBackgroundColor`, `activeBackgroundColor`, `borderRadius`, `padding`, `@click`.',
+        text: '### `<text>` (Direct Canvas Text Node)\n\nHardware-accelerated text rendering with automatic line-breaking and sub-pixel glyph alignment.\n\n**Props**: `fontSize`, `fontWeight`, `fontFamily`, `color`, `lineHeight`, `letterSpacing`, `textAlign`, `selectable`.',
+        button: '### `<button>` (Interactive Canvas Button)\n\nZero-DOM interactive button with built-in hover, active, and focus states.\n\n**Props**: `label`, `labelColor`, `backgroundColor`, `hoverBackgroundColor`, `activeBackgroundColor`, `borderRadius`, `padding`, `disabled`, `@click`.',
         image: '### `<image>` (Pure Canvas Image Node)\n\nHardware-accelerated bitmap rendering with automatic loader spinners, error fallbacks, and off-thread GPU decode.\n\n**Props**: `src`, `fit`, `width`, `height`, `borderRadius`, `showLoader`, `showErrorIcon`.',
         input: '### `<input>` (Ghost DOM Input Node)\n\nCombines native IME touch keyboard entry and clipboard support with Pure Canvas rendering.\n\n**Props**: `placeholder`, `placeholderColor`, `:value`, `focusBorderColor`, `@input`, `@submit`, `@change`.',
-        modal: '### `<modal>` (Fullscreen Canvas Dialog Overlay)\n\nFrosted glass blur, backdrop dimming, and Smart Hero morph animations with zero DOM overhead.\n\n**Props**: `:open`, `animation`, `@close`, `originRect`.',
+        modal: '### `<modal>` (Fullscreen Canvas Dialog Overlay)\n\nFrosted glass background blur (`backdrop-filter: blur`), backdrop dimming, and Smart Hero morph animations with zero DOM overhead.\n\n**Props**: `:open`, `backdropBlur`, `backdropFilter`, `backdropColor`, `blur`, `blurRadius`, `animation`, `duration`, `originRect`, `closeOnBackdropClick`, `@close`.',
+        'scroll-view': '### `<scroll-view>` (Hardware-Accelerated Scroll Container)\n\nHardware-accelerated scrolling with momentum physics, touch drag panning, mouse wheel, and customizable scrollbars.\n\n**Props**: `scroll`, `scrollDirection`, `showScrollbar`, `scrollY`, `scrollX`, `scrollTop`, `scrollLeft`, `scrollbarColor`, `scrollbarWidth`, `overflow`, `@scroll`.',
+        a: '### `<a>` (Native Hyperlink & Ghost DOM Anchor Node)\n\nZero-DOM Canvas hyperlink with hover/active underline transitions, built-in SPA router navigation, and native Ghost DOM right-click context menu.\n\n**Props**: `href`, `target`, `rel`, `download`, `color`, `hoverColor`, `activeColor`, `visitedColor`, `underline`, `underlineOffset`, `underlineThickness`, `disabled`, `@click`.',
+        link: '### `<link>` (SPA Route Hyperlink Node)\n\nDeclarative Single-Page Application route link. Navigates seamlessly via CanvApps Router without page reload.\n\n**Props**: `href`, `target`, `rel`, `color`, `hoverColor`, `activeColor`, `visitedColor`, `underline`, `disabled`, `@click`.',
         motion: '### `<motion>` (GPU-Timed Motion Wrapper)\n\nSpring physics and timeline animations (`scale-in`, `fade`, `slide-up`, `cinematic-splash`).\n\n**Props**: `animation`, `duration`, `delay`, `spring`.',
         slot: '### `<slot />` (Dynamic Layout Outlet)\n\nRenders child scene content injected from parent layouts.',
+        backdropBlur: '### `backdropBlur` (Modal Frosted Glass Blur)\n\nApplies a hardware-accelerated Gaussian background blur behind the modal overlay (e.g. `backdropBlur="12px"`, `backdropBlur={16}`, `backdropBlur={true}`).',
+        backdropFilter: '### `backdropFilter` (CSS-Style Modal Blur Filter)\n\nApplies a CSS-like filter effect to the modal backdrop (e.g. `backdropFilter="blur(14px)"`).',
+        backdropColor: '### `backdropColor` (Modal Backdrop Tint Color)\n\nSpecifies the translucent tint color rendered over the blurred background (e.g. `backdropColor="rgba(15, 23, 42, 0.65)"`).',
+        blur: '### `blur` (Modal Blur Toggle)\n\nEnables or disables frosted glass backdrop blur on modal dialog overlays.',
+        href: '### `href` (Hyperlink Destination URL / Route)\n\nSpecifies the target URL or SPA route for `<a>` / `<link>` components (e.g. `href="/dashboard"` or `href="https://example.com"`).',
+        target: '### `target` (Anchor Browsing Context)\n\nSpecifies where to open the linked URL (`_self`, `_blank`, `_parent`, `_top`).',
+        underline: '### `underline` (Anchor Underline Transition)\n\nControls text underline behavior (`"hover"`, `"always"`, `"never"`). Defaults to `"hover"`.',
+        hoverColor: '### `hoverColor` (Interactive Hover Text Color)\n\nSpecifies the color applied when the mouse pointer hovers over an anchor or button.',
+        activeColor: '### `activeColor` (Interactive Pressed Text Color)\n\nSpecifies the color applied while the pointer button is held down.',
+        visitedColor: '### `visitedColor` (Visited Link Text Color)\n\nSpecifies the color applied after a link has been navigated.',
+        scroll: '### `scroll` (Scroll Container Direction)\n\nControls scroll axes for `<scroll-view>`: `"vertical"`, `"horizontal"`, or `"both"`.',
+        showScrollbar: '### `showScrollbar` (Scrollbar Indicator Visibility)\n\nControls scrollbar pill visibility: `"auto"` (fades out when idle), `"always"`, or `"never"`.',
+        scrollY: '### `scrollY` / `scrollTop` (Vertical Scroll Offset)\n\nGets or sets the vertical scroll offset in pixels.',
+        scrollX: '### `scrollX` / `scrollLeft` (Horizontal Scroll Offset)\n\nGets or sets the horizontal scroll offset in pixels.',
+        '@scroll': '### `@scroll="handler"`\n\nFires in real-time as a `<scroll-view>` is scrolled via touch drag, mouse wheel, or scroll API.',
+        '@close': '### `@close="handler"`\n\nFires when the modal is dismissed via backdrop click or programmatic close event.',
         '@if': '### `@if (condition) { ... }`\n\nConditional directive that dynamically mounts or unmounts branches based on reactive signals.',
         '@each': '### `@each array as item, index { ... }`\n\nReactive iteration directive that projects an array of items without Virtual DOM diffing.',
         '@click': '### `@click="handler"`\n\nFires on pointer release when coordinates match element bounding box.',
@@ -470,20 +489,28 @@ export function activate(context: vscode.ExtensionContext): void {
     },
   });
 
-  // 3. Completion Item Provider (Suggesting events, directives, attributes, and script symbols)
+  // 3. Completion Item Provider (Suggesting events, directives, attributes, and tags)
   const completionProvider = vscode.languages.registerCompletionItemProvider(
     'canvapps',
     {
       provideCompletionItems(document: vscode.TextDocument, position: vscode.Position) {
-        const linePrefix = document.lineAt(position).text.substring(0, position.character);
+        const lineText = document.lineAt(position).text;
+        const linePrefix = lineText.substring(0, position.character);
+        const textBefore = document.getText(new vscode.Range(new vscode.Position(0, 0), position));
         const items: vscode.CompletionItem[] = [];
 
-        // A. Event completions (@click, @input, @submit, @hover, etc.)
+        // Detect if cursor is currently inside an opening tag: <tag-name ... |
+        const tagMatch = textBefore.match(/<([a-zA-Z][a-zA-Z0-9_-]*)(?:\s+[^>]*)?$/);
+        const currentTag = tagMatch ? tagMatch[1].toLowerCase() : null;
+
+        // A. Event completions (@click, @scroll, @close, @input, @submit, etc.)
         if (linePrefix.endsWith('@') || /@\w*$/.test(linePrefix)) {
           const events = [
             { name: 'click', doc: 'Fires when a pointer clicks the element.', snippet: '@click="${1:handleClick}"' },
-            { name: 'submit', doc: 'Fires when user submits an input via Enter key.', snippet: '@submit="${1:handleSubmit}"' },
+            { name: 'close', doc: 'Fires when modal overlay is dismissed via backdrop click or close action.', snippet: '@close="${1:handleClose}"' },
+            { name: 'scroll', doc: 'Fires in real-time when a <scroll-view> is scrolled.', snippet: '@scroll="${1:handleScroll}"' },
             { name: 'input', doc: 'Fires in real-time when text input changes.', snippet: '@input="${1:handleInput}"' },
+            { name: 'submit', doc: 'Fires when user submits an input via Enter key.', snippet: '@submit="${1:handleSubmit}"' },
             { name: 'change', doc: 'Fires when an input value is committed.', snippet: '@change="${1:handleChange}"' },
             { name: 'hover', doc: 'Fires when pointer enters element bounds.', snippet: '@hover="${1:handleHover}"' },
             { name: 'pointerdown', doc: 'Fires when pointer button is pressed.', snippet: '@pointerdown="${1:onPointerDown}"' },
@@ -510,12 +537,39 @@ export function activate(context: vscode.ExtensionContext): void {
           return items;
         }
 
-        // B. Reactive Property Bindings (:value, :color, :fontSize, etc.)
+        // B. Reactive Property Bindings (:prop="expr")
         if (linePrefix.endsWith(':') || /:\w*$/.test(linePrefix)) {
           const dynamicProps = [
+            // Modal bindings
+            { name: 'open', doc: 'Controls modal open state (boolean).' },
+            { name: 'backdropBlur', doc: 'Dynamic frosted glass blur for modal overlay ("12px", 16, boolean).' },
+            { name: 'backdropFilter', doc: 'Dynamic CSS-style filter for modal overlay ("blur(14px)").' },
+            { name: 'backdropColor', doc: 'Dynamic translucent backdrop color ("rgba(15,23,42,0.65)").' },
+            { name: 'blur', doc: 'Dynamic toggle for modal frosted glass backdrop blur.' },
+            { name: 'originRect', doc: 'Origin bounding box for Smart Hero Morph modal animations.' },
+
+            // Hyperlink / Anchor bindings
+            { name: 'href', doc: 'Dynamic destination URL or SPA route for <a> / <link>.' },
+            { name: 'target', doc: 'Dynamic browsing target ("_self" | "_blank").' },
+            { name: 'rel', doc: 'Dynamic link rel relationship string.' },
+            { name: 'underline', doc: 'Dynamic underline transition ("hover" | "always" | "never").' },
+            { name: 'hoverColor', doc: 'Dynamic hover state color.' },
+            { name: 'activeColor', doc: 'Dynamic active/pressed state color.' },
+            { name: 'visitedColor', doc: 'Dynamic visited state color.' },
+
+            // Scroll View bindings
+            { name: 'scroll', doc: 'Dynamic scroll direction ("vertical" | "horizontal" | "both").' },
+            { name: 'showScrollbar', doc: 'Dynamic scrollbar visibility ("auto" | "always" | "never").' },
+            { name: 'scrollY', doc: 'Two-way reactive vertical scroll offset in pixels.' },
+            { name: 'scrollX', doc: 'Two-way reactive horizontal scroll offset in pixels.' },
+            { name: 'scrollTop', doc: 'Reactive vertical scroll offset alias.' },
+            { name: 'scrollLeft', doc: 'Reactive horizontal scroll offset alias.' },
+
+            // Standard bindings
             { name: 'value', doc: 'Two-way reactive value binding for UIInput.' },
             { name: 'text', doc: 'Dynamic text content binding.' },
             { name: 'label', doc: 'Dynamic button label binding.' },
+            { name: 'disabled', doc: 'Dynamic disabled state binding (boolean).' },
             { name: 'backgroundColor', doc: 'Dynamic background color binding.' },
             { name: 'color', doc: 'Dynamic text color binding.' },
             { name: 'fontSize', doc: 'Dynamic font size binding.' },
@@ -531,8 +585,8 @@ export function activate(context: vscode.ExtensionContext): void {
             { name: 'borderWidth', doc: 'Dynamic border width binding.' },
             { name: 'opacity', doc: 'Dynamic opacity binding (0.0 to 1.0).' },
             { name: 'selectable', doc: 'Controls whether text can be selected and copied (boolean).' },
-            { name: 'open', doc: 'Controls modal open state (boolean).' },
-            { name: 'originRect', doc: 'Origin bounding box for Smart Hero Morph animations.' },
+            { name: 'src', doc: 'Dynamic image source URL.' },
+            { name: 'fit', doc: 'Dynamic image object fit mode.' },
           ];
 
           for (const prop of dynamicProps) {
@@ -545,16 +599,19 @@ export function activate(context: vscode.ExtensionContext): void {
           return items;
         }
 
-        // C. Built-in Tag Snippets (<view>, <text>, <button>, <image>, <input>, <modal>)
+        // C. Built-in Tag Snippets (<view>, <text>, <button>, <modal>, <scroll-view>, <a>, <link>, etc.)
         if (linePrefix.endsWith('<') || /<\w*$/.test(linePrefix)) {
           const tags = [
             { name: 'view', snippet: '<view width="${1:100%}" flexDirection="${2|column,row|}" gap="${3:10}">\n\t$0\n</view>' },
             { name: 'text', snippet: '<text fontSize="${1:14}" fontWeight="${2|normal,bold,600|}" color="${3:#ffffff}">$0</text>' },
             { name: 'button', snippet: '<button label="${1:Click Me}" backgroundColor="${2:#3b82f6}" color="#ffffff" borderRadius="12" padding="[8, 16]" @click="${3:handleClick}" />' },
+            { name: 'a', snippet: '<a href="${1:https://example.com}"${2: target="_blank"} color="${3:#1a73e8}" hoverColor="${4:#174ea6}" underline="${5|hover,always,never|}">${6:Link text}</a>' },
+            { name: 'link', snippet: '<link href="${1:/settings}" color="${2:#1a73e8}" underline="${3|hover,always,never|}">${4:Link text}</link>' },
+            { name: 'modal', snippet: '<modal :open="${1:isOpen.value}" backdropBlur="${2:12px}" backdropColor="${3:rgba(15, 23, 42, 0.65)}" @close="${4:closeModal}">\n\t<view width="${5:480}" backgroundColor="#1e293b" borderRadius="16" padding="24" gap="16">\n\t\t<text fontSize="20" fontWeight="bold" color="#ffffff">${6:Modal Title}</text>\n\t\t$0\n\t</view>\n</modal>' },
+            { name: 'scroll-view', snippet: '<scroll-view width="${1:100%}" height="${2:400}" scroll="${3|vertical,horizontal,both|}" showScrollbar="${4|auto,always,never|}">\n\t$0\n</scroll-view>' },
             { name: 'image', snippet: '<image src="${1:url}" width="${2:100%}" height="${3:200}" fit="${4|cover,contain,fill|}" borderRadius="12" />' },
             { name: 'input', snippet: '<input placeholder="${1:Enter text...}" value="${2:myInput.value}" @input="${3:onInput}" />' },
-            { name: 'modal', snippet: '<modal :open="${1:isOpen.value}" animation="hero" @close="${2:closeModal}">\n\t<view width="${3:500}" backgroundColor="#1e1e24" borderRadius="20" padding="20">\n\t\t$0\n\t</view>\n</modal>' },
-            { name: 'motion', snippet: '<motion animation="${1|fade,scale-in,slide-up|}" duration="${2:300}">\n\t$0\n</motion>' },
+            { name: 'motion', snippet: '<motion animation="${1|fade,scale-in,slide-up,zoom-center|}" duration="${2:300}">\n\t$0\n</motion>' },
             { name: 'slot', snippet: '<slot />' },
           ];
 
@@ -567,30 +624,139 @@ export function activate(context: vscode.ExtensionContext): void {
           return items;
         }
 
-        // D. Standard Tag Attributes
-        const staticProps = [
-          'width', 'height', 'flexDirection', 'alignItems', 'justifyContent', 'flexGrow', 'flexShrink',
-          'padding', 'gap', 'backgroundColor', 'borderRadius', 'borderWidth', 'borderColor', 'boxShadow',
-          'fontSize', 'fontWeight', 'color', 'placeholder', 'placeholderColor', 'focusBorderColor',
-          'cursor', 'label', 'labelColor', 'hoverBackgroundColor', 'activeBackgroundColor', 'selectable',
-          'fit', 'src', 'showLoader', 'showErrorIcon', 'loaderColor', 'errorColor', 'animation', 'duration'
+        // D. Comprehensive Tag Attributes with Documentation & Smart Snippets
+        const attributeDefs: { name: string; doc: string; snippet?: string; tags?: string[] }[] = [
+          // Modal specific
+          { name: 'backdropBlur', doc: 'Hardware-accelerated frosted glass background blur behind modal overlay (e.g. "12px", "16", 12, true).', snippet: 'backdropBlur="${1:12px}"', tags: ['modal', 'uimodal'] },
+          { name: 'backdropFilter', doc: 'CSS-style backdrop filter for modal overlay.', snippet: 'backdropFilter="blur(${1:14}px)"', tags: ['modal', 'uimodal'] },
+          { name: 'backdropColor', doc: 'Translucent tint color for modal backdrop overlay.', snippet: 'backdropColor="${1:rgba(15, 23, 42, 0.65)}"', tags: ['modal', 'uimodal'] },
+          { name: 'backdropColors', doc: 'Gradient backdrop colors for modal overlay.', snippet: 'backdropColors="${1:[\'rgba(0,0,0,0.8)\', \'rgba(0,0,0,0.4)\']}"', tags: ['modal', 'uimodal'] },
+          { name: 'blur', doc: 'Toggles modal frosted glass backdrop blur.', snippet: 'blur="${1|true,false|}"', tags: ['modal', 'uimodal'] },
+          { name: 'blurBackdrop', doc: 'Toggles modal frosted glass backdrop blur.', snippet: 'blurBackdrop="${1|true,false|}"', tags: ['modal', 'uimodal'] },
+          { name: 'blurRadius', doc: 'Modal blur radius in pixels.', snippet: 'blurRadius="${1:10}"', tags: ['modal', 'uimodal'] },
+          { name: 'closeOnBackdropClick', doc: 'Whether clicking the backdrop dismisses the modal.', snippet: 'closeOnBackdropClick="${1|true,false|}"', tags: ['modal', 'uimodal'] },
+          { name: 'open', doc: 'Controls modal open state.', snippet: 'open="${1|true,false|}"', tags: ['modal', 'uimodal'] },
+          { name: 'animation', doc: 'Modal entrance/exit transition animation.', snippet: 'animation="${1|hero,zoom-center,scale-in,slide-up,fade,none|}"', tags: ['modal', 'uimodal', 'motion', 'uimotion'] },
+          { name: 'duration', doc: 'Animation transition duration in milliseconds.', snippet: 'duration="${1:300}"', tags: ['modal', 'uimodal', 'motion', 'uimotion'] },
+          { name: 'originRect', doc: 'Source bounding rectangle for Smart Hero Morph expansion.', snippet: 'originRect="${1:originRect}"', tags: ['modal', 'uimodal'] },
+
+          // Anchor / Link specific
+          { name: 'href', doc: 'Target navigation destination URL or SPA route.', snippet: 'href="${1:https://example.com}"', tags: ['a', 'link', 'uianchor', 'uilink'] },
+          { name: 'target', doc: 'Anchor browsing target context ("_self", "_blank", "_parent", "_top").', snippet: 'target="${1|_self,_blank,_parent,_top|}"', tags: ['a', 'link', 'uianchor', 'uilink'] },
+          { name: 'rel', doc: 'Relationship between linked document and current page.', snippet: 'rel="${1:noopener noreferrer}"', tags: ['a', 'link', 'uianchor', 'uilink'] },
+          { name: 'download', doc: 'Prompts the user to save the linked resource.', snippet: 'download="${1:filename}"', tags: ['a', 'link', 'uianchor', 'uilink'] },
+          { name: 'underline', doc: 'Anchor underline transition mode.', snippet: 'underline="${1|hover,always,never|}"', tags: ['a', 'link', 'uianchor', 'uilink'] },
+          { name: 'underlineOffset', doc: 'Distance between baseline and underline in pixels.', snippet: 'underlineOffset="${1:2}"', tags: ['a', 'link', 'uianchor', 'uilink'] },
+          { name: 'underlineThickness', doc: 'Thickness of underline stroke in pixels.', snippet: 'underlineThickness="${1:1}"', tags: ['a', 'link', 'uianchor', 'uilink'] },
+          { name: 'hoverColor', doc: 'Text color applied when hovered.', snippet: 'hoverColor="${1:#174ea6}"', tags: ['a', 'link', 'uianchor', 'uilink', 'button', 'uibutton'] },
+          { name: 'activeColor', doc: 'Text color applied when pressed.', snippet: 'activeColor="${1:#185abc}"', tags: ['a', 'link', 'uianchor', 'uilink', 'button', 'uibutton'] },
+          { name: 'visitedColor', doc: 'Text color applied after link is visited.', snippet: 'visitedColor="${1:#681da8}"', tags: ['a', 'link', 'uianchor', 'uilink'] },
+
+          // Scroll View specific
+          { name: 'scroll', doc: 'Scroll direction mode for <scroll-view>.', snippet: 'scroll="${1|vertical,horizontal,both|}"', tags: ['scroll-view', 'uiscrollview', 'scrollview'] },
+          { name: 'scrollDirection', doc: 'Scroll direction alias for <scroll-view>.', snippet: 'scrollDirection="${1|vertical,horizontal,both|}"', tags: ['scroll-view', 'uiscrollview', 'scrollview'] },
+          { name: 'showScrollbar', doc: 'Scrollbar indicator pill visibility mode.', snippet: 'showScrollbar="${1|auto,always,never|}"', tags: ['scroll-view', 'uiscrollview', 'scrollview'] },
+          { name: 'scrollY', doc: 'Vertical scroll offset in pixels.', snippet: 'scrollY="${1:0}"', tags: ['scroll-view', 'uiscrollview', 'scrollview'] },
+          { name: 'scrollX', doc: 'Horizontal scroll offset in pixels.', snippet: 'scrollX="${1:0}"', tags: ['scroll-view', 'uiscrollview', 'scrollview'] },
+          { name: 'scrollTop', doc: 'Vertical scroll offset alias.', snippet: 'scrollTop="${1:0}"', tags: ['scroll-view', 'uiscrollview', 'scrollview'] },
+          { name: 'scrollLeft', doc: 'Horizontal scroll offset alias.', snippet: 'scrollLeft="${1:0}"', tags: ['scroll-view', 'uiscrollview', 'scrollview'] },
+          { name: 'scrollbarColor', doc: 'Scrollbar indicator pill color.', snippet: 'scrollbarColor="${1:rgba(255,255,255,0.3)}"', tags: ['scroll-view', 'uiscrollview', 'scrollview'] },
+          { name: 'scrollbarWidth', doc: 'Scrollbar indicator width in pixels.', snippet: 'scrollbarWidth="${1:6}"', tags: ['scroll-view', 'uiscrollview', 'scrollview'] },
+          { name: 'overflow', doc: 'Overflow clipping behavior ("scroll", "hidden", "visible").', snippet: 'overflow="${1|scroll,hidden,visible|}"' },
+
+          // General Box & Layout
+          { name: 'width', doc: 'Element width in pixels or percentage ("100%").', snippet: 'width="${1:100%}"' },
+          { name: 'height', doc: 'Element height in pixels or percentage ("100%").', snippet: 'height="${1:100%}"' },
+          { name: 'minWidth', doc: 'Minimum width constraint.', snippet: 'minWidth="${1:0}"' },
+          { name: 'maxWidth', doc: 'Maximum width constraint.', snippet: 'maxWidth="${1:100%}"' },
+          { name: 'minHeight', doc: 'Minimum height constraint.', snippet: 'minHeight="${1:0}"' },
+          { name: 'maxHeight', doc: 'Maximum height constraint.', snippet: 'maxHeight="${1:100%}"' },
+          { name: 'flexDirection', doc: 'Flex direction for child flow.', snippet: 'flexDirection="${1|column,row,column-reverse,row-reverse|}"' },
+          { name: 'alignItems', doc: 'Cross-axis alignment of flex items.', snippet: 'alignItems="${1|stretch,flex-start,flex-end,center,baseline|}"' },
+          { name: 'justifyContent', doc: 'Main-axis distribution of flex items.', snippet: 'justifyContent="${1|flex-start,flex-end,center,space-between,space-around,space-evenly|}"' },
+          { name: 'flexGrow', doc: 'Flex grow factor.', snippet: 'flexGrow="${1:1}"' },
+          { name: 'flexShrink', doc: 'Flex shrink factor.', snippet: 'flexShrink="${1:0}"' },
+          { name: 'flexWrap', doc: 'Flex item wrapping behavior.', snippet: 'flexWrap="${1|nowrap,wrap,wrap-reverse|}"' },
+          { name: 'padding', doc: 'Inner padding (number, [top, right, bottom, left], or [vertical, horizontal]).', snippet: 'padding="${1:16}"' },
+          { name: 'margin', doc: 'Outer margin (number, [top, right, bottom, left], or [vertical, horizontal]).', snippet: 'margin="${1:0}"' },
+          { name: 'gap', doc: 'Gap spacing between flex children in pixels.', snippet: 'gap="${1:12}"' },
+          { name: 'rowGap', doc: 'Row gap spacing in pixels.', snippet: 'rowGap="${1:12}"' },
+          { name: 'columnGap', doc: 'Column gap spacing in pixels.', snippet: 'columnGap="${1:12}"' },
+          { name: 'backgroundColor', doc: 'Background color fill (#hex, rgb, rgba).', snippet: 'backgroundColor="${1:#1e293b}"' },
+          { name: 'borderRadius', doc: 'Border corner rounding radius in pixels.', snippet: 'borderRadius="${1:12}"' },
+          { name: 'borderWidth', doc: 'Border stroke width in pixels.', snippet: 'borderWidth="${1:1}"' },
+          { name: 'borderColor', doc: 'Border stroke color.', snippet: 'borderColor="${1:#334155}"' },
+          { name: 'boxShadow', doc: 'Shadow offset, blur, and color (e.g. "0 4px 12px rgba(0,0,0,0.25)").', snippet: 'boxShadow="${1:0 4px 12px rgba(0,0,0,0.25)}"' },
+          { name: 'opacity', doc: 'Element transparency level (0.0 to 1.0).', snippet: 'opacity="${1:1.0}"' },
+          { name: 'display', doc: 'Layout participation ("flex", "contents", "none").', snippet: 'display="${1|flex,contents,none|}"' },
+          { name: 'position', doc: 'Positioning model ("relative", "absolute").', snippet: 'position="${1|relative,absolute|}"' },
+          { name: 'left', doc: 'Left coordinate offset.', snippet: 'left="${1:0}"' },
+          { name: 'top', doc: 'Top coordinate offset.', snippet: 'top="${1:0}"' },
+          { name: 'right', doc: 'Right coordinate offset.', snippet: 'right="${1:0}"' },
+          { name: 'bottom', doc: 'Bottom coordinate offset.', snippet: 'bottom="${1:0}"' },
+          { name: 'zIndex', doc: 'Stacking order index.', snippet: 'zIndex="${1:10}"' },
+          { name: 'cursor', doc: 'Mouse cursor style ("pointer", "default", "text", "not-allowed", "grab").', snippet: 'cursor="${1|pointer,default,text,not-allowed,grab|}"' },
+
+          // Typography
+          { name: 'fontSize', doc: 'Font size in pixels.', snippet: 'fontSize="${1:14}"' },
+          { name: 'fontWeight', doc: 'Font weight ("normal", "bold", "500", "600", "700").', snippet: 'fontWeight="${1|normal,bold,500,600,700|}"' },
+          { name: 'fontFamily', doc: 'Font family stack.', snippet: 'fontFamily="${1:system-ui, sans-serif}"' },
+          { name: 'fontStyle', doc: 'Font style ("normal", "italic").', snippet: 'fontStyle="${1|normal,italic|}"' },
+          { name: 'color', doc: 'Foreground text color.', snippet: 'color="${1:#ffffff}"' },
+          { name: 'lineHeight', doc: 'Line height multiplier or pixel value.', snippet: 'lineHeight="${1:1.4}"' },
+          { name: 'letterSpacing', doc: 'Letter spacing in pixels.', snippet: 'letterSpacing="${1:0.5}"' },
+          { name: 'textAlign', doc: 'Text horizontal alignment ("left", "center", "right").', snippet: 'textAlign="${1|left,center,right|}"' },
+          { name: 'selectable', doc: 'Whether text can be highlighted and copied (boolean).', snippet: 'selectable="${1|true,false|}"' },
+          { name: 'text', doc: 'Direct text content.', snippet: 'text="${1:Text}"' },
+
+          // Button
+          { name: 'label', doc: 'Button label text.', snippet: 'label="${1:Button}"' },
+          { name: 'labelColor', doc: 'Button label text color.', snippet: 'labelColor="${1:#ffffff}"' },
+          { name: 'hoverBackgroundColor', doc: 'Button background color when hovered.', snippet: 'hoverBackgroundColor="${1:#2563eb}"' },
+          { name: 'activeBackgroundColor', doc: 'Button background color when pressed.', snippet: 'activeBackgroundColor="${1:#1d4ed8}"' },
+          { name: 'disabled', doc: 'Disables button interactions.', snippet: 'disabled="${1|true,false|}"' },
+
+          // Input
+          { name: 'placeholder', doc: 'Placeholder prompt text when input is empty.', snippet: 'placeholder="${1:Enter text...}"' },
+          { name: 'placeholderColor', doc: 'Placeholder text color.', snippet: 'placeholderColor="${1:#64748b}"' },
+          { name: 'value', doc: 'Input text value.', snippet: 'value="${1}"' },
+          { name: 'focusBorderColor', doc: 'Border color applied when input is focused.', snippet: 'focusBorderColor="${1:#38bdf8}"' },
+          { name: 'secureTextEntry', doc: 'Masks input characters for passwords.', snippet: 'secureTextEntry="${1|true,false|}"' },
+
+          // Image
+          { name: 'src', doc: 'Image source URL or asset path.', snippet: 'src="${1:https://...}"' },
+          { name: 'fit', doc: 'Image scaling fit mode ("cover", "contain", "fill", "none").', snippet: 'fit="${1|cover,contain,fill,none|}"' },
+          { name: 'showLoader', doc: 'Shows loading spinner while image downloads.', snippet: 'showLoader="${1|true,false|}"' },
+          { name: 'showErrorIcon', doc: 'Shows error indicator if image fails to load.', snippet: 'showErrorIcon="${1|true,false|}"' },
+
+          // Motion
+          { name: 'spring', doc: 'Enables spring-physics damping curve.', snippet: 'spring="${1|true,false|}"' },
+          { name: 'delay', doc: 'Animation start delay in milliseconds.', snippet: 'delay="${1:100}"' },
+          { name: 'repeat', doc: 'Animation repeat count.', snippet: 'repeat="${1:1}"' },
         ];
 
-        for (const p of staticProps) {
-          const item = new vscode.CompletionItem(p, vscode.CompletionItemKind.Field);
-          item.detail = `CanvApps Attribute: ${p}`;
-          item.insertText = new vscode.SnippetString(`${p}="\${1}"`);
+        for (const attr of attributeDefs) {
+          const isTagMatch = currentTag && attr.tags ? attr.tags.includes(currentTag) : false;
+          const item = new vscode.CompletionItem(attr.name, vscode.CompletionItemKind.Field);
+          item.detail = `CanvApps Attribute: ${attr.name}`;
+          item.documentation = new vscode.MarkdownString(attr.doc);
+          item.insertText = new vscode.SnippetString(attr.snippet || `${attr.name}="\${1}"`);
+          // Prioritize attributes that specifically belong to the active tag
+          item.sortText = isTagMatch ? `0_${attr.name}` : `1_${attr.name}`;
           items.push(item);
         }
 
         return items;
       },
     },
-    '@', ':', '<', '"', ' '
+    '@', ':', '<', ' ', '"', '/', '.', '-', '_', '{', '=',
+    'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z',
+    'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'
   );
 
   context.subscriptions.push(definitionProvider, hoverProvider, completionProvider);
 }
 
 export function deactivate(): void {}
+
 

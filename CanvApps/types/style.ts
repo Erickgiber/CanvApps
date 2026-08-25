@@ -180,11 +180,26 @@ export interface VisualStyles extends LayoutStyles {
   // Modal & Overlay Backdrop Properties
   backdropColor?: string;
   backdropColors?: [string, string];
+  backdropBlur?: number | string | boolean;
+  backdropFilter?: string;
   gradient?: boolean;
   backdropGradient?: boolean;
   blur?: boolean;
   blurBackdrop?: boolean;
   blurRadius?: number;
   closeOnBackdropClick?: boolean;
+
+  // Anchor & Hyperlink Properties
+  href?: string;
+  target?: '_self' | '_blank' | '_parent' | '_top' | string;
+  rel?: string;
+  download?: string | boolean;
+  hoverColor?: string;
+  activeColor?: string;
+  visitedColor?: string;
+  underline?: 'always' | 'hover' | 'never' | boolean;
+  underlineOffset?: number;
+  underlineThickness?: number;
 }
+
 

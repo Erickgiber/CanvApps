@@ -71,5 +71,59 @@
       "const ${1:state} = signal<${2:string}>(${3:''});"
     ],
     "description": "Create a reactive signal"
+  },
+  "Anchor / Link Element": {
+    "prefix": "cvs-anchor",
+    "body": [
+      "<a href=\"${1:https://example.com}\"${2: target=\"_blank\"} color=\"${3:#1a73e8}\" hoverColor=\"${4:#174ea6}\" underline=\"${5|hover,always,never|}\">${6:Link text}</a>"
+    ],
+    "description": "Create a UIAnchor / UILink hyperlink element"
+  },
+  "Link Element (Alias)": {
+    "prefix": "cvs-link",
+    "body": [
+      "<link href=\"${1:/settings}\" color=\"${2:#1a73e8}\" underline=\"${3|hover,always,never|}\">${4:Link text}</link>"
+    ],
+    "description": "Create a UIAnchor / UILink hyperlink element"
+  },
+  "Modal Dialog Overlay": {
+    "prefix": "cvs-modal",
+    "body": [
+      "<modal :open=\"${1:isOpen.value}\" backdropBlur=\"${2:12px}\" backdropColor=\"${3:rgba(15, 23, 42, 0.65)}\" @close=\"${4:closeModal}\">",
+      "  <view width=\"${5:480}\" backgroundColor=\"${6:#1e293b}\" borderRadius=\"${7:16}\" padding=\"${8:24}\" flexDirection=\"column\" gap=\"${9:16}\">",
+      "    <text fontSize=\"20\" fontWeight=\"bold\" color=\"#ffffff\">${10:Modal Title}</text>",
+      "    $0",
+      "    <button label=\"Close\" backgroundColor=\"#334155\" @click=\"${4:closeModal}\" />",
+      "  </view>",
+      "</modal>"
+    ],
+    "description": "Create a UIModal dialog overlay with frosted glass background blur"
+  },
+  "Scroll View Container": {
+    "prefix": "cvs-scroll-view",
+    "body": [
+      "<scroll-view width=\"${1:100%}\" height=\"${2:400}\" scroll=\"${3|vertical,horizontal,both|}\" showScrollbar=\"${4|auto,always,never|}\">",
+      "  $0",
+      "</scroll-view>"
+    ],
+    "description": "Create a UIScrollView hardware-accelerated scroll container"
+  },
+  "Image Element": {
+    "prefix": "cvs-image",
+    "body": [
+      "<image src=\"${1:https://example.com/image.png}\" width=\"${2:100%}\" height=\"${3:200}\" fit=\"${4|cover,contain,fill,none|}\" borderRadius=\"${5:12}\" />"
+    ],
+    "description": "Create a UIImage element"
+  },
+  "Motion Wrapper": {
+    "prefix": "cvs-motion",
+    "body": [
+      "<motion animation=\"${1|fade,scale-in,slide-up,zoom-center|}\" duration=\"${2:300}\">",
+      "  $0",
+      "</motion>"
+    ],
+    "description": "Create a UIMotion GPU-timed animated wrapper"
   }
 }
+
+

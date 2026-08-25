@@ -1,6 +1,6 @@
 {
   "name": "@canvapps/core",
-  "version": "0.1.7",
+  "version": "0.1.8",
   "description": "High-performance 100% Canvas-based UI Framework for SPA, PWA, and Native Mobile via Capacitor",
   "type": "module",
   "main": "./dist/canvapps.cjs",

@@ -1,6 +1,6 @@
 {
   "name": "@canvapps/vite-plugin",
-  "version": "0.1.7",
+  "version": "0.1.8",
   "description": "Official Vite plugin for compiling CanvApps declarative .cvs Canvas UI components",
   "type": "module",
   "main": "./dist/index.cjs",

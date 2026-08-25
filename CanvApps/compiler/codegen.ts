@@ -405,7 +405,10 @@ ${itemCode}
           codeLines.push(`  ${elVar}.setOpen(Boolean(${dyn.value}));`);
         } else if (element.tag === 'modal' && dyn.name === 'originRect') {
           codeLines.push(`  ${elVar}.setStyle({ originRect: ${dyn.value} });`);
+        } else if (element.tag === 'modal' && (dyn.name === 'backdropBlur' || dyn.name === 'blur')) {
+          codeLines.push(`  ${elVar}.setBackdropBlur((${dyn.value}) as any);`);
         } else if (element.tag === 'text' && dyn.name === 'text') {
+
           codeLines.push(`  ${elVar}.setText(String(${dyn.value} ?? ''));`);
         } else if (element.tag === 'text' && dyn.name === 'selectable') {
           codeLines.push(`  ${elVar}.setSelectable(Boolean(${dyn.value}));`);
@@ -465,7 +468,13 @@ ${itemCode}
   effect(() => {
     ${elVar}.setStyle({ originRect: ${dyn.value} });
   });`);
+        } else if (element.tag === 'modal' && (dyn.name === 'backdropBlur' || dyn.name === 'blur')) {
+          codeLines.push(`
+  effect(() => {
+    ${elVar}.setBackdropBlur((${dyn.value}) as any);
+  });`);
         } else if (element.tag === 'text' && dyn.name === 'text') {
+
           codeLines.push(`
   effect(() => {
     ${elVar}.setText(String(${dyn.value} ?? ''));

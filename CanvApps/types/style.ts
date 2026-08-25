@@ -180,6 +180,8 @@ export interface VisualStyles extends LayoutStyles {
   // Modal & Overlay Backdrop Properties
   backdropColor?: string;
   backdropColors?: [string, string];
+  backdropBlur?: number | string | boolean;
+  backdropFilter?: string;
   gradient?: boolean;
   backdropGradient?: boolean;
   blur?: boolean;

@@ -23,6 +23,8 @@ export interface ModalStyles extends VisualStyles {
   originRect?: RectBounds | null;
   backdropColor?: string;
   backdropColors?: [string, string];
+  backdropBlur?: number | string | boolean;
+  backdropFilter?: string;
   gradient?: boolean;
   backdropGradient?: boolean;
   blur?: boolean;
@@ -30,6 +32,7 @@ export interface ModalStyles extends VisualStyles {
   blurRadius?: number;
   closeOnBackdropClick?: boolean;
 }
+
 
 // Silky smooth quartic-out fluid deceleration curve
 function fluidEase(t: number): number {
@@ -50,6 +53,56 @@ export class UIModal extends UIElement {
   private animStartTime = 0;
   private animPhase: 'opening' | 'closing' | 'idle' = 'idle';
   private originRect: RectBounds | null = null;
+  private static blurCanvas: HTMLCanvasElement | null = null;
+
+  private static getBlurCanvas(): HTMLCanvasElement | null {
+    if (typeof document === 'undefined') return null;
+    if (!this.blurCanvas) {
+      this.blurCanvas = document.createElement('canvas');
+    }
+    return this.blurCanvas;
+  }
+
+  /**
+   * Resolves the configured backdrop blur radius in pixels.
+   */
+  public getBackdropBlurRadius(): number {
+    const { backdropBlur, backdropFilter, blurBackdrop, blur, blurRadius } = this.styles;
+
+    if (typeof backdropBlur === 'number') {
+      return Math.max(0, backdropBlur);
+    }
+    if (typeof backdropBlur === 'string') {
+      if (backdropBlur === 'true') return blurRadius ?? 10;
+      if (backdropBlur === 'false') return 0;
+      const parsed = parseFloat(backdropBlur);
+      if (!isNaN(parsed)) return Math.max(0, parsed);
+    }
+    if (backdropBlur === true || blurBackdrop === true || blur === true) {
+      return blurRadius ?? 10;
+    }
+    if (typeof backdropFilter === 'string') {
+      const match = backdropFilter.match(/blur\(([\d.]+)px\)/i);
+      if (match) {
+        return Math.max(0, parseFloat(match[1]) || 10);
+      }
+    }
+    if (typeof blurRadius === 'number' && (blur || blurBackdrop || backdropBlur)) {
+      return Math.max(0, blurRadius);
+    }
+    return 0;
+  }
+
+  /**
+   * Dynamically sets or toggles the backdrop blur effect.
+   */
+  public setBackdropBlur(blur: number | string | boolean): this {
+    this.styles.backdropBlur = blur;
+    this.markRenderDirty();
+    Engine.invalidateActive();
+    return this;
+  }
+
 
   constructor(styles: ModalStyles = {}) {
     super({
@@ -356,15 +409,45 @@ export class UIModal extends UIElement {
     const progress = this.animProgress;
     const eased = fluidEase(progress);
 
-    // 1. Draw Fullscreen Dark Backdrop Overlay
+    // 1. Draw Hardware-Accelerated Frosted Glass Backdrop Blur (backdrop-filter: blur)
+    const blurRadius = this.getBackdropBlurRadius();
+    const effectiveBlur = blurRadius * Math.max(0, Math.min(1, progress * 1.2));
+
+    if (effectiveBlur > 0.5 && ctx.canvas && typeof ctx.drawImage === 'function') {
+      const blurBuffer = UIModal.getBlurCanvas();
+      if (blurBuffer) {
+        if (blurBuffer.width !== ctx.canvas.width || blurBuffer.height !== ctx.canvas.height) {
+          blurBuffer.width = ctx.canvas.width;
+          blurBuffer.height = ctx.canvas.height;
+        }
+        const bCtx = blurBuffer.getContext('2d');
+        if (bCtx) {
+          bCtx.clearRect(0, 0, blurBuffer.width, blurBuffer.height);
+          bCtx.drawImage(ctx.canvas, 0, 0);
+
+          ctx.save();
+          if ('filter' in ctx) {
+            (ctx as any).filter = `blur(${effectiveBlur.toFixed(1)}px)`;
+          }
+          ctx.drawImage(blurBuffer, 0, 0, fullCanvasWidth, fullCanvasHeight);
+          if ('filter' in ctx) {
+            (ctx as any).filter = 'none';
+          }
+          ctx.restore();
+        }
+      }
+    }
+
+    // 2. Draw Fullscreen Dark / Tinted Backdrop Overlay
     ctx.save();
-    ctx.fillStyle = this.styles.backdropColor ?? 'rgba(0, 0, 0, 0.78)';
+    ctx.fillStyle = this.styles.backdropColor ?? (blurRadius > 0 ? 'rgba(0, 0, 0, 0.52)' : 'rgba(0, 0, 0, 0.78)');
     const backdropAlpha = Math.max(0, Math.min(1, progress * 1.4));
     ctx.globalAlpha = backdropAlpha;
     ctx.fillRect(0, 0, fullCanvasWidth, fullCanvasHeight);
     ctx.restore();
 
-    // 2. Render Modal Dialog Card with Hero Morph Transition
+    // 3. Render Modal Dialog Card with Hero Morph Transition
+
     const originRect = this.styles.originRect || this.originRect;
     const card = this.getModalCard();
 

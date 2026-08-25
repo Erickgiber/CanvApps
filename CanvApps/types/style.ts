@@ -117,6 +117,16 @@ export interface LayoutStyles {
 }
 
 /**
+ * Direction of scroll allowed on a scrollable container.
+ */
+export type ScrollDirection = 'vertical' | 'horizontal' | 'both' | 'none';
+
+/**
+ * Scrollbar visibility modes.
+ */
+export type ScrollbarVisibility = 'auto' | 'always' | 'never' | boolean;
+
+/**
  * Visual styling properties used during Canvas 2D paint passes.
  */
 export interface VisualStyles extends LayoutStyles {
@@ -131,6 +141,19 @@ export interface VisualStyles extends LayoutStyles {
   boxShadow?: BoxShadow;
   overflow?: 'visible' | 'hidden' | 'scroll' | 'auto';
   cursor?: string;
+
+  // Scroll & Scrollbar Properties
+  scroll?: ScrollDirection;
+  scrollDirection?: ScrollDirection;
+  showScrollbar?: ScrollbarVisibility;
+  scrollbarColor?: string;
+  scrollbarTrackColor?: string;
+  scrollbarWidth?: number;
+  scrollX?: number;
+  scrollY?: number;
+  scrollTop?: number;
+  scrollLeft?: number;
+  bounce?: boolean;
 
   // Image properties
   src?: string;
@@ -164,3 +187,4 @@ export interface VisualStyles extends LayoutStyles {
   blurRadius?: number;
   closeOnBackdropClick?: boolean;
 }
+

@@ -107,6 +107,26 @@ export abstract class UIElement {
   public maxScrollLeft = 0;
 
   /**
+   * Y-axis scroll offset (alias for scrollTop).
+   */
+  public get scrollY(): number {
+    return this.scrollTop;
+  }
+  public set scrollY(val: number) {
+    this.scrollTop = val;
+  }
+
+  /**
+   * X-axis scroll offset (alias for scrollLeft).
+   */
+  public get scrollX(): number {
+    return this.scrollLeft;
+  }
+  public set scrollX(val: number) {
+    this.scrollLeft = val;
+  }
+
+  /**
    * Creates a new UIElement instance.
    *
    * @param initialStyles Optional initial visual and layout styles.
@@ -248,6 +268,9 @@ export abstract class UIElement {
     'wordWrap',
     'maxLines',
     'overflow',
+    'scroll',
+    'scrollDirection',
+    'showScrollbar',
   ]);
 
   // ---------------------------------------------------------------------------
@@ -262,6 +285,19 @@ export abstract class UIElement {
    * @returns This instance for chaining.
    */
   public setStyle(styles: Partial<VisualStyles>): this {
+    if (styles.scrollTop !== undefined) {
+      this.scrollTop = Math.max(0, styles.scrollTop);
+    }
+    if (styles.scrollY !== undefined) {
+      this.scrollTop = Math.max(0, styles.scrollY);
+    }
+    if (styles.scrollLeft !== undefined) {
+      this.scrollLeft = Math.max(0, styles.scrollLeft);
+    }
+    if (styles.scrollX !== undefined) {
+      this.scrollLeft = Math.max(0, styles.scrollX);
+    }
+
     let requiresLayout = false;
     for (const key of Object.keys(styles)) {
       if (UIElement.LAYOUT_AFFECTING_KEYS.has(key)) {
@@ -553,14 +589,15 @@ export abstract class UIElement {
    * Scrolls this container to the specified coordinates with optional smooth animation.
    */
   public scrollTo(options: { top?: number; left?: number; behavior?: 'smooth' | 'auto'; duration?: number } = {}): () => void {
-    const targetTop = options.top !== undefined ? Math.max(0, options.top) : this.scrollTop;
-    const targetLeft = options.left !== undefined ? Math.max(0, options.left) : this.scrollLeft;
+    const targetTop = options.top !== undefined ? Math.max(0, Math.min(this.maxScrollTop || Infinity, options.top)) : this.scrollTop;
+    const targetLeft = options.left !== undefined ? Math.max(0, Math.min(this.maxScrollLeft || Infinity, options.left)) : this.scrollLeft;
     const behavior = options.behavior ?? 'auto';
     const duration = options.duration ?? 350;
 
     if (behavior === 'auto' || duration <= 0 || typeof window === 'undefined') {
       this.scrollTop = targetTop;
       this.scrollLeft = targetLeft;
+      this.emit('scroll', new CanvasPointerEvent('scroll', this, {} as any));
       Engine.invalidateActive();
       return () => {};
     }
@@ -576,14 +613,49 @@ export abstract class UIElement {
       onUpdate: (progress) => {
         this.scrollTop = startTop + (targetTop - startTop) * progress;
         this.scrollLeft = startLeft + (targetLeft - startLeft) * progress;
+        this.emit('scroll', new CanvasPointerEvent('scroll', this, {} as any));
         Engine.invalidateActive();
       },
       onComplete: () => {
         this.scrollTop = targetTop;
         this.scrollLeft = targetLeft;
+        this.emit('scroll', new CanvasPointerEvent('scroll', this, {} as any));
         Engine.invalidateActive();
       },
     });
+  }
+
+  /**
+   * Scrolls to the top of the container.
+   */
+  public scrollToTop(behavior: 'smooth' | 'auto' = 'smooth'): () => void {
+    return this.scrollTo({ top: 0, behavior });
+  }
+
+  /**
+   * Scrolls to the bottom of the container.
+   */
+  public scrollToBottom(behavior: 'smooth' | 'auto' = 'smooth'): () => void {
+    return this.scrollTo({ top: this.maxScrollTop, behavior });
+  }
+
+  /**
+   * Scrolls by relative coordinate offsets.
+   */
+  public scrollBy(options: { top?: number; left?: number; behavior?: 'smooth' | 'auto'; duration?: number } = {}): () => void {
+    const top = options.top !== undefined ? this.scrollTop + options.top : this.scrollTop;
+    const left = options.left !== undefined ? this.scrollLeft + options.left : this.scrollLeft;
+    return this.scrollTo({ top, left, behavior: options.behavior, duration: options.duration });
+  }
+
+  /**
+   * Returns normalized scroll progression between 0 and 1.
+   */
+  public getScrollProgress(): { x: number; y: number } {
+    return {
+      x: this.maxScrollLeft > 0 ? Math.min(1, Math.max(0, this.scrollLeft / this.maxScrollLeft)) : 0,
+      y: this.maxScrollTop > 0 ? Math.min(1, Math.max(0, this.scrollTop / this.maxScrollTop)) : 0,
+    };
   }
 
   // ---------------------------------------------------------------------------
@@ -698,10 +770,11 @@ export abstract class UIElement {
     this.draw(ctx);
     ctx.restore();
 
-    // Clip child hierarchy if container specifies overflow hidden or is actively overflowing
+    // Clip child hierarchy if container specifies overflow hidden, scroll, or is actively overflowing
     const isClipped =
       this.styles.overflow === 'hidden' ||
-      ((this.styles.overflow === 'scroll' || this.styles.overflow === 'auto') &&
+      this.styles.overflow === 'scroll' ||
+      ((this.styles.overflow === 'auto' || Boolean(this.styles.scroll)) &&
         (this.maxScrollTop > 0 || this.maxScrollLeft > 0));
 
     if (isClipped) {
@@ -730,6 +803,102 @@ export abstract class UIElement {
 
     if (isClipped) {
       ctx.restore();
+    }
+
+    // Draw native subtle Canvas scrollbars if scrollable
+    this.drawScrollbars(ctx);
+
+    ctx.restore();
+  }
+
+  /**
+   * Renders subtle Canvas scrollbars if the container is scrollable and configured to show them.
+   */
+  protected drawScrollbars(ctx: CanvasRenderingContext2D): void {
+    const showScrollbar = this.styles.showScrollbar;
+    if (showScrollbar === false || showScrollbar === 'never') {
+      return;
+    }
+
+    const isExplicitScroll =
+      this.styles.overflow === 'scroll' ||
+      this.styles.overflow === 'auto' ||
+      Boolean(this.styles.scroll) ||
+      showScrollbar === true ||
+      showScrollbar === 'always' ||
+      showScrollbar === 'auto';
+
+    if (!isExplicitScroll) {
+      return;
+    }
+
+    const scrollbarSize = this.styles.scrollbarWidth ?? 5;
+    const scrollbarColor = this.styles.scrollbarColor ?? 'rgba(140, 140, 140, 0.45)';
+    const trackColor = this.styles.scrollbarTrackColor;
+    const padding = this.getComputedPadding();
+    const radius = scrollbarSize / 2;
+
+    const canScrollY =
+      this.maxScrollTop > 0 &&
+      this.styles.scroll !== 'horizontal' &&
+      this.styles.scrollDirection !== 'horizontal';
+    const canScrollX =
+      this.maxScrollLeft > 0 &&
+      this.styles.scroll !== 'vertical' &&
+      this.styles.scrollDirection !== 'vertical';
+
+    ctx.save();
+
+    // 1. Vertical scrollbar
+    if (canScrollY && this.worldRect.height > 0) {
+      const trackMargin = 3;
+      const trackX = this.worldRect.x + this.worldRect.width - scrollbarSize - trackMargin;
+      const trackY = this.worldRect.y + padding.top + trackMargin;
+      const trackH = Math.max(1, this.worldRect.height - padding.top - padding.bottom - trackMargin * 2);
+
+      if (trackColor) {
+        ctx.beginPath();
+        this.applyPath(ctx, trackX, trackY, scrollbarSize, trackH, radius);
+        ctx.fillStyle = trackColor;
+        ctx.fill();
+      }
+
+      const ratio = this.worldRect.height / (this.worldRect.height + this.maxScrollTop);
+      const thumbH = Math.max(16, Math.min(trackH, trackH * ratio));
+      const availableScrollDistance = trackH - thumbH;
+      const scrollRatio = this.maxScrollTop > 0 ? Math.min(1, Math.max(0, this.scrollTop / this.maxScrollTop)) : 0;
+      const thumbY = trackY + scrollRatio * availableScrollDistance;
+
+      ctx.beginPath();
+      this.applyPath(ctx, trackX, thumbY, scrollbarSize, thumbH, radius);
+      ctx.fillStyle = scrollbarColor;
+      ctx.fill();
+    }
+
+    // 2. Horizontal scrollbar
+    if (canScrollX && this.worldRect.width > 0) {
+      const trackMargin = 3;
+      const trackX = this.worldRect.x + padding.left + trackMargin;
+      const trackY = this.worldRect.y + this.worldRect.height - scrollbarSize - trackMargin;
+      const trackW = Math.max(1, this.worldRect.width - padding.left - padding.right - trackMargin * 2);
+
+      if (trackColor) {
+        ctx.beginPath();
+        this.applyPath(ctx, trackX, trackY, trackW, scrollbarSize, radius);
+        ctx.fillStyle = trackColor;
+        ctx.fill();
+      }
+
+      const ratio = this.worldRect.width / (this.worldRect.width + this.maxScrollLeft);
+      const thumbW = Math.max(16, Math.min(trackW, trackW * ratio));
+      const availableScrollDistance = trackW - thumbW;
+      const scrollRatio = this.maxScrollLeft > 0 ? Math.min(1, Math.max(0, this.scrollLeft / this.maxScrollLeft)) : 0;
+      const thumbX = trackX + scrollRatio * availableScrollDistance;
+
+      ctx.beginPath();
+      this.applyPath(ctx, thumbX, trackY, thumbW, scrollbarSize, radius);
+      ctx.fillStyle = scrollbarColor;
+      ctx.fill();
     }
 
     ctx.restore();

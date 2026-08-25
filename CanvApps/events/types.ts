@@ -16,6 +16,7 @@ export type UIEventType =
   | 'dblclick'
   | 'hover'
   | 'wheel'
+  | 'scroll'
   | 'focus'
   | 'blur'
   | 'keydown'
@@ -96,15 +97,25 @@ export class CanvasPointerEvent {
    */
   public readonly nativeEvent: Event;
 
+  /**
+   * Scroll offsets and deltas (populated for scroll/wheel events).
+   */
+  public scrollTop?: number;
+  public scrollLeft?: number;
+  public scrollY?: number;
+  public scrollX?: number;
+  public deltaX?: number;
+  public deltaY?: number;
+
   private _propagationStopped = false;
   private _defaultPrevented = false;
 
   constructor(
     type: UIEventType,
     target: UIElement,
-    nativeEvent: PointerEvent | MouseEvent | TouchEvent | WheelEvent,
-    canvasX: number,
-    canvasY: number
+    nativeEvent: PointerEvent | MouseEvent | TouchEvent | WheelEvent | Event,
+    canvasX: number = 0,
+    canvasY: number = 0
   ) {
     this.type = type;
     this.target = target;
@@ -113,17 +124,17 @@ export class CanvasPointerEvent {
     this.y = canvasY;
     this.nativeEvent = nativeEvent;
 
-    if ('clientX' in nativeEvent) {
-      this.clientX = nativeEvent.clientX;
-      this.clientY = nativeEvent.clientY;
-      this.button = nativeEvent.button;
-      this.buttons = nativeEvent.buttons;
-      this.ctrlKey = nativeEvent.ctrlKey;
-      this.shiftKey = nativeEvent.shiftKey;
-      this.altKey = nativeEvent.altKey;
-      this.metaKey = nativeEvent.metaKey;
+    if (nativeEvent && 'clientX' in nativeEvent) {
+      this.clientX = (nativeEvent as MouseEvent).clientX;
+      this.clientY = (nativeEvent as MouseEvent).clientY;
+      this.button = (nativeEvent as MouseEvent).button ?? 0;
+      this.buttons = (nativeEvent as MouseEvent).buttons ?? 0;
+      this.ctrlKey = (nativeEvent as MouseEvent).ctrlKey ?? false;
+      this.shiftKey = (nativeEvent as MouseEvent).shiftKey ?? false;
+      this.altKey = (nativeEvent as MouseEvent).altKey ?? false;
+      this.metaKey = (nativeEvent as MouseEvent).metaKey ?? false;
       this.pointerType = (nativeEvent as PointerEvent).pointerType || 'mouse';
-    } else {
+    } else if (nativeEvent && 'touches' in nativeEvent) {
       const touch = (nativeEvent as TouchEvent).touches[0] || (nativeEvent as TouchEvent).changedTouches[0];
       this.clientX = touch?.clientX ?? 0;
       this.clientY = touch?.clientY ?? 0;
@@ -134,6 +145,16 @@ export class CanvasPointerEvent {
       this.altKey = false;
       this.metaKey = false;
       this.pointerType = 'touch';
+    } else {
+      this.clientX = 0;
+      this.clientY = 0;
+      this.button = 0;
+      this.buttons = 0;
+      this.ctrlKey = false;
+      this.shiftKey = false;
+      this.altKey = false;
+      this.metaKey = false;
+      this.pointerType = 'custom';
     }
   }
 

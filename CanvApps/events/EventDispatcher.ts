@@ -138,7 +138,11 @@ export class EventDispatcher {
   private pointerStartY = 0;
   private lastPointerX = 0;
   private lastPointerY = 0;
+  private lastPointerTime = 0;
+  private pointerVelocityX = 0;
+  private pointerVelocityY = 0;
   private isDraggingScroll = false;
+  private activeScroller: UIElement | null = null;
 
   // ---------------------------------------------------------------------------
   // Native Event Handlers
@@ -153,12 +157,17 @@ export class EventDispatcher {
       }
     }
 
+    const now = typeof performance !== 'undefined' ? performance.now() : Date.now();
     this.isPointerDown = true;
     this.pointerStartX = e.clientX;
     this.pointerStartY = e.clientY;
     this.lastPointerX = e.clientX;
     this.lastPointerY = e.clientY;
+    this.lastPointerTime = now;
+    this.pointerVelocityX = 0;
+    this.pointerVelocityY = 0;
     this.isDraggingScroll = false;
+    this.activeScroller = null;
 
     const { x, y } = this.clientToCanvas(e.clientX, e.clientY);
     const target = this.hitTest(x, y);
@@ -216,16 +225,24 @@ export class EventDispatcher {
   private handlePointerMove(e: PointerEvent): void {
     const { x, y } = this.clientToCanvas(e.clientX, e.clientY);
     const target = this.hitTest(x, y);
+    const now = typeof performance !== 'undefined' ? performance.now() : Date.now();
 
     // Handle touch & pointer drag scrolling
     if (this.isPointerDown) {
       if (this.hasOpenModal()) {
         this.lastPointerX = e.clientX;
         this.lastPointerY = e.clientY;
+        this.lastPointerTime = now;
       } else {
         const dx = e.clientX - this.lastPointerX;
         const dy = e.clientY - this.lastPointerY;
+        const dt = Math.max(1, now - this.lastPointerTime);
         const totalDist = Math.hypot(e.clientX - this.pointerStartX, e.clientY - this.pointerStartY);
+
+        const instVx = dx / dt;
+        const instVy = dy / dt;
+        this.pointerVelocityX = this.pointerVelocityX * 0.3 + instVx * 0.7;
+        this.pointerVelocityY = this.pointerVelocityY * 0.3 + instVy * 0.7;
 
         if (totalDist > 6) {
           this.isDraggingScroll = true;
@@ -237,23 +254,50 @@ export class EventDispatcher {
 
           while (curr) {
             if (curr.styles.display !== 'contents') {
-              const isScrollContainer = !curr.parent || curr.styles.overflow === 'scroll' || curr.styles.overflow === 'auto';
+              const isScrollContainer =
+                !curr.parent ||
+                curr.styles.overflow === 'scroll' ||
+                curr.styles.overflow === 'auto' ||
+                Boolean(curr.styles.scroll);
+
+              const scrollDir = curr.styles.scroll ?? curr.styles.scrollDirection ?? 'both';
+              const allowX = (scrollDir === 'both' || scrollDir === 'horizontal') && curr.maxScrollLeft > 0;
+              const allowY = (scrollDir === 'both' || scrollDir === 'vertical') && curr.maxScrollTop > 0;
+
               // Horizontal scroll
-              if (dx !== 0 && isScrollContainer && curr.maxScrollLeft > 0) {
+              if (dx !== 0 && isScrollContainer && allowX) {
                 const prev = curr.scrollLeft;
                 curr.scrollLeft = Math.max(0, Math.min(curr.maxScrollLeft, curr.scrollLeft - dx));
                 if (curr.scrollLeft !== prev) {
+                  const scrollEvent = new CanvasPointerEvent('scroll', curr, e, x, y);
+                  scrollEvent.deltaX = -dx;
+                  scrollEvent.deltaY = 0;
+                  scrollEvent.scrollLeft = curr.scrollLeft;
+                  scrollEvent.scrollTop = curr.scrollTop;
+                  scrollEvent.scrollX = curr.scrollLeft;
+                  scrollEvent.scrollY = curr.scrollTop;
+                  curr.emit('scroll', scrollEvent);
                   curr.markRenderDirty();
                   didScroll = true;
+                  this.activeScroller = curr;
                 }
               }
               // Vertical scroll
-              if (dy !== 0 && isScrollContainer && curr.maxScrollTop > 0) {
+              if (dy !== 0 && isScrollContainer && allowY) {
                 const prev = curr.scrollTop;
                 curr.scrollTop = Math.max(0, Math.min(curr.maxScrollTop, curr.scrollTop - dy));
                 if (curr.scrollTop !== prev) {
+                  const scrollEvent = new CanvasPointerEvent('scroll', curr, e, x, y);
+                  scrollEvent.deltaX = 0;
+                  scrollEvent.deltaY = -dy;
+                  scrollEvent.scrollLeft = curr.scrollLeft;
+                  scrollEvent.scrollTop = curr.scrollTop;
+                  scrollEvent.scrollX = curr.scrollLeft;
+                  scrollEvent.scrollY = curr.scrollTop;
+                  curr.emit('scroll', scrollEvent);
                   curr.markRenderDirty();
                   didScroll = true;
+                  this.activeScroller = curr;
                 }
               }
               if (didScroll) {
@@ -266,6 +310,7 @@ export class EventDispatcher {
 
         this.lastPointerX = e.clientX;
         this.lastPointerY = e.clientY;
+        this.lastPointerTime = now;
       }
     }
 
@@ -305,9 +350,32 @@ export class EventDispatcher {
     const { x, y } = this.clientToCanvas(e.clientX, e.clientY);
     const target = this.hitTest(x, y);
     const wasDragging = this.isDraggingScroll;
+    const scroller = this.activeScroller;
 
     this.isPointerDown = false;
     this.isDraggingScroll = false;
+    this.activeScroller = null;
+
+    // Apply inertial momentum scrolling
+    if (wasDragging && scroller) {
+      const vx = this.pointerVelocityX;
+      const vy = this.pointerVelocityY;
+      if (Math.abs(vx) > 0.08 || Math.abs(vy) > 0.08) {
+        const momentumX = vx * 220;
+        const momentumY = vy * 220;
+        const targetX = Math.max(0, Math.min(scroller.maxScrollLeft, scroller.scrollLeft - momentumX));
+        const targetY = Math.max(0, Math.min(scroller.maxScrollTop, scroller.scrollTop - momentumY));
+
+        if (targetX !== scroller.scrollLeft || targetY !== scroller.scrollTop) {
+          scroller.scrollTo({
+            top: targetY,
+            left: targetX,
+            behavior: 'smooth',
+            duration: Math.min(500, Math.max(250, Math.hypot(momentumX, momentumY) * 1.1)),
+          });
+        }
+      }
+    }
 
     if (this.pressedElement) {
       this.pressedElement.isPressed = false;
@@ -334,6 +402,7 @@ export class EventDispatcher {
   private handlePointerCancel(e: PointerEvent): void {
     this.isPointerDown = false;
     this.isDraggingScroll = false;
+    this.activeScroller = null;
     const { x, y } = this.clientToCanvas(e.clientX, e.clientY);
     if (this.pressedElement) {
       this.pressedElement.isPressed = false;
@@ -371,16 +440,25 @@ export class EventDispatcher {
       let scrolled = false;
       while (curr) {
         if (curr.styles.display !== 'contents') {
-          const isScrollContainer = !curr.parent || curr.styles.overflow === 'scroll' || curr.styles.overflow === 'auto';
+          const isScrollContainer =
+            !curr.parent ||
+            curr.styles.overflow === 'scroll' ||
+            curr.styles.overflow === 'auto' ||
+            Boolean(curr.styles.scroll);
+
+          const scrollDir = curr.styles.scroll ?? curr.styles.scrollDirection ?? 'both';
+          const allowX = (scrollDir === 'both' || scrollDir === 'horizontal') && curr.maxScrollLeft > 0;
+          const allowY = (scrollDir === 'both' || scrollDir === 'vertical') && curr.maxScrollTop > 0;
+
           let didScroll = false;
-          if (e.deltaX !== 0 && isScrollContainer && curr.maxScrollLeft > 0) {
+          if (e.deltaX !== 0 && isScrollContainer && allowX) {
             const prev = curr.scrollLeft;
             curr.scrollLeft = Math.max(0, Math.min(curr.maxScrollLeft, curr.scrollLeft + e.deltaX));
             if (curr.scrollLeft !== prev) {
               didScroll = true;
             }
           }
-          if (e.deltaY !== 0 && isScrollContainer && curr.maxScrollTop > 0) {
+          if (e.deltaY !== 0 && isScrollContainer && allowY) {
             const prev = curr.scrollTop;
             curr.scrollTop = Math.max(0, Math.min(curr.maxScrollTop, curr.scrollTop + e.deltaY));
             if (curr.scrollTop !== prev) {
@@ -388,6 +466,14 @@ export class EventDispatcher {
             }
           }
           if (didScroll) {
+            const scrollEvent = new CanvasPointerEvent('scroll', curr, e, x, y);
+            scrollEvent.deltaX = e.deltaX;
+            scrollEvent.deltaY = e.deltaY;
+            scrollEvent.scrollLeft = curr.scrollLeft;
+            scrollEvent.scrollTop = curr.scrollTop;
+            scrollEvent.scrollX = curr.scrollLeft;
+            scrollEvent.scrollY = curr.scrollTop;
+            curr.emit('scroll', scrollEvent);
             curr.markRenderDirty();
             scrolled = true;
             break;

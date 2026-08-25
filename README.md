@@ -9,8 +9,8 @@
 </p>
 
 <p align="center">
-  <a href="https://www.npmjs.com/package/canvapps"><img src="https://img.shields.io/npm/v/canvapps.svg?style=flat-square&color=2563eb" alt="npm version" /></a>
-  <a href="https://www.npmjs.com/package/canvapps"><img src="https://img.shields.io/npm/dm/canvapps.svg?style=flat-square&color=059669" alt="npm downloads" /></a>
+  <a href="https://www.npmjs.com/package/@canvapps/core"><img src="https://img.shields.io/npm/v/@canvapps/core.svg?style=flat-square&color=2563eb" alt="npm version" /></a>
+  <a href="https://www.npmjs.com/package/@canvapps/core"><img src="https://img.shields.io/npm/dm/@canvapps/core.svg?style=flat-square&color=059669" alt="npm downloads" /></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue.svg?style=flat-square" alt="License: MIT" /></a>
   <a href="https://www.typescriptlang.org/"><img src="https://img.shields.io/badge/TypeScript-5.7+-3178c6?style=flat-square&logo=typescript&logoColor=white" alt="TypeScript" /></a>
   <a href="https://vitejs.dev/"><img src="https://img.shields.io/badge/Vite-6.x-646CFF?style=flat-square&logo=vite&logoColor=white" alt="Vite" /></a>
@@ -44,16 +44,16 @@ Whether building high-frequency dashboards, data visualizers, games, audio works
 
 ```bash
 # Using npm
-npm install canvapps
+npm install @canvapps/core
 
 # Using pnpm
-pnpm add canvapps
+pnpm add @canvapps/core
 
 # Using yarn
-yarn add canvapps
+yarn add @canvapps/core
 
 # Using bun
-bun add canvapps
+bun add @canvapps/core
 ```
 
 ### CDN Direct `<script>` Tag
@@ -70,9 +70,9 @@ Include the pre-bundled UMD build in any HTML file without build tools:
 </head>
 <body>
   <div id="app"></div>
-  <script src="https://cdn.jsdelivr.net/npm/canvapps/dist/canvapps.umd.cjs"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@canvapps/core/dist/canvapps.umd.cjs"></script>
   <script>
-    const { Engine, UIView, UIText, UIButton, signal, effect } = window.CanvApps;
+    const { Engine, UIView, UIText, UIButton, signal, effect } = window.canvapps;
 
     const count = signal(0);
     const engine = new Engine({ container: '#app', autoResize: true, backgroundColor: '#0f172a' });
@@ -96,7 +96,7 @@ Include the pre-bundled UMD build in any HTML file without build tools:
 ## 🚀 3-Minute Quickstart (TypeScript)
 
 ```ts
-import { Engine, UIView, UIText, UIButton, UIInput, signal, effect } from 'canvapps';
+import { Engine, UIView, UIText, UIButton, UIInput, signal, effect } from '@canvapps/core';
 
 // 1. Initialize the Engine
 const engine = new Engine({
@@ -665,7 +665,8 @@ Format `.cvs` files automatically on save with Prettier using Svelte parser inte
 
 ```ts
 import { defineConfig } from 'vite';
-import { canvappsPlugin } from 'canvapps/compiler';
+import { canvappsPlugin } from '@canvapps/vite-plugin';
+// or: import { canvappsPlugin } from '@canvapps/core/vite';
 
 export default defineConfig({
   plugins: [canvappsPlugin()],
@@ -679,7 +680,7 @@ export default defineConfig({
 Configure single-command multi-target distribution across Web, PWA, and Mobile:
 
 ```ts
-import { defineConfig } from 'canvapps';
+import { defineConfig } from '@canvapps/core';
 
 export default defineConfig({
   // Target: 'SPA' | 'PWA' | 'CAPACITOR'

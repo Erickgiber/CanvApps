@@ -1,0 +1,24 @@
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "module": "ESNext",
+    "lib": ["ES2020", "DOM", "DOM.Iterable"],
+    "moduleResolution": "bundler",
+    "strict": true,
+    "noImplicitAny": true,
+    "strictNullChecks": true,
+    "resolveJsonModule": true,
+    "esModuleInterop": true,
+    "declaration": true,
+    "emitDeclarationOnly": true,
+    "declarationMap": true,
+    "skipLibCheck": true,
+    "baseUrl": ".",
+    "paths": {
+      "@canvapps": ["CanvApps/index.ts"],
+      "@canvapps/*": ["CanvApps/*"]
+    }
+  },
+  "include": ["CanvApps/**/*"],
+  "exclude": ["node_modules", "dist", "dist-app", "dist-demo", "CanvApps/extension", "src"]
+}

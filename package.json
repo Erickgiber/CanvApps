@@ -1,43 +1,50 @@
 {
-  "name": "canvapps",
-  "version": "0.1.0",
+  "name": "@canvapps/core",
+  "version": "0.1.1",
   "description": "High-performance 100% Canvas-based UI Framework for SPA, PWA, and Native Mobile via Capacitor",
   "type": "module",
-  "main": "./dist/canvapps.js",
+  "main": "./dist/canvapps.cjs",
   "module": "./dist/canvapps.js",
-  "types": "./dist/index.d.ts",
+  "types": "./dist/types/index.d.ts",
+  "unpkg": "./dist/canvapps.umd.cjs",
+  "jsdelivr": "./dist/canvapps.umd.cjs",
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/canvapps.js"
+      "types": "./dist/types/index.d.ts",
+      "import": "./dist/canvapps.js",
+      "require": "./dist/canvapps.cjs"
     },
-    "./core": {
-      "types": "./dist/core/index.d.ts",
-      "import": "./dist/core/index.js"
+    "./vite": {
+      "types": "./dist/types/vite.d.ts",
+      "import": "./dist/vite/index.js",
+      "require": "./dist/vite/index.cjs"
     },
-    "./nodes": {
-      "types": "./dist/nodes/index.d.ts",
-      "import": "./dist/nodes/index.js"
-    },
-    "./layout": {
-      "types": "./dist/layout/index.d.ts",
-      "import": "./dist/layout/index.js"
+    "./compiler": {
+      "types": "./dist/types/compiler/index.d.ts",
+      "import": "./dist/compiler/index.js",
+      "require": "./dist/compiler/index.cjs"
     }
   },
   "files": [
     "dist",
-    "CanvApps",
-    "logo.svg",
-    "README.md"
+    "README.md",
+    "LICENSE",
+    "logo.svg"
   ],
   "bin": {
-    "canvapps": "./CanvApps/cli/bin.ts"
+    "canvapps": "dist/cli/bin.js"
   },
   "scripts": {
     "dev": "vite",
-    "build": "tsc --noEmit && vite build && tsx CanvApps/cli/bin.ts build",
+    "build": "npm run build:packages && npm run build:app",
+    "build:packages": "tsx scripts/build-packages.ts",
+    "build:app": "tsx CanvApps/cli/bin.ts build",
     "preview": "vite preview --outDir dist-app",
-    "package:extension": "tsx CanvApps/extension/package-vsix.ts"
+    "prepublishOnly": "npm run build:packages",
+    "package:extension": "tsx CanvApps/extension/package-vsix.ts",
+    "publish:core": "npm publish --access public",
+    "publish:plugin": "cd packages/vite-plugin-canvapps && npm publish --access public",
+    "publish:all": "npm run build:packages && npm run publish:core && npm run publish:plugin"
   },
   "keywords": [
     "canvas",
@@ -46,10 +53,37 @@
     "typescript",
     "pwa",
     "capacitor",
-    "canvas-ui"
+    "canvas-ui",
+    "vite-plugin",
+    "signals",
+    "declarative-ui",
+    "svelte-like",
+    "cvs"
   ],
-  "author": "Erick Giber",
+  "author": "Erickgiber",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Erickgiber/CanvApps.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Erickgiber/CanvApps/issues"
+  },
+  "homepage": "https://github.com/Erickgiber/CanvApps#readme",
+  "publishConfig": {
+    "access": "public"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "peerDependencies": {
+    "vite": ">=5.0.0 || >=6.0.0"
+  },
+  "peerDependenciesMeta": {
+    "vite": {
+      "optional": true
+    }
+  },
   "devDependencies": {
     "@types/node": "^22.13.5",
     "tsx": "^4.23.12",

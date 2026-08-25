@@ -68,5 +68,5 @@ export type ASTNode = ASTElement | ASTTextNode | ASTIfBlock | ASTEachBlock;
  */
 export interface CVSComponentAST {
   script: string;
-  template: ASTElement | null;
+  template: ASTNode | null;
 }

@@ -34,7 +34,7 @@ export class CVSParser {
   /**
    * Parses the template markup into an ASTElement root.
    */
-  private static parseTemplate(templateSource: string): ASTElement | null {
+  private static parseTemplate(templateSource: string): ASTNode | null {
     const trimmed = templateSource.trim();
     if (!trimmed) {
       return null;
@@ -157,13 +157,15 @@ export class CVSParser {
 
         // Parse attributes
         for (const attr of token.attributes || []) {
-          if (attr.name === '*if' || attr.name === '@if') {
+          if (attr.name === '*if' || attr.name === '@if' || attr.name === ':if') {
             directives.ifCondition = attr.value;
           } else if (
             attr.name === '*for' ||
             attr.name === '@for' ||
+            attr.name === ':for' ||
             attr.name === '*each' ||
             attr.name === '@each' ||
+            attr.name === ':each' ||
             attr.name === 'each'
           ) {
             directives.forLoop = this.parseForDirective(attr.value);
@@ -226,7 +228,7 @@ export class CVSParser {
 
     while (index < tokens.length) {
       const node = parseNode();
-      if (node && node.type === 'element') {
+      if (node && (node.type === 'element' || node.type === 'each-block' || node.type === 'if-block')) {
         return node;
       }
     }
@@ -555,32 +557,28 @@ export class CVSParser {
       }
       const subParts = rhs.split(',').map((s) => s.trim());
       return {
-        item: subParts[0],
-        index: subParts[1],
+        item: subParts[0] || 'item',
+        index: subParts[1] ? subParts[1] : undefined,
         iterable,
       };
     }
 
-    // 2. Support standard "item in items" or "(item, index) in items"
+    // 2. Support standard "item in items" or "(item, index) in items" or "item, index in items"
     const parts = value.split(/\bin\b/);
     if (parts.length !== 2) {
       return { item: 'item', iterable: value.trim() };
     }
 
-    const lhs = parts[0].trim();
+    let lhs = parts[0].trim();
     const iterable = parts[1].trim();
 
     if (lhs.startsWith('(') && lhs.endsWith(')')) {
-      const subParts = lhs.slice(1, -1).split(',').map((s) => s.trim());
-      return {
-        item: subParts[0],
-        index: subParts[1],
-        iterable,
-      };
+      lhs = lhs.slice(1, -1).trim();
     }
-
+    const subParts = lhs.split(',').map((s) => s.trim());
     return {
-      item: lhs,
+      item: subParts[0] || 'item',
+      index: subParts[1] ? subParts[1] : undefined,
       iterable,
     };
   }

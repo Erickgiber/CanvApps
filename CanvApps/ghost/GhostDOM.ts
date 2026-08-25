@@ -4,7 +4,7 @@ import { UIElement } from '../core/UIElement';
  * Interface representing a Canvas element that participates in the Ghost DOM layer.
  */
 export interface GhostTarget extends UIElement {
-  getGhostType(): 'input' | 'textarea' | 'select' | 'button' | 'text' | 'accessible';
+  getGhostType(): 'input' | 'textarea' | 'select' | 'button' | 'text' | 'accessible' | 'anchor' | 'link';
   getId?(): string;
   getName?(): string;
   getValue?(): string;
@@ -13,6 +13,11 @@ export interface GhostTarget extends UIElement {
   isSelectable?(): boolean;
   getPlaceholder?(): string;
   getInputType?(): string;
+  getHref?(): string;
+  getTarget?(): string;
+  getRel?(): string;
+  getDownload?(): string | boolean;
+  navigate?(): void;
   getSelectionRange?(): { start: number; end: number };
   onNativeInput?(val: string, cursorIndex?: number): void;
   onNativeKeyDown?(e: KeyboardEvent): void;
@@ -20,6 +25,7 @@ export interface GhostTarget extends UIElement {
   onNativeFocus?(): void;
   onSelectionChange?(start: number, end: number): void;
 }
+
 
 /**
  * GhostDOM Manager: Mounts semantically accurate HTML elements matching
@@ -193,6 +199,44 @@ export class GhostDOM {
           zIndex: '1',
         });
         ghost = span;
+      } else if (type === 'anchor' || type === 'link') {
+        const a = document.createElement('a');
+        a.id = elId;
+        a.className = 'canvapps-ghost-anchor';
+        const href = target.getHref ? target.getHref() : (target.styles as any)?.href || '';
+        const aTarget = target.getTarget ? target.getTarget() : (target.styles as any)?.target || '_self';
+        const rel = target.getRel ? target.getRel() : (target.styles as any)?.rel || (aTarget === '_blank' ? 'noopener noreferrer' : '');
+        const download = target.getDownload ? target.getDownload() : (target.styles as any)?.download;
+        const textContent = target.getText ? target.getText() : (target.styles as any)?.text || (target.styles as any)?.label || '';
+        const disabled = Boolean((target.styles as any)?.disabled);
+
+        if (href) a.href = href;
+        if (aTarget) a.target = aTarget;
+        if (rel) a.rel = rel;
+        if (download) {
+          a.download = typeof download === 'string' ? download : '';
+        }
+        if (textContent) {
+          a.textContent = textContent;
+          a.setAttribute('aria-label', textContent);
+        }
+
+        Object.assign(a.style, {
+          position: 'absolute',
+          opacity: '0',
+          pointerEvents: 'auto',
+          border: 'none',
+          outline: 'none',
+          background: 'transparent',
+          color: 'transparent',
+          padding: '0',
+          margin: '0',
+          cursor: disabled ? 'not-allowed' : 'pointer',
+          zIndex: '1',
+          userSelect: 'none',
+          WebkitUserSelect: 'none',
+        });
+        ghost = a;
       } else {
         ghost = document.createElement('div');
         ghost.id = elId;
@@ -203,7 +247,7 @@ export class GhostDOM {
       ghost.setAttribute('name', elName);
       ghost.setAttribute('data-canvapps-id', elId);
 
-      if (type !== 'text') {
+      if (type !== 'text' && type !== 'anchor' && type !== 'link') {
         // Invisible input/interactive
         Object.assign(ghost.style, {
           position: 'absolute',
@@ -249,7 +293,22 @@ export class GhostDOM {
     const { x, y, width, height } = target.worldRect;
     const isVisible = target.visible && target.styles.display !== 'none';
 
-    if (ghost instanceof HTMLInputElement || ghost instanceof HTMLTextAreaElement) {
+    const isInputOrTextarea =
+      type === 'input' ||
+      type === 'textarea' ||
+      (typeof HTMLInputElement !== 'undefined' && ghost instanceof HTMLInputElement) ||
+      (typeof HTMLTextAreaElement !== 'undefined' && ghost instanceof HTMLTextAreaElement);
+
+    const isAnchor =
+      type === 'anchor' ||
+      type === 'link' ||
+      (typeof HTMLAnchorElement !== 'undefined' && ghost instanceof HTMLAnchorElement);
+
+    const isText =
+      type === 'text' ||
+      (typeof HTMLSpanElement !== 'undefined' && ghost instanceof HTMLSpanElement);
+
+    if (isInputOrTextarea) {
       Object.assign(ghost.style, {
         left: `${x}px`,
         top: `${y}px`,
@@ -260,22 +319,55 @@ export class GhostDOM {
       });
 
       const currentTargetVal = target.getValue ? target.getValue() ?? '' : '';
-      if (ghost.value !== currentTargetVal) {
-        const prevStart = ghost.selectionStart;
-        const prevEnd = ghost.selectionEnd;
-        ghost.value = currentTargetVal;
+      if ((ghost as any).value !== currentTargetVal) {
+        const prevStart = (ghost as any).selectionStart;
+        const prevEnd = (ghost as any).selectionEnd;
+        (ghost as any).value = currentTargetVal;
         if (prevStart !== null && prevEnd !== null && typeof document !== 'undefined' && document.activeElement === ghost) {
           try {
-            ghost.setSelectionRange(prevStart, prevEnd);
+            (ghost as any).setSelectionRange(prevStart, prevEnd);
           } catch {
             // ignore non-text inputs
           }
         }
       }
       if (target.getPlaceholder) {
-        ghost.placeholder = target.getPlaceholder() ?? '';
+        (ghost as any).placeholder = target.getPlaceholder() ?? '';
       }
-    } else if (ghost instanceof HTMLSpanElement || target.getGhostType() === 'text') {
+    } else if (isAnchor) {
+      const href = target.getHref ? target.getHref() : (target.styles as any)?.href || '';
+      const aTarget = target.getTarget ? target.getTarget() : (target.styles as any)?.target || '_self';
+      const rel = target.getRel ? target.getRel() : (target.styles as any)?.rel || (aTarget === '_blank' ? 'noopener noreferrer' : '');
+      const download = target.getDownload ? target.getDownload() : (target.styles as any)?.download;
+      const textContent = target.getText ? target.getText() : (target.styles as any)?.text || (target.styles as any)?.label || '';
+      const disabled = Boolean((target.styles as any)?.disabled);
+
+      if (href) {
+        (ghost as any).href = href;
+      } else if (typeof (ghost as any).removeAttribute === 'function') {
+        (ghost as any).removeAttribute('href');
+      }
+      if (aTarget) (ghost as any).target = aTarget;
+      if (rel) (ghost as any).rel = rel;
+      if (download) {
+        (ghost as any).download = typeof download === 'string' ? download : '';
+      }
+      if (ghost.textContent !== textContent) {
+        ghost.textContent = textContent;
+        if (typeof (ghost as any).setAttribute === 'function') {
+          (ghost as any).setAttribute('aria-label', textContent);
+        }
+      }
+
+      Object.assign(ghost.style, {
+        left: `${x}px`,
+        top: `${y}px`,
+        width: `${Math.max(1, width)}px`,
+        height: `${Math.max(1, height)}px`,
+        display: isVisible ? 'block' : 'none',
+        cursor: disabled ? 'not-allowed' : 'pointer',
+      });
+    } else if (isText) {
       const padding = target.getComputedPadding ? target.getComputedPadding() : { top: 0, right: 0, bottom: 0, left: 0 };
       const innerX = x + padding.left;
       const innerY = y + padding.top;
@@ -327,29 +419,53 @@ export class GhostDOM {
    * Binds bidirectional native events between ghost HTML element and Canvas target.
    */
   private bindEvents(ghost: HTMLElement, target: GhostTarget): void {
-    if (ghost instanceof HTMLInputElement || ghost instanceof HTMLTextAreaElement) {
-      ghost.addEventListener('input', () => {
-        const val = ghost.value;
-        const cursor = ghost.selectionStart ?? val.length;
-        if (target.onNativeInput) {
-          target.onNativeInput(val, cursor);
-        }
-      });
+    const type = target.getGhostType();
+    const isAnchor =
+      type === 'anchor' ||
+      type === 'link' ||
+      (typeof HTMLAnchorElement !== 'undefined' && ghost instanceof HTMLAnchorElement);
 
-      ghost.addEventListener('keydown', ((e: KeyboardEvent) => {
-        if (target.onNativeKeyDown) {
-          target.onNativeKeyDown(e);
+    const isInputOrTextarea =
+      type === 'input' ||
+      type === 'textarea' ||
+      (typeof HTMLInputElement !== 'undefined' && ghost instanceof HTMLInputElement) ||
+      (typeof HTMLTextAreaElement !== 'undefined' && ghost instanceof HTMLTextAreaElement);
+
+    if (isAnchor) {
+      ghost.addEventListener('click', ((e: MouseEvent) => {
+        if ((target.styles as any)?.disabled) {
+          e.preventDefault();
+          return;
+        }
+
+        const isModified = e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0;
+        const href =
+          (typeof (ghost as any).getAttribute === 'function' ? (ghost as any).getAttribute('href') : null) ||
+          (ghost as any).href ||
+          (target.getHref ? target.getHref() : (target.styles as any)?.href || '');
+        const aTarget =
+          (ghost as any).target ||
+          (target.getTarget ? target.getTarget() : (target.styles as any)?.target || '_self');
+
+        const isExternal =
+          href.startsWith('http://') ||
+          href.startsWith('https://') ||
+          href.startsWith('mailto:') ||
+          href.startsWith('tel:') ||
+          href.startsWith('//');
+        const isBlank = aTarget === '_blank';
+
+        if (!isModified && !isExternal && !isBlank && href) {
+          e.preventDefault();
+          if (typeof target.navigate === 'function') {
+            target.navigate();
+          } else {
+            target.emit('click', e as any);
+          }
+        } else {
+          target.emit('click', e as any);
         }
       }) as EventListener);
-
-      ghost.addEventListener('blur', () => {
-        if (target.isFocused) {
-          target.blur();
-        }
-        if (target.onNativeBlur) {
-          target.onNativeBlur();
-        }
-      });
 
       ghost.addEventListener('focus', () => {
         if (!target.isFocused) {
@@ -360,13 +476,58 @@ export class GhostDOM {
         }
       });
 
-      ghost.addEventListener('select', () => {
-        if (target.onSelectionChange && ghost.selectionStart !== null && ghost.selectionEnd !== null) {
-          target.onSelectionChange(ghost.selectionStart, ghost.selectionEnd);
+      ghost.addEventListener('blur', () => {
+        if (target.isFocused) {
+          target.blur();
+        }
+        if (target.onNativeBlur) {
+          target.onNativeBlur();
+        }
+      });
+    } else if (isInputOrTextarea) {
+      const inputEl = ghost as HTMLInputElement | HTMLTextAreaElement;
+
+      inputEl.addEventListener('input', () => {
+        const val = inputEl.value;
+        const cursor = inputEl.selectionStart ?? val.length;
+        if (target.onNativeInput) {
+          target.onNativeInput(val, cursor);
+        }
+      });
+
+      inputEl.addEventListener('keydown', ((e: KeyboardEvent) => {
+        if (target.onNativeKeyDown) {
+          target.onNativeKeyDown(e);
+        }
+      }) as EventListener);
+
+      inputEl.addEventListener('blur', () => {
+        if (target.isFocused) {
+          target.blur();
+        }
+        if (target.onNativeBlur) {
+          target.onNativeBlur();
+        }
+      });
+
+      inputEl.addEventListener('focus', () => {
+        if (!target.isFocused) {
+          target.focus();
+        }
+        if (target.onNativeFocus) {
+          target.onNativeFocus();
+        }
+      });
+
+      inputEl.addEventListener('select', () => {
+        if (target.onSelectionChange && inputEl.selectionStart !== null && inputEl.selectionEnd !== null) {
+          target.onSelectionChange(inputEl.selectionStart, inputEl.selectionEnd);
         }
       });
     }
+
   }
+
 
   /**
    * Removes a specific ghost target by its element ID.

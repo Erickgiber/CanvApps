@@ -271,7 +271,10 @@ export abstract class UIElement {
     'scroll',
     'scrollDirection',
     'showScrollbar',
+    'text',
+    'label',
   ]);
+
 
   // ---------------------------------------------------------------------------
   // Style and Invalidation

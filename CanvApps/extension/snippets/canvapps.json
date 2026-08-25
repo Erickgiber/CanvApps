@@ -71,5 +71,20 @@
       "const ${1:state} = signal<${2:string}>(${3:''});"
     ],
     "description": "Create a reactive signal"
+  },
+  "Anchor / Link Element": {
+    "prefix": "cvs-anchor",
+    "body": [
+      "<a href=\"${1:https://example.com}\"${2: target=\"_blank\"} color=\"${3:#1a73e8}\" hoverColor=\"${4:#174ea6}\" underline=\"${5|hover,always,never|}\">${6:Link text}</a>"
+    ],
+    "description": "Create a UIAnchor / UILink hyperlink element"
+  },
+  "Link Element (Alias)": {
+    "prefix": "cvs-link",
+    "body": [
+      "<link href=\"${1:/settings}\" color=\"${2:#1a73e8}\" underline=\"${3|hover,always,never|}\">${4:Link text}</link>"
+    ],
+    "description": "Create a UIAnchor / UILink hyperlink element"
   }
 }
+

@@ -31,6 +31,8 @@ export class CLIBuilder {
     console.log(`🎯 Target: [${target}]`);
     console.log(`📁 Output Directory: ${outputDir}\n`);
 
+    const includeBanner = config.banner !== false;
+
     // 1. Execute Vite Application Bundling
     console.log(`⚡ [Step 1/2]: Compiling Canvas Application & .cvs Components with Vite...`);
     const localCanvAppsPath = path.resolve(cwd, 'CanvApps');
@@ -43,9 +45,9 @@ export class CLIBuilder {
       configFile: false,
       root: cwd,
       base: './',
-      plugins: [canvappsPlugin()],
+      plugins: [canvappsPlugin({ banner: includeBanner })],
       esbuild: {
-        legalComments: 'none',
+        legalComments: includeBanner ? 'inline' : 'none',
       },
       build: {
         outDir: outputDir,
@@ -79,7 +81,10 @@ export class CLIBuilder {
     fs.writeFileSync(path.resolve(outputDir, '.nojekyll'), '', 'utf-8');
 
     // GitHub Pages 404.html SPA Deep Link Redirector (Restores Clean Paths)
-    const github404Html = `<!DOCTYPE html>
+    const github404Comment = includeBanner
+      ? `<!--\n  CanvApps SPA Routing Fallback for GitHub Pages\n  Built with CanvApps Framework\n  Open Source • MIT License • https://github.com/Erickgiber/CanvApps\n-->\n`
+      : '';
+    const github404Html = `${github404Comment}<!DOCTYPE html>
 <html>
   <head>
     <meta charset="utf-8">
@@ -107,7 +112,11 @@ export class CLIBuilder {
     fs.writeFileSync(path.resolve(outputDir, '404.html'), github404Html, 'utf-8');
 
     // Netlify _redirects rule
-    fs.writeFileSync(path.resolve(outputDir, '_redirects'), '/*    /index.html   200\n', 'utf-8');
+    const redirectsComment = includeBanner
+      ? `# Built with CanvApps Framework | https://github.com/Erickgiber/CanvApps\n`
+      : '';
+    fs.writeFileSync(path.resolve(outputDir, '_redirects'), `${redirectsComment}/*    /index.html   200\n`, 'utf-8');
+
 
     // Vercel vercel.json rewrite configuration
     const vercelConfig = JSON.stringify(

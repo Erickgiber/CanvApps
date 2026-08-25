@@ -6,8 +6,14 @@ export default defineConfig({
   title: 'CanvApps Application',
   outDir: 'dist-app',
 
+  // Build Watermark Banner: Set to false to disable auto-generated open-source attribution banners in JS/HTML
+  banner: true,
+
+
+
   // Global Text Selection Strategy (false = zero Ghost DOM overhead; developers opt-in per component)
   selectable: false,
+
 
   // Optional: Uncomment to configure Progressive Web App (target: 'PWA')
   pwa: {

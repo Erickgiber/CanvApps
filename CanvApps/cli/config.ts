@@ -72,10 +72,17 @@ export interface CanvAppsConfig {
   outDir?: string;
 
   /**
+   * Whether to inject the official CanvApps open-source build watermark comments into final application bundles and HTML.
+   * Defaults to true. Set to false to disable auto-generated watermark banners.
+   */
+  banner?: boolean;
+
+  /**
    * Global text selection strategy. If true, all text nodes are selectable by default.
    * Defaults to false (only nodes with selectable="true" are mounted in Ghost DOM).
    */
   selectable?: boolean;
+
 
   /**
    * PWA metadata and service worker generation options.

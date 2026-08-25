@@ -574,6 +574,9 @@ export default defineConfig({
   title: 'CanvApps Production App',
   outDir: 'dist-app',
 
+  // Open-source build watermark comments in output JS/HTML (true by default)
+  banner: true,
+
   // Automated PWA Assets & Offline Service Worker
   pwa: {
     name: 'CanvApps PWA',
@@ -591,6 +594,21 @@ export default defineConfig({
   },
 });
 ```
+
+### Build Branding & Watermark Banners
+
+By default, CanvApps automatically adds a clean open-source watermark comment banner at the top of your compiled application JS bundles and `index.html`:
+
+```javascript
+/*!
+ * Built with CanvApps Framework
+ * Open Source • MIT License • https://github.com/Erickgiber/CanvApps
+ */
+```
+
+To disable or customize this behavior:
+- In `canvapps.config.ts`, set `banner: false`.
+- In `vite.config.ts`, pass `canvappsPlugin({ banner: false })`.
 
 ### CLI Build Commands
 
@@ -612,9 +630,14 @@ import { defineConfig } from 'vite';
 import { canvappsPlugin } from '@canvapps/vite-plugin';
 
 export default defineConfig({
-  plugins: [canvappsPlugin()],
+  plugins: [
+    canvappsPlugin({
+      banner: true, // Set to false to disable build watermark banner
+    }),
+  ],
 });
 ```
+
 
 ---
 

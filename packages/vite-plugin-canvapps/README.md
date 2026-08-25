@@ -2,6 +2,8 @@
 
 Official [Vite](https://vitejs.dev/) plugin for compiling **[CanvApps](https://github.com/Erickgiber/CanvApps)** declarative `.cvs` Single-File Canvas UI Components with instant Hot Module Replacement (HMR).
 
+> **CanvApps: The first compiled UI framework that renders at 120 FPS by eliminating the DOM. Svelte-like syntax, native performance.**
+
 ---
 
 ## 📦 Installation
@@ -15,6 +17,9 @@ pnpm add -D @canvapps/vite-plugin @canvapps/core
 
 # Using yarn
 yarn add -D @canvapps/vite-plugin @canvapps/core
+
+# Using bun
+bun add -D @canvapps/vite-plugin @canvapps/core
 ```
 
 ---
@@ -51,7 +56,7 @@ export default defineConfig({
 
 <view width="100%" height="100%" alignItems="center" justifyContent="center" gap="16">
   <text fontSize="24" color="#ffffff">
-    Clicks: {count.value}
+    Clicks: {{ count.value }}
   </text>
 
   <button
@@ -59,7 +64,7 @@ export default defineConfig({
     backgroundColor="#2563eb"
     labelColor="#ffffff"
     padding="[10, 20]"
-    onClick="increment()"
+    @click="increment"
   />
 </view>
 ```

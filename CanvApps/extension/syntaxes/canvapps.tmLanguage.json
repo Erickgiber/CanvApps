@@ -152,7 +152,24 @@
       "patterns": [
         {
           "name": "meta.directive.if.canvapps",
-          "begin": "(@if)\\s*(=)\\s*(\"|')",
+          "begin": "(@if|\\*if)\\s*(=)\\s*(\"|')",
+          "beginCaptures": {
+            "1": { "name": "keyword.control.directive.canvapps" },
+            "2": { "name": "punctuation.separator.key-value.html" },
+            "3": { "name": "punctuation.definition.string.begin.html" }
+          },
+          "end": "(\"|')",
+          "endCaptures": {
+            "1": { "name": "punctuation.definition.string.end.html" }
+          },
+          "patterns": [
+            { "include": "source.ts" },
+            { "include": "#ts-embedded" }
+          ]
+        },
+        {
+          "name": "meta.directive.each.canvapps",
+          "begin": "(@each|\\*each|@for|\\*for)\\s*(=)\\s*(\"|')",
           "beginCaptures": {
             "1": { "name": "keyword.control.directive.canvapps" },
             "2": { "name": "punctuation.separator.key-value.html" },

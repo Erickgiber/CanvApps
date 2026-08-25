@@ -177,14 +177,58 @@ ${itemCodeLines.join('\n')}
       };
     }
 
+    // Directive: forLoop attribute on element (e.g. <view @each="items as item, index"> or <view *for="...">)
+    if (element.directives.forLoop) {
+      const forLoop = element.directives.forLoop;
+      const forContainer = this.nextId('forContainer');
+      const elementWithoutFor: ASTElement = {
+        ...element,
+        directives: {
+          ...element.directives,
+          forLoop: undefined,
+        },
+      };
+      const { code: itemCode, rootVar: itemRoot } = this.generateNode(elementWithoutFor, true);
+      const indexParam = forLoop.index ? `, ${forLoop.index}` : '';
+
+      return {
+        code: `
+  const ${forContainer} = new UIView({ display: 'contents' });
+  effect(() => {
+    ${forContainer}.removeAllChildren();
+    const items = ${forLoop.iterable};
+    if (Array.isArray(items)) {
+      items.forEach((${forLoop.item}${indexParam}) => {
+${itemCode}
+        ${forContainer}.addChild(${itemRoot});
+      });
+    }
+  });
+`,
+        rootVar: forContainer,
+      };
+    }
+
     // Single-item conditional tag attribute: @if="condition" or *if="condition"
     if (element.directives.ifCondition) {
       const condition = element.directives.ifCondition;
-      const elementWithoutIf = {
+      const elementWithoutIf: ASTElement = {
         ...element,
         directives: { ...element.directives, ifCondition: undefined },
       };
       const { code: itemCode, rootVar: itemRoot } = this.generateNode(elementWithoutIf, inLoop);
+
+      if (inLoop) {
+        const isVisVar = this.nextId('isVis');
+        return {
+          code: `${itemCode}
+  const ${isVisVar} = Boolean(${condition});
+  ${itemRoot}.visible = ${isVisVar};
+  ${itemRoot}.setStyle({ display: ${isVisVar} ? 'flex' : 'none' });
+`,
+          rootVar: itemRoot,
+        };
+      }
 
       return {
         code: `${itemCode}

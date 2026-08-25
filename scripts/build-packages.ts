@@ -175,11 +175,23 @@ async function generateDeclarations() {
 
   // Standalone vite plugin declarations
   const pluginDts = `import type { Plugin } from 'vite';
-export declare function canvappsPlugin(): Plugin;
+
+export interface CanvAppsPluginOptions {
+  /**
+   * Whether to inject the official CanvApps open-source build watermark comments into output JS bundles and HTML.
+   * Defaults to true.
+   */
+  banner?: boolean;
+}
+
+export declare const CANVAPPS_BANNER: string;
+export declare const CANVAPPS_HTML_BANNER: string;
+export declare function canvappsPlugin(options?: CanvAppsPluginOptions): Plugin;
 export default canvappsPlugin;
 export type * from '@canvapps/core/compiler';
 `;
   fs.writeFileSync(path.join(pluginDistDir, 'index.d.ts'), pluginDts, 'utf-8');
+
 
   console.log('  ✓ Type declarations created');
 }

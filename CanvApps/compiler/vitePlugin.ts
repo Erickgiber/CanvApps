@@ -2,10 +2,33 @@ import { compileCVS } from './transformer';
 import { transformSync } from 'esbuild';
 import type { Plugin } from 'vite';
 
+export const CANVAPPS_BANNER = `/*!
+ * Built with CanvApps Framework
+ * Open Source • MIT License • https://github.com/Erickgiber/CanvApps
+ */`;
+
+export const CANVAPPS_HTML_BANNER = `<!--
+  ⚡ Built with CanvApps Framework
+  🌐 Open Source • MIT License • https://github.com/Erickgiber/CanvApps
+-->`;
+
+/**
+ * Options for configuring the CanvApps Vite plugin.
+ */
+export interface CanvAppsPluginOptions {
+  /**
+   * Whether to inject the official CanvApps open-source build watermark comments into final application bundles and HTML.
+   * Defaults to true.
+   */
+  banner?: boolean;
+}
+
 /**
  * Official Vite Plugin for compiling CanvApps `.cvs` declarative canvas components.
  */
-export function canvappsPlugin(): Plugin {
+export function canvappsPlugin(options?: CanvAppsPluginOptions): Plugin {
+  const includeBanner = options?.banner !== false;
+
   return {
     name: 'vite-plugin-canvapps',
     enforce: 'pre',
@@ -47,6 +70,27 @@ if (import.meta.hot) {
       }
     },
 
+    transformIndexHtml(html: string) {
+      if (!includeBanner || html.includes('Built with CanvApps Framework')) {
+        return html;
+      }
+      if (html.includes('<head>')) {
+        return html.replace('<head>', `<head>\n  ${CANVAPPS_HTML_BANNER}`);
+      }
+      return `${CANVAPPS_HTML_BANNER}\n${html}`;
+    },
+
+    generateBundle(_options, bundle) {
+      if (!includeBanner) return;
+      for (const [fileName, file] of Object.entries(bundle)) {
+        if (file.type === 'chunk' && (fileName.endsWith('.js') || fileName.endsWith('.mjs') || fileName.endsWith('.cjs'))) {
+          if (!file.code.startsWith('/*!') && !file.code.includes('Built with CanvApps Framework')) {
+            file.code = `${CANVAPPS_BANNER}\n${file.code}`;
+          }
+        }
+      }
+    },
+
     handleHotUpdate({ file, server }) {
       if (file.endsWith('.cvs')) {
         server.ws.send({
@@ -59,3 +103,4 @@ if (import.meta.hot) {
 }
 
 export default canvappsPlugin;
+

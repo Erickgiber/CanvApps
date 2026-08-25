@@ -1,4 +1,5 @@
-import { createStore, computed } from '@canvapps';
+import { createStore, computed, setThemeColor } from '@canvapps';
+
 
 /**
  * User Profile & Session State Model
@@ -120,17 +121,22 @@ export const sessionStore = createStore<UserSessionState>(initialSessionState, {
   persist: false,
 });
 
-// Automatically persist theme changes to localStorage whenever theme updates
+// Automatically persist theme changes to localStorage and update status bar meta tags
 if (typeof window !== 'undefined') {
-  if (typeof localStorage !== 'undefined') {
-    sessionStore.select('theme').subscribe(() => {
+  // Sync initial status bar theme color
+  setThemeColor({ light: '#f8fafc', dark: '#101010' }, sessionStore.state.theme);
+
+  sessionStore.select('theme').subscribe((theme) => {
+    if (typeof localStorage !== 'undefined') {
       try {
-        localStorage.setItem('canvapps_theme', sessionStore.state.theme);
+        localStorage.setItem('canvapps_theme', theme);
       } catch {
         // Ignore quota errors
       }
-    });
-  }
+    }
+    // Dynamically update browser/OS status bar theme color
+    setThemeColor({ light: '#f8fafc', dark: '#101010' }, theme);
+  });
 
   // Synchronize browser history and hash navigation dynamically
   const syncRouteFromLocation = () => {
@@ -143,6 +149,7 @@ if (typeof window !== 'undefined') {
   window.addEventListener('popstate', syncRouteFromLocation);
   window.addEventListener('hashchange', syncRouteFromLocation);
 }
+
 
 /**
  * Computed signal derived from the global store
@@ -205,10 +212,12 @@ export function incrementSessionStreak(): void {
  * Store Action: Toggles the application global theme (light / dark)
  */
 export function toggleTheme(): void {
+  const nextTheme = sessionStore.state.theme === 'light' ? 'dark' : 'light';
   sessionStore.update((prev) => ({
     ...prev,
-    theme: prev.theme === 'light' ? 'dark' : 'light',
+    theme: nextTheme,
   }));
+  setThemeColor({ light: '#f8fafc', dark: '#101010' }, nextTheme);
 }
 
 /**
@@ -219,4 +228,6 @@ export function setTheme(theme: 'dark' | 'light'): void {
     ...prev,
     theme,
   }));
+  setThemeColor({ light: '#f8fafc', dark: '#101010' }, theme);
 }
+

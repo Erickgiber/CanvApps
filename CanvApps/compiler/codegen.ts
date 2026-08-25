@@ -39,10 +39,12 @@ export class CVSCodeGenerator {
     }
 
     return `
-import { UIView, UIText, UIButton, UIInput, UIModal, UIMotion, UIImage, UIScrollView, UIAnchor, UILink, UIElement, KineticFX, Motion, createRouter, useRouter, effect, signal, computed, batch, untrack, createStore, persistentSignal, useBreakpoints, useMediaQuery, useWindowSize } from '@canvapps';
+import { UIView, UIText, UIButton, UIInput, UIModal, UIMotion, UIImage, UIScrollView, UIAnchor, UILink, UIElement, KineticFX, Motion, createRouter, useRouter, effect, signal, computed, batch, untrack, createStore, persistentSignal, useBreakpoints, useMediaQuery, useWindowSize, useSafeArea, getSafeAreaInsets, setThemeColor, getThemeColor, getThemeMode, configureThemePalette } from '@canvapps';
+
 ${importLines.join('\n')}
 
 export function createComponent(props: Record<string, any> = {}): UIElement {
+
 ${bodyLines.join('\n')}
 
 ${templateCode}

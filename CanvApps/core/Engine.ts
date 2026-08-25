@@ -2,6 +2,8 @@ import { UIElement } from './UIElement';
 import { FlexLayout } from '../layout/FlexLayout';
 import { EventDispatcher } from '../events/EventDispatcher';
 import { GhostDOM, GhostTarget } from '../ghost/GhostDOM';
+import { initSafeAreaProbe } from './safeArea';
+import { setThemeColor } from './theme';
 
 /**
  * Options for configuring the CanvApps rendering engine.
@@ -36,6 +38,18 @@ export interface EngineOptions {
    * Global text selection strategy. If false (default), non-selectable texts do not generate Ghost DOM nodes.
    */
   selectable?: boolean;
+
+  /**
+   * Automatic Safe Area Insets (Notch / Dynamic Island / Status Bar) tracking.
+   * Defaults to true.
+   */
+  safeArea?: boolean;
+
+  /**
+   * Theme Color and Status Bar synchronization.
+   * Defaults to true. Automatically keeps <meta name="theme-color"> and overscroll background in sync.
+   */
+  themeColor?: boolean | string | { light: string; dark: string };
 }
 
 /**
@@ -74,6 +88,13 @@ export class Engine {
     Engine.activeEngine = this;
     if (options.selectable !== undefined) {
       UIElement.defaultSelectable = options.selectable;
+    }
+    if (options.safeArea !== undefined) {
+      UIElement.enableSafeArea = options.safeArea;
+    }
+
+    if (options.safeArea !== false) {
+      initSafeAreaProbe();
     }
 
     // 1. Resolve canvas instance
@@ -129,6 +150,16 @@ export class Engine {
 
     this.dpr = options.dpr ?? (typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1);
     this.backgroundColor = options.backgroundColor ?? 'transparent';
+
+    // Synchronize initial theme color with status bar meta tags if configured
+    if (options.themeColor !== false) {
+      if (typeof options.themeColor === 'string' || typeof options.themeColor === 'object') {
+        setThemeColor(options.themeColor);
+      } else if (this.backgroundColor && this.backgroundColor !== 'transparent') {
+        setThemeColor(this.backgroundColor);
+      }
+    }
+
 
     // 3. Mount to container if specified
     let mountParent: HTMLElement | undefined;
@@ -246,11 +277,24 @@ export class Engine {
   }
 
   /**
+   * Updates the engine background clear color and optionally syncs status bar meta tags.
+   */
+  public setBackgroundColor(color: string, syncTheme = true): this {
+    this.backgroundColor = color;
+    if (syncTheme && color && color !== 'transparent') {
+      setThemeColor(color);
+    }
+    this.invalidate();
+    return this;
+  }
+
+  /**
    * Marks the engine dirty, ensuring a redraw pass is executed on next animation frame.
    */
   public invalidate(): void {
     this.isDirty = true;
   }
+
 
   /**
    * Starts the continuous rendering loop.

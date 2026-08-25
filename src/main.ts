@@ -1,14 +1,26 @@
 import { Engine } from '@canvapps';
 import config from '../canvapps.config';
 import createApp from './App.cvs';
+import { sessionStore } from './stores/session.store';
+
+const initialBg = sessionStore.state.theme === 'dark' ? '#101010' : '#f8fafc';
 
 // 1. Initialize CanvApps Engine with project configuration
 const engine = new Engine({
   container: '#app-container',
-  backgroundColor: '#f8fafc',
+  backgroundColor: initialBg,
   autoResize: true,
   selectable: config.selectable ?? false,
+  safeArea: config.safeArea ?? true,
+  themeColor: config.themeColor ?? { light: '#f8fafc', dark: '#101010' },
 });
+
+// Reactively synchronize engine background color whenever theme toggles
+if (typeof window !== 'undefined') {
+  sessionStore.select('theme').subscribe((theme) => {
+    engine.setBackgroundColor(theme === 'dark' ? '#101010' : '#f8fafc');
+  });
+}
 
 // 2. Instantiate and mount compiled .cvs component
 const appRoot = createApp();
@@ -23,3 +35,4 @@ if (typeof window !== 'undefined') {
     engine.setRoot(nextRoot);
   };
 }
+

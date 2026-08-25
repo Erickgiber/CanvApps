@@ -373,7 +373,7 @@ Conditionally render Canvas subtrees reactively without boilerplate:
   <text fontSize="16" color="#0f172a">💻 Desktop 120 FPS Retina Layout</text>
 }
 ```
-*Also supports Svelte-style blocks (`{#if cond} ... {:else} ... {/if}`) and inline directives (`<view @if="cond">`).*
+*Also supports inline directives (`<view @if="isMobile.value">`).*
 
 ### 3. Reactive List Iteration Blocks (`@each`)
 Iterate signals with sub-millisecond updates directly as blocks:
@@ -385,7 +385,7 @@ Iterate signals with sub-millisecond updates directly as blocks:
   </view>
 }
 ```
-*Also supports Svelte-style iteration (`{#each tasks.value as item} ... {/each}`).*
+*Also supports inline directives (`<view @each="tasks.value as item">`).*
 
 ### 4. Custom Component Composition
 Import any `.cvs` component in `<script lang="ts">` and invoke it directly in templates using standard PascalCase tags:
@@ -627,7 +627,7 @@ canvapps-vscode-0.1.0.vsix (Included in repository root)
 ```
 
 ### ✨ Extension Features
-* 🌈 **Full Syntax Highlighting:** Embedded TypeScript syntax inside `<script lang="ts">`, Canvas template tags (`<view>`, `<text>`, `<button>`, `<input>`, `<motion>`, `<modal>`, `<slot>`), directives (`@if`, `@each`, `{#if}`, `{#each}`), dynamic attributes (`:value`, `:gap`), and reactive events (`@click`, `@input`, `@finish`).
+* 🌈 **Full Syntax Highlighting:** Embedded TypeScript syntax inside `<script lang="ts">`, Canvas template tags (`<view>`, `<text>`, `<button>`, `<input>`, `<motion>`, `<modal>`, `<slot>`), directives (`@if`, `@each`), dynamic attributes (`:value`, `:gap`), and reactive events (`@click`, `@input`, `@finish`).
 * 🔍 **Go to Definition (`Cmd+Click` / `Ctrl+Click`):** Jump directly from template handlers to their exact declaration inside `<script lang="ts">`.
 * 💡 **Intelligent Autocompletion:** Instant suggestions for Canvas layout props, reactive bindings, and events.
 * ⚡ **Productivity Snippets:** `cvs-component`, `cvs-view`, `cvs-text`, `cvs-button`, `cvs-input`, `cvs-motion`, `cvs-modal`, `cvs-signal`, `cvs-store`.

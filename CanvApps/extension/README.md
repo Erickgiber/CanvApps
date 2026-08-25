@@ -10,7 +10,7 @@ Supports **Visual Studio Code**, **Cursor**, **VSCodium**, **Windsurf**, and **G
 
 ## ✨ Features
 
-* 🌈 **Full Syntax Highlighting:** Embedded TypeScript syntax inside `<script lang="ts">`, Canvas template tags (`<view>`, `<text>`, `<button>`, `<input>`, `<motion>`, `<modal>`, `<slot>`), directives (`@if`, `@each`, `{#if}`, `{#each}`), dynamic attributes (`:value`, `:gap`), and reactive events (`@click`, `@input`, `@finish`).
+* 🌈 **Full Syntax Highlighting:** Embedded TypeScript syntax inside `<script lang="ts">`, Canvas template tags (`<view>`, `<text>`, `<button>`, `<input>`, `<motion>`, `<modal>`, `<slot>`), directives (`@if`, `@each`), dynamic attributes (`:value`, `:gap`), and reactive events (`@click`, `@input`, `@finish`).
 * 🔍 **Go to Definition (`Cmd+Click` / `Ctrl+Click`):** Jump directly from template event handlers and reactive bindings to their declaration inside `<script lang="ts">`.
 * 💡 **Intelligent Autocompletion:** Fast suggestions for Canvas layout props, reactive bindings, and events.
 * ⚡ **Productivity Snippets:**

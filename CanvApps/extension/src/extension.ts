@@ -230,9 +230,6 @@ function validateCanvAppsDocument(document: vscode.TextDocument): vscode.Diagnos
 
   // Step D: Mask control directive headers (@if, @else if, @each, etc.) before the body "{"
   cleanTemplate = cleanTemplate.replace(/(@(?:if|else\s+if|each))\b[^{]*\{/g, (m) => ' '.repeat(m.length - 1) + '{');
-  cleanTemplate = cleanTemplate.replace(/\{#(?:if|each)\b[^}]*\}/g, (m) => ' '.repeat(m.length));
-  cleanTemplate = cleanTemplate.replace(/\{:else\}/g, (m) => ' '.repeat(m.length));
-  cleanTemplate = cleanTemplate.replace(/\{\/(?:if|each)\}/g, (m) => ' '.repeat(m.length));
 
   // Step E: Parse and match tags
   const tagStack: { name: string; pos: vscode.Position; index: number; length: number }[] = [];

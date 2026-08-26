@@ -735,16 +735,33 @@ npm run build:packages
 
 ### Vite Plugin Setup (`vite.config.ts`)
 
+CanvApps provides an official plugin `@canvapps/vite-plugin` for compiling `.cvs` Single-File Components with instant Hot Module Replacement (HMR).
+
+> 💡 **Quickstart Template:** You can clone the ready-to-use template repository: [google-canvapps](https://github.com/Erickgiber/google-canvapps) (`git clone https://github.com/Erickgiber/google-canvapps.git`).
+
 ```ts
 import { defineConfig } from 'vite';
 import { canvappsPlugin } from '@canvapps/vite-plugin';
+import path from 'node:path';
 
 export default defineConfig({
+  base: './',
   plugins: [
     canvappsPlugin({
       banner: true, // Set to false to disable build watermark banner
     }),
   ],
+  resolve: {
+    alias: [
+      { find: /^@canvapps$/, replacement: '@canvapps/core' },
+      { find: /^canvapps$/, replacement: '@canvapps/core' },
+      { find: '@', replacement: path.resolve(__dirname, './src') },
+    ],
+  },
+  server: {
+    port: 5173,
+    open: false,
+  },
 });
 ```
 

@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TODO App - Arquitectura Híbrida (WebGL + Canvas2D)</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #e2e8f0;
+            overflow: hidden;
+            font-family: sans-serif;
+        }
+
+        /* Apilamos los dos canvas uno encima del otro */
+        .canvas-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+        }
+
+        canvas {
+            display: block;
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+
+        #glCanvas {
+            z-index: 1;
+        }
+
+        #textCanvas {
+            z-index: 2;
+            pointer-events: auto;
+        }
+
+        /* Atrapa los clics */
+    </style>
+</head>
+
+<body>
+
+    <div class="canvas-container">
+        <canvas id="glCanvas"></canvas> <!-- Renderiza las formas con la GPU -->
+        <canvas id="textCanvas"></canvas> <!-- Renderiza el texto con la CPU -->
+    </div>
+
+    <script>
+        // --- 1. CONFIGURACIÓN DE LOS DOS MUNDOS ---
+        const glCanvas = document.getElementById('glCanvas');
+        const gl = glCanvas.getContext('webgl', { antialias: true, alpha: false });
+
+        const textCanvas = document.getElementById('textCanvas');
+        const ctx = textCanvas.getContext('2d');
+
+        // --- 2. LOS SHADERS DE WEBGL (El programa de la Tarjeta Gráfica) ---
+        // El Vertex Shader convierte pixeles a espacio de recorte (-1 a +1)
+        const vertexShaderSource = `
+        attribute vec2 a_position;
+        uniform vec2 u_resolution;
+        void main() {
+            vec2 zeroToOne = a_position / u_resolution;
+            vec2 zeroToTwo = zeroToOne * 2.0;
+            vec2 clipSpace = zeroToTwo - 1.0;
+            gl_Position = vec4(clipSpace * vec2(1, -1), 0, 1);
+        }
+    `;
+
+        // El Fragment Shader pinta los pixeles de un color
+        const fragmentShaderSource = `
+        precision mediump float;
+        uniform vec4 u_color;
+        void main() {
+            gl_FragColor = u_color;
+        }
+    `;
+
+        // Función auxiliar para compilar Shaders
+        function createShader(gl, type, source) {
+            const shader = gl.createShader(type);
+            gl.shaderSource(shader, source);
+            gl.compileShader(shader);
+            if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+                console.error(gl.getShaderInfoLog(shader));
+                gl.deleteShader(shader);
+            }
+            return shader;
+        }
+
+        const vertexShader = createShader(gl, gl.VERTEX_SHADER, vertexShaderSource);
+        const fragmentShader = createShader(gl, gl.FRAGMENT_SHADER, fragmentShaderSource);
+        const program = gl.createProgram();
+        gl.attachShader(program, vertexShader);
+        gl.attachShader(program, fragmentShader);
+        gl.linkProgram(program);
+        gl.useProgram(program);
+
+        // Encontrar dónde están nuestras variables en la tarjeta gráfica
+        const positionLocation = gl.getAttribLocation(program, "a_position");
+        const resolutionLocation = gl.getUniformLocation(program, "u_resolution");
+        const colorLocation = gl.getUniformLocation(program, "u_color");
+
+        const positionBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+        gl.enableVertexAttribArray(positionLocation);
+        gl.vertexAttribPointer(positionLocation, 2, gl.FLOAT, false, 0, 0);
+
+        // --- ACTIVAR TRANSPARENCIA EN WEBGL ---
+        gl.enable(gl.BLEND);
+        gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+
+        // --- 3. FUNCIÓN PARA DIBUJAR RECTÁNGULOS EN LA GPU ---
+        // Convierte colores Hex a valores de 0 a 1 para WebGL
+        function hexToRgbA(hex, alpha = 1) {
+            let c;
+            if (/^#([A-Fa-f0-9]{3}){1,2}$/.test(hex)) {
+                c = hex.substring(1).split('');
+                if (c.length == 3) { c = [c[0], c[0], c[1], c[1], c[2], c[2]]; }
+                c = '0x' + c.join('');
+                return [(c >> 16) & 255, (c >> 8) & 255, c & 255].map(v => v / 255).concat(alpha);
+            }
+            return [0, 0, 0, alpha];
+        }
+
+        function drawRectGL(x, y, width, height, hexColor, alpha = 1) {
+            // Enviar coordenadas de los dos triángulos que forman el rectángulo
+            const x1 = x, x2 = x + width;
+            const y1 = y, y2 = y + height;
+            gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
+                x1, y1, x2, y1, x1, y2,
+                x1, y2, x2, y1, x2, y2,
+            ]), gl.STATIC_DRAW);
+
+            // Enviar el color
+            gl.uniform4fv(colorLocation, hexToRgbA(hexColor, alpha));
+            // Ordenar a la GPU que dibuje
+            gl.drawArrays(gl.TRIANGLES, 0, 6);
+        }
+
+        // --- 4. ESTADO DE LA APLICACIÓN (Mismo que antes) ---
+        let tasks = [
+            { id: 1, text: "Comprar café", done: false, y: 140, targetY: 140, opacity: 1, targetOpacity: 1, strikeProg: 0, targetStrike: 0, isDeleting: false },
+            { id: 2, text: "Aprender WebGL", done: true, y: 190, targetY: 190, opacity: 1, targetOpacity: 1, strikeProg: 1, targetStrike: 1, isDeleting: false }
+        ];
+        let inputText = "";
+        let editingId = null;
+        const ui = { padding: 20, inputHeight: 40, addBtnWidth: 80, itemHeight: 50, listStartY: 140 };
+
+        function lerp(start, end, factor = 0.15) { return start + (end - start) * factor; }
+
+        function updateLayout() {
+            let displayIndex = 0;
+            tasks.filter(t => !t.done && !t.isDeleting).forEach(t => { t.targetY = ui.listStartY + (displayIndex * ui.itemHeight); t.targetStrike = 0; displayIndex++; });
+            tasks.filter(t => t.done && !t.isDeleting).forEach(t => { t.targetY = ui.listStartY + (displayIndex * ui.itemHeight); t.targetStrike = 1; displayIndex++; });
+            tasks.filter(t => t.isDeleting).forEach(t => { t.targetOpacity = 0; });
+        }
+
+        function resize() {
+            const w = Math.min(window.innerWidth, 600);
+            const h = window.innerHeight;
+            const dpr = window.devicePixelRatio || 1;
+
+            // Ajustar ambos canvas
+            [glCanvas, textCanvas].forEach(c => {
+                c.width = w * dpr;
+                c.height = h * dpr;
+                c.style.width = `${w}px`;
+                c.style.height = `${h}px`;
+                if (window.innerWidth > 600) c.style.margin = "0 auto";
+                else c.style.margin = "0";
+            });
+
+            // Configurar escalas
+            gl.viewport(0, 0, glCanvas.width, glCanvas.height);
+            gl.uniform2f(resolutionLocation, w, h); // Le decimos a WebGL el tamaño lógico
+
+            ctx.setTransform(dpr, 0, 0, dpr, 0, 0); // Escala para Canvas2D
+            textCanvas.logicalWidth = w;
+
+            updateLayout();
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        // --- 5. BUCLE DE DIBUJADO HÍBRIDO ---
+        function draw() {
+            const w = textCanvas.logicalWidth;
+
+            // Físicas / Animaciones
+            for (let i = tasks.length - 1; i >= 0; i--) {
+                let t = tasks[i];
+                t.y = lerp(t.y, t.targetY);
+                t.opacity = lerp(t.opacity, t.targetOpacity);
+                t.strikeProg = lerp(t.strikeProg, t.targetStrike, 0.2);
+                if (t.isDeleting && t.opacity < 0.05) {
+                    tasks.splice(i, 1);
+                    updateLayout();
+                }
+            }
+
+            // LIMPIAR PANTALLAS
+            // 1. Limpiar WebGL (Fondo blanco acelerado por hardware)
+            gl.clearColor(1.0, 1.0, 1.0, 1.0);
+            gl.clear(gl.COLOR_BUFFER_BIT);
+
+            // 2. Limpiar Canvas de Texto (Transparente)
+            ctx.clearRect(0, 0, textCanvas.width, textCanvas.height);
+
+            // --- DIBUJAR UI GLOBAL ---
+            // Título (Solo en 2D)
+            ctx.fillStyle = "#1e293b"; ctx.font = "bold 24px Arial"; ctx.fillText("TODO en WebGL", ui.padding, 40);
+
+            // Input (Fondo y borde en WebGL)
+            const inputY = 70;
+            const inputWidth = w - (ui.padding * 2) - ui.addBtnWidth - 10;
+
+            // Bordes (Se simulan dibujando un rect grande y uno más pequeño encima)
+            drawRectGL(ui.padding, inputY, inputWidth, ui.inputHeight, editingId ? "#f59e0b" : "#cbd5e1");
+            drawRectGL(ui.padding + 2, inputY + 2, inputWidth - 4, ui.inputHeight - 4, editingId ? "#fffbeb" : "#f8fafc");
+
+            // Texto del Input
+            ctx.fillStyle = "#0f172a"; ctx.font = "16px Arial";
+            ctx.fillText(inputText + (Math.floor(Date.now() / 500) % 2 === 0 ? "|" : ""), ui.padding + 10, inputY + 25);
+
+            // Botón
+            const btnX = ui.padding + inputWidth + 10;
+            drawRectGL(btnX, inputY, ui.addBtnWidth, ui.inputHeight, editingId ? "#f59e0b" : "#3b82f6");
+
+            ctx.fillStyle = "white"; ctx.font = "bold 14px Arial";
+            const btnText = editingId ? "Guardar" : "Añadir";
+            ctx.fillText(btnText, btnX + (ui.addBtnWidth - ctx.measureText(btnText).width) / 2, inputY + 25);
+
+            // --- DIBUJAR TAREAS ---
+            tasks.forEach((task) => {
+                // Línea separadora (WebGL)
+                drawRectGL(ui.padding, task.y - 10, w - (ui.padding * 2), 1, "#f1f5f9", task.opacity);
+
+                // Checkbox (Borde exterior y fondo interior)
+                drawRectGL(ui.padding, task.y, 20, 20, task.done ? "#22c55e" : "#94a3b8", task.opacity);
+                drawRectGL(ui.padding + 2, task.y + 2, 16, 16, "#ffffff", task.opacity); // hueco
+
+                // Relleno animado verde
+                if (task.strikeProg > 0) {
+                    drawRectGL(ui.padding + 4, task.y + 4, 12, 12, "#22c55e", task.strikeProg * task.opacity);
+                }
+
+                // Animación de tachado (WebGL)
+                if (task.strikeProg > 0.01) {
+                    ctx.font = "16px Arial";
+                    const textWidth = ctx.measureText(task.text).width;
+                    // Dibujamos la línea de tachado usando la GPU
+                    drawRectGL(ui.padding + 35, task.y + 9, textWidth * task.strikeProg, 2, "#94a3b8", task.opacity);
+                }
+
+                // Textos e íconos (Canvas 2D)
+                ctx.save();
+                ctx.globalAlpha = task.opacity;
+                ctx.fillStyle = task.done ? "#94a3b8" : "#0f172a";
+                ctx.font = task.done ? "italic 16px Arial" : "16px Arial";
+                ctx.fillText(task.text, ui.padding + 35, task.y + 16);
+
+                ctx.fillStyle = "#ef4444"; ctx.font = "bold 16px Arial"; ctx.fillText("✕", w - ui.padding - 20, task.y + 16);
+                ctx.fillStyle = "#f59e0b"; ctx.font = "16px Arial"; ctx.fillText("✎", w - ui.padding - 50, task.y + 16);
+                ctx.restore();
+            });
+
+            requestAnimationFrame(draw);
+        }
+
+        // --- INTERACCIONES Y TECLADO (Igual que antes) ---
+        textCanvas.addEventListener('mousedown', (e) => {
+            const rect = textCanvas.getBoundingClientRect();
+            const mouseX = (e.clientX - rect.left) * (textCanvas.logicalWidth / rect.width);
+            const mouseY = (e.clientY - rect.top) * (textCanvas.logicalWidth / rect.width);
+            const w = textCanvas.logicalWidth;
+            const inputWidth = w - (ui.padding * 2) - ui.addBtnWidth - 10;
+            const btnX = ui.padding + inputWidth + 10;
+
+            if (mouseX >= btnX && mouseX <= btnX + ui.addBtnWidth && mouseY >= 70 && mouseY <= 70 + ui.inputHeight) {
+                submitTask(); return;
+            }
+
+            tasks.forEach((task) => {
+                if (task.isDeleting) return;
+                if (mouseX >= ui.padding && mouseX <= ui.padding + 20 && mouseY >= task.y && mouseY <= task.y + 20) {
+                    task.done = !task.done; updateLayout();
+                }
+                if (mouseX >= w - ui.padding - 55 && mouseX <= w - ui.padding - 35 && mouseY >= task.y && mouseY <= task.y + 20) {
+                    editingId = task.id; inputText = task.text;
+                }
+                if (mouseX >= w - ui.padding - 25 && mouseX <= w - ui.padding && mouseY >= task.y && mouseY <= task.y + 20) {
+                    task.isDeleting = true; if (editingId === task.id) { editingId = null; inputText = ""; } updateLayout();
+                }
+            });
+        });
+
+        window.addEventListener('keydown', (e) => {
+            if (e.key === "Backspace") inputText = inputText.slice(0, -1);
+            else if (e.key === "Enter") submitTask();
+            else if (e.key.length === 1) {
+                const w = textCanvas.logicalWidth;
+                ctx.font = "16px Arial";
+                if (ctx.measureText(inputText).width < w - (ui.padding * 2) - ui.addBtnWidth - 50) inputText += e.key;
+            }
+        });
+
+        function submitTask() {
+            if (inputText.trim() === "") return;
+            if (editingId) {
+                const task = tasks.find(t => t.id === editingId);
+                if (task) task.text = inputText;
+                editingId = null;
+            } else {
+                tasks.push({ id: Date.now(), text: inputText, done: false, y: ui.listStartY - 50, targetY: 0, opacity: 0, targetOpacity: 1, strikeProg: 0, targetStrike: 0, isDeleting: false });
+            }
+            inputText = ""; updateLayout();
+        }
+
+        draw();
+    </script>
+</body>
+
+</html>

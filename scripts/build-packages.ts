@@ -200,6 +200,7 @@ async function copyAssets() {
   console.log('🖼️ Copying assets...');
   if (fs.existsSync(path.join(rootDir, 'logo.svg'))) {
     fs.copyFileSync(path.join(rootDir, 'logo.svg'), path.join(distDir, 'logo.svg'));
+    fs.copyFileSync(path.join(rootDir, 'logo.svg'), path.join(pluginPkgDir, 'logo.svg'));
   }
   if (fs.existsSync(path.join(rootDir, 'LICENSE'))) {
     fs.copyFileSync(path.join(rootDir, 'LICENSE'), path.join(pluginPkgDir, 'LICENSE'));

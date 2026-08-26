@@ -1,20 +1,23 @@
-# CanvApps 🎨
-
 <p align="center">
-  <img src="./logo.svg" width="96" height="96" alt="CanvApps Logo" />
+  <a href="https://github.com/Erickgiber/CanvApps">
+    <img src="https://raw.githubusercontent.com/Erickgiber/CanvApps/main/logo.svg" width="100" height="100" alt="CanvApps Logo" />
+  </a>
 </p>
+
+<h1 align="center">CanvApps 🎨</h1>
 
 <p align="center">
   <strong>The First Compiled UI Framework That Renders at 120 FPS by Eliminating the DOM.</strong><br>
-  <em>Svelte-like compiled syntax. Native 120 FPS hardware rasterization. Zero DOM layout thrashing.</em>
+  <em>Svelte-like compiled syntax • Native 120 FPS hardware rasterization • Zero DOM layout thrashing • Ghost DOM accessibility</em>
 </p>
 
 <p align="center">
-  <a href="https://www.npmjs.com/package/@canvapps/core"><img src="https://img.shields.io/npm/v/@canvapps/core.svg?style=flat-square&color=2563eb" alt="npm version" /></a>
+  <a href="https://www.npmjs.com/package/@canvapps/core"><img src="https://img.shields.io/npm/v/@canvapps/core.svg?style=flat-square&color=2563eb" alt="npm version core" /></a>
+  <a href="https://www.npmjs.com/package/@canvapps/vite-plugin"><img src="https://img.shields.io/npm/v/@canvapps/vite-plugin.svg?style=flat-square&color=646cff" alt="npm version vite-plugin" /></a>
   <a href="https://www.npmjs.com/package/@canvapps/core"><img src="https://img.shields.io/npm/dm/@canvapps/core.svg?style=flat-square&color=059669" alt="npm downloads" /></a>
-  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue.svg?style=flat-square" alt="License: MIT" /></a>
+  <a href="https://github.com/Erickgiber/CanvApps/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue.svg?style=flat-square" alt="License: MIT" /></a>
   <a href="https://www.typescriptlang.org/"><img src="https://img.shields.io/badge/TypeScript-5.7+-3178c6?style=flat-square&logo=typescript&logoColor=white" alt="TypeScript" /></a>
-  <a href="https://vitejs.dev/"><img src="https://img.shields.io/badge/Vite-6.x-646CFF?style=flat-square&logo=vite&logoColor=white" alt="Vite" /></a>
+  <a href="https://vitejs.dev/"><img src="https://img.shields.io/badge/Vite-5.x%20%7C%206.x-646CFF?style=flat-square&logo=vite&logoColor=white" alt="Vite" /></a>
   <a href="https://capacitorjs.com/"><img src="https://img.shields.io/badge/Capacitor-Ready-119EFF?style=flat-square&logo=capacitor&logoColor=white" alt="Capacitor" /></a>
   <img src="https://img.shields.io/badge/Performance-120%20FPS%20Retina-brightgreen?style=flat-square" alt="120 FPS" />
   <img src="https://img.shields.io/badge/Architecture-Ghost%20DOM-purple?style=flat-square" alt="Ghost DOM" />
@@ -57,7 +60,7 @@
 * 🎨 **Declarative `.cvs` Single-File Components:** Svelte-like developer experience with `<script lang="ts">`, `@each` list iteration, `@if` conditionals, `:prop` dynamic bindings, and instant Vite Hot Module Replacement (HMR).
 * 🎞️ **Hardware Motion & Kinetic Physics:** Declarative `<motion>` presets, Figma-grade Hero shared-element morph modals, and `KineticFX` parabolic flight tokens with particle bursts.
 * 📦 **Multi-Target Automation:** Build for **SPA**, **PWA** (with automated Service Worker & Web Manifest generation), or **Native Mobile (iOS & Android)** via Capacitor from a single `canvapps.config.ts`.
-* 🛠️ **Dedicated IDE Extension:** First-class syntax highlighting, code snippets, and `Cmd+Click` / `Ctrl+Click` definition navigation for VS Code, Cursor, and Antigravity IDE.
+* 🛠️ **Dedicated IDE Extension:** First-class syntax highlighting, code snippets, and `Cmd+Click` / `Ctrl+Click` definition navigation for VS Code, Cursor, Windsurf, and Antigravity IDE.
 
 ---
 
@@ -140,18 +143,30 @@ When dynamic components unmount or list items are filtered (`@each`), `GhostDOM.
 
 ## 📦 Installation
 
+Install `@canvapps/core` (runtime engine) and `@canvapps/vite-plugin` (Vite build tool & HMR):
+
+### Using npm
 ```bash
-# Using npm
 npm install @canvapps/core
+npm install -D @canvapps/vite-plugin
+```
 
-# Using pnpm
+### Using pnpm
+```bash
 pnpm add @canvapps/core
+pnpm add -D @canvapps/vite-plugin
+```
 
-# Using yarn
+### Using yarn
+```bash
 yarn add @canvapps/core
+yarn add -D @canvapps/vite-plugin
+```
 
-# Using bun
+### Using bun
+```bash
 bun add @canvapps/core
+bun add -d @canvapps/vite-plugin
 ```
 
 ### CDN Direct `<script>` Tag (No Build Tools Required)
@@ -574,6 +589,18 @@ export default defineConfig({
   title: 'CanvApps Production App',
   outDir: 'dist-app',
 
+  // Open-source build watermark comments in output JS/HTML (default: true)
+  banner: true,
+
+  // Automatic Safe Area Inset calculations (Notch, Dynamic Island, Status Bar). Default: true
+  safeArea: true,
+
+  // Dynamic Theme Color & Status Bar sync for light/dark modes. Default: true
+  themeColor: {
+    light: '#f8fafc',
+    dark: '#090d16',
+  },
+
   // Automated PWA Assets & Offline Service Worker
   pwa: {
     name: 'CanvApps PWA',
@@ -592,6 +619,122 @@ export default defineConfig({
 });
 ```
 
+---
+
+## 📱 Topnav, Safe Area Insets & Status Bar Integration
+
+CanvApps provides native-grade status bar and top navigation bar (`topnav`) integration across **PWA** (Desktop macOS/Windows & Mobile iOS/Android), **SPA**, and **Capacitor Mobile** builds with `viewport-fit=cover`. The Canvas rendering engine renders edge-to-edge behind the device notch, Dynamic Island, and status bar, while automatically adapting padding so that top navigation headers remain perfectly spaced.
+
+### 1. Declarative `<view safeArea="top">` Prop
+
+Simply add `safeArea="top"` (or `"all"`, `"bottom"`, `"horizontal"`, `"vertical"`) to your layout or navigation container. CanvApps automatically computes `env(safe-area-inset-top)` and `env(titlebar-area-height)` and offsets padding:
+
+```html
+<!-- Top navigation header with automatic notch / status bar spacing -->
+<view width="100%" safeArea="top" padding={[12, 20]} :backgroundColor={isDark.value ? '#101010' : '#ffffff'}>
+  <text fontSize="18" fontWeight="bold">🎨 CanvApps</text>
+  <button label="Menu" @click="toggleMenu" />
+</view>
+```
+
+### 2. Reactive `useSafeArea()` Hook
+
+Access fine-grained reactive signals for device insets:
+
+```ts
+import { useSafeArea } from '@canvapps/core';
+
+const { top, bottom, left, right, insets } = useSafeArea();
+
+// top.value => e.g. 47 on iPhone 15 Pro, 24 on Android punch hole, 0 on desktop
+```
+
+### 3. Dynamic Status Bar & Theme Color Management (`setThemeColor`)
+
+When the user switches themes (e.g. Light ↔ Dark or custom themes), `setThemeColor` dynamically synchronizes the entire OS and browser window chrome in real time without reloading the page:
+
+- **Desktop PWA Titlebars (macOS / Windows / Chrome / Edge)**: Updates `<meta name="theme-color">` and `<meta name="color-scheme">`, instantly changing the macOS window titlebar and traffic-light control contrast.
+- **Mobile Status Bars (Android Chrome & iOS Safari)**: Adjusts status bar background and icon contrast (light/dark icons).
+- **Overscroll Rubber-Band Bounds**: Synchronizes `document.documentElement` and `document.body` background colors to match your canvas background seamlessly.
+
+```ts
+import { setThemeColor, configureThemePalette } from '@canvapps/core';
+
+// 1. Define custom palette (optional)
+configureThemePalette({
+  light: '#f8fafc',
+  dark: '#101010',
+  midnight: '#07090e',
+  emerald: '#064e3b',
+});
+
+// 2. Switch theme anywhere in your code or stores
+setThemeColor({
+  light: '#f8fafc',
+  dark: '#101010',
+  midnight: '#07090e',
+}, currentTheme.value);
+
+// Or simply pass a direct color string:
+setThemeColor('#101010');
+```
+
+### 4. Custom Multi-Theme Example with Store
+
+```ts
+import { createStore, setThemeColor } from '@canvapps/core';
+
+export const appTheme = createStore({
+  current: 'dark' as 'light' | 'dark' | 'midnight',
+});
+
+// Switch theme action
+export function switchTheme(mode: 'light' | 'dark' | 'midnight') {
+  appTheme.set({ current: mode });
+  
+  const palette = {
+    light: '#ffffff',
+    dark: '#121212',
+    midnight: '#05070f',
+  };
+  
+  // Updates status bar, macOS window titlebar, and document background
+  setThemeColor(palette, mode);
+}
+```
+
+### 5. Configuration & Disabling
+
+By default, Safe Area Inset measurement and Status Bar Theme Color sync are enabled (`true`). To customize or disable:
+
+- In `canvapps.config.ts`:
+  ```ts
+  export default defineConfig({
+    safeArea: false, // Disables automatic safe area inset calculation
+    themeColor: false, // Disables automatic status bar meta tag synchronization
+  });
+  ```
+- In `new Engine({ safeArea: false, themeColor: false })`.
+- On elements: `UIElement.enableSafeArea = false`.
+
+
+---
+
+### Build Branding & Watermark Banners
+
+By default, CanvApps automatically adds a clean open-source watermark comment banner at the top of your compiled application JS bundles and `index.html`:
+
+```javascript
+/*!
+ * Built with CanvApps Framework
+ * Open Source • MIT License • https://github.com/Erickgiber/CanvApps
+ */
+```
+
+To disable or customize this behavior:
+- In `canvapps.config.ts`, set `banner: false`.
+- In `vite.config.ts`, pass `canvappsPlugin({ banner: false })`.
+
 ### CLI Build Commands
 
 ```bash
@@ -607,11 +750,15 @@ npm run build:packages
 
 ### Vite Plugin Setup (`vite.config.ts`)
 
-CanvApps provides an official plugin `@canvapps/vite-plugin` for compiling `.cvs` Single-File Components with instant Hot Module Replacement (HMR).
+CanvApps provides an official plugin [`@canvapps/vite-plugin`](https://www.npmjs.com/package/@canvapps/vite-plugin) for compiling `.cvs` Single-File Components with instant Hot Module Replacement (HMR).
+
+> [!NOTE]
+> **Vite Plugin + Core Architecture**: `@canvapps/vite-plugin` handles build-time AST compilation and HMR updates, while `@canvapps/core` provides the runtime engine, mathematical Flexbox layout solver, signals, and Ghost DOM.
 
 > 💡 **Quickstart Template:** You can clone the ready-to-use template repository: [google-canvapps](https://github.com/Erickgiber/google-canvapps) (`git clone https://github.com/Erickgiber/google-canvapps.git`).
 
 ```ts
+// vite.config.ts
 import { defineConfig } from 'vite';
 import { canvappsPlugin } from '@canvapps/vite-plugin';
 import path from 'node:path';
@@ -619,7 +766,9 @@ import path from 'node:path';
 export default defineConfig({
   base: './',
   plugins: [
-    canvappsPlugin(),
+    canvappsPlugin({
+      banner: true, // Injects open-source watermark comments in production bundles
+    }),
   ],
   resolve: {
     alias: [
@@ -639,32 +788,52 @@ export default defineConfig({
 
 ## 💻 IDE Extension Installation & Tooling (`.vsix`)
 
-The official **CanvApps IDE Extension** provides first-class developer tooling for `.cvs` Single-File Components across **VS Code**, **Cursor**, **VSCodium**, **Windsurf**, and **Google Antigravity IDE**.
+The official **CanvApps IDE Extension** provides first-class developer tooling for `.cvs` Single-File Components across **VS Code**, **Cursor**, **Windsurf**, **VSCodium**, and **Google Antigravity IDE**.
 
-```text
-canvapps-vscode-0.1.0.vsix (Included in repository root)
-```
+### 📥 Direct VSIX Download
+The extension package is hosted in the official GitHub repository:  
+👉 **[canvapps-vscode-0.1.0.vsix (Download on GitHub)](https://github.com/Erickgiber/CanvApps/blob/main/canvapps-vscode-0.1.0.vsix)**
 
 ### ✨ Extension Features
 * 🌈 **Full Syntax Highlighting:** Embedded TypeScript syntax inside `<script lang="ts">`, Canvas template tags (`<view>`, `<text>`, `<button>`, `<input>`, `<motion>`, `<modal>`, `<slot>`), directives (`@if`, `@each`), dynamic attributes (`:value`, `:gap`), and reactive events (`@click`, `@input`, `@finish`).
-* 🔍 **Go to Definition (`Cmd+Click` / `Ctrl+Click`):** Jump directly from template handlers to their exact declaration inside `<script lang="ts">`.
-* 💡 **Intelligent Autocompletion:** Instant suggestions for Canvas layout props, reactive bindings, and events.
-* ⚡ **Productivity Snippets:** `cvs-component`, `cvs-view`, `cvs-text`, `cvs-button`, `cvs-input`, `cvs-motion`, `cvs-modal`, `cvs-signal`, `cvs-store`.
+* 🔍 **Go to Definition (`Cmd+Click` / `Ctrl+Click`):** Jump directly from template handlers and bindings to their declaration inside `<script lang="ts">`.
+* 💡 **Intelligent Autocompletion:** Instant suggestions for Canvas layout props, reactive bindings, colors, and events.
+* ⚡ **Productivity Snippets:**
+  * `cvs-component` → Full `.cvs` Single-File Component boilerplate.
+  * `cvs-view` → Mathematical Flexbox layout container.
+  * `cvs-text` → Typography node with reactive bindings.
+  * `cvs-button` → Interactive button with hover/active states.
+  * `cvs-input` → Ghost DOM-synchronized text input.
+  * `cvs-motion` → Hardware-timed motion animation wrapper.
+  * `cvs-modal` → Hero shared-element morph modal dialog.
+  * `cvs-signal` / `cvs-store` → Reactive state and store templates.
+* 🛠️ **Tag Auto-Closing & Bracket Matching:** Native editor ergonomics for `.cvs` files.
 
-### 📦 Installation via Command Line (CLI)
+### 🚀 How to Install
 
+#### Option 1: Visual Installation (GUI)
+1. Download the [**`canvapps-vscode-0.1.0.vsix`**](https://github.com/Erickgiber/CanvApps/blob/main/canvapps-vscode-0.1.0.vsix) file.
+2. In your IDE (**VS Code**, **Cursor**, **Windsurf**, **VSCodium**, or **Google Antigravity IDE**), open the **Extensions** panel (`Ctrl+Shift+X` / `Cmd+Shift+X`).
+3. Click the three dots menu (**`···`**) at the top right of the Extensions panel.
+4. Select **"Install from VSIX..."** (*Instalar desde VSIX...*).
+5. Choose the downloaded `canvapps-vscode-0.1.0.vsix` file and reload the editor if prompted.
+
+#### Option 2: Command Line (CLI)
 ```bash
+# Download the VSIX file directly
+curl -LO https://raw.githubusercontent.com/Erickgiber/CanvApps/main/canvapps-vscode-0.1.0.vsix
+
 # Visual Studio Code
 code --install-extension canvapps-vscode-0.1.0.vsix
 
 # Cursor IDE
 cursor --install-extension canvapps-vscode-0.1.0.vsix
 
-# VSCodium
-codium --install-extension canvapps-vscode-0.1.0.vsix
-
 # Windsurf IDE
 windsurf --install-extension canvapps-vscode-0.1.0.vsix
+
+# VSCodium
+codium --install-extension canvapps-vscode-0.1.0.vsix
 ```
 
 ---
@@ -683,8 +852,12 @@ windsurf --install-extension canvapps-vscode-0.1.0.vsix
 | `KineticFX` | Curved parabolic flight tokens, stardust trails, and radial shockwave particle bursts. |
 | `signal(val)` / `computed(fn)` | Fine-grained reactive state primitives. |
 | `effect(fn)` / `batch(fn)` | Reactive subscriptions and batch frame invalidations. |
+| `useSafeArea()` | Fine-grained reactive signals for device notch, status bar, and home indicator insets. |
+| `getSafeAreaInsets()` | Synchronously measures current device safe area insets in logical pixels. |
+| `setThemeColor(color, mode?)` | Dynamically synchronizes HTML5 `<meta name="theme-color">`, iOS status bar, and document backgrounds. |
 | `animate(options)` | 60–120 FPS hardware-timed animation tween with standard and advanced easing curves (`Easings`). |
 | `defineConfig(config)` | Helper for typed `canvapps.config.ts` configuration. |
+
 
 ---
 

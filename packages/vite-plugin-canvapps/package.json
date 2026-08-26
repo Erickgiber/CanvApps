@@ -16,7 +16,8 @@
   "files": [
     "dist",
     "README.md",
-    "LICENSE"
+    "LICENSE",
+    "logo.svg"
   ],
   "keywords": [
     "vite",
@@ -43,7 +44,7 @@
     "access": "public"
   },
   "peerDependencies": {
-    "@canvapps/core": "^0.1.0",
+    "@canvapps/core": ">=0.1.0",
     "vite": ">=5.0.0 || >=6.0.0"
   },
   "engines": {

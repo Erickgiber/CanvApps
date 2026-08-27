@@ -39,7 +39,7 @@ export class CVSCodeGenerator {
     }
 
     return `
-import { UIView, UIText, UIButton, UIInput, UIModal, UIMotion, UIImage, UIScrollView, UIAnchor, UILink, UISlider, UIElement, KineticFX, Motion, createRouter, useRouter, effect, signal, computed, batch, untrack, createStore, persistentSignal, useBreakpoints, useMediaQuery, useWindowSize, useSafeArea, getSafeAreaInsets, setThemeColor, getThemeColor, getThemeMode, configureThemePalette } from '@canvapps';
+import { UIView, UIText, UIButton, UIInput, UIModal, UIMotion, UIImage, UIScrollView, UIAnchor, UILink, UISlider, UISelect, UIElement, KineticFX, Motion, createRouter, useRouter, effect, signal, computed, batch, untrack, createStore, persistentSignal, useBreakpoints, useMediaQuery, useWindowSize, useSafeArea, getSafeAreaInsets, setThemeColor, getThemeColor, getThemeMode, configureThemePalette } from '@canvapps';
 
 ${importLines.join('\n')}
 
@@ -61,7 +61,6 @@ export default createComponent;
   }
 
   private generateNode(node: ASTNode, inLoop = false): { code: string; rootVar: string } {
-    // 1. Text node
     if (node.type === 'text') {
       const textVar = this.nextId('text');
       const textNode = node as ASTTextNode;
@@ -90,7 +89,6 @@ export default createComponent;
       }
     }
 
-    // 2. Conditional block node (@if ... { ... } else { ... })
     if (node.type === 'if-block') {
       const ifContainer = this.nextId('ifContainer');
       const consequentLines: string[] = [];
@@ -134,7 +132,6 @@ ${consequentLines.join('\n')}
       };
     }
 
-    // 3. Iteration block node (@each rows as row { ... })
     if (node.type === 'each-block') {
       const forContainer = this.nextId('forContainer');
       const itemCodeLines: string[] = [];
@@ -163,7 +160,6 @@ ${itemCodeLines.join('\n')}
       };
     }
 
-    // 4. Element node (<view>, <text>, <button>, <input>, <modal>, <motion>, or Custom Component <SplashView />)
     const element = node as ASTElement;
     if (element.tag === 'template') {
       const fragmentVar = this.nextId('fragment');
@@ -247,7 +243,6 @@ ${itemCode}
     const elVar = this.nextId(element.tag);
     const codeLines: string[] = [];
 
-    // 1. Instantiate element based on tag
     const { staticStyles, dynamicProps, events } = this.classifyProps(element.props);
     const isCustomComponent = /^[A-Z]/.test(element.tag);
 
@@ -377,12 +372,13 @@ ${itemCode}
       codeLines.push(`  const ${elVar} = new UIScrollView(${JSON.stringify(staticStyles)});`);
     } else if (element.tag === 'slider' || element.tag === 'UISlider' || element.tag === 'Slider') {
       codeLines.push(`  const ${elVar} = new UISlider(${JSON.stringify(staticStyles)});`);
+    } else if (element.tag === 'select' || element.tag === 'UISelect' || element.tag === 'Select') {
+      codeLines.push(`  const ${elVar} = new UISelect(${JSON.stringify(staticStyles)});`);
     } else {
       // Default to UIView container
       codeLines.push(`  const ${elVar} = new UIView(${JSON.stringify(staticStyles)});`);
     }
 
-    // 2. Attach Event Handlers (@click, @pointerdown, @submit, @close, @scroll, etc.)
     for (const evt of events) {
       const val = evt.value.trim();
       if (val.includes('=>')) {
@@ -394,12 +390,17 @@ ${itemCode}
       }
     }
 
-    // 3. Attach Dynamic Bindings (:prop="expr" or :prop={expr})
     for (const dyn of dynamicProps) {
       if (inLoop) {
         if (element.tag === 'input' && dyn.name === 'value') {
           codeLines.push(`  ${elVar}.setValue(String(${dyn.value} ?? ''));`);
         } else if (element.tag === 'input' && dyn.name === 'placeholder') {
+          codeLines.push(`  ${elVar}.setPlaceholder(String(${dyn.value} ?? ''));`);
+        } else if ((element.tag === 'select' || element.tag === 'UISelect' || element.tag === 'Select') && dyn.name === 'value') {
+          codeLines.push(`  ${elVar}.setValue((${dyn.value}));`);
+        } else if ((element.tag === 'select' || element.tag === 'UISelect' || element.tag === 'Select') && dyn.name === 'options') {
+          codeLines.push(`  ${elVar}.setOptions((${dyn.value}) as any);`);
+        } else if ((element.tag === 'select' || element.tag === 'UISelect' || element.tag === 'Select') && dyn.name === 'placeholder') {
           codeLines.push(`  ${elVar}.setPlaceholder(String(${dyn.value} ?? ''));`);
         } else if ((element.tag === 'image' || element.tag === 'img' || element.tag === 'UIImage') && dyn.name === 'src') {
           codeLines.push(`  ${elVar}.setSrc(String(${dyn.value} ?? ''));`);
@@ -430,6 +431,12 @@ ${itemCode}
           codeLines.push(`  ${elVar}.setUnderline((${dyn.value}) as any);`);
         } else if ((element.tag === 'a' || element.tag === 'link' || element.tag === 'UIAnchor' || element.tag === 'UILink') && dyn.name === 'disabled') {
           codeLines.push(`  ${elVar}.setDisabled(Boolean(${dyn.value}));`);
+        } else if ((element.tag === 'image' || element.tag === 'img' || element.tag === 'UIImage') && dyn.name === 'src') {
+          codeLines.push(`  ${elVar}.setSrc(String(${dyn.value} ?? ''));`);
+        } else if ((element.tag === 'image' || element.tag === 'img' || element.tag === 'UIImage') && dyn.name === 'fit') {
+          codeLines.push(`  ${elVar}.setFit((${dyn.value}) as any);`);
+        } else if ((element.tag === 'image' || element.tag === 'img' || element.tag === 'UIImage') && dyn.name === 'loaderColor') {
+          codeLines.push(`  ${elVar}.setLoaderColor(String(${dyn.value}));`);
         } else if ((element.tag === 'scroll-view' || element.tag === 'UIScrollView' || element.tag === 'ScrollView') && (dyn.name === 'scroll' || dyn.name === 'scrollDirection')) {
           codeLines.push(`  ${elVar}.setScroll((${dyn.value}) as any);`);
         } else if ((element.tag === 'scroll-view' || element.tag === 'UIScrollView' || element.tag === 'ScrollView') && dyn.name === 'showScrollbar') {
@@ -475,6 +482,11 @@ ${itemCode}
           codeLines.push(`
   effect(() => {
     ${elVar}.setFit((${dyn.value}) as any);
+  });`);
+        } else if ((element.tag === 'image' || element.tag === 'img' || element.tag === 'UIImage') && dyn.name === 'loaderColor') {
+          codeLines.push(`
+  effect(() => {
+    ${elVar}.setLoaderColor(String(${dyn.value}));
   });`);
         } else if (element.tag === 'modal' && dyn.name === 'open') {
           codeLines.push(`
@@ -582,6 +594,21 @@ ${itemCode}
   effect(() => {
     ${elVar}.setDisabled(Boolean(${dyn.value}));
   });`);
+        } else if ((element.tag === 'select' || element.tag === 'UISelect' || element.tag === 'Select') && dyn.name === 'value') {
+          codeLines.push(`
+  effect(() => {
+    ${elVar}.setValue((${dyn.value}));
+  });`);
+        } else if ((element.tag === 'select' || element.tag === 'UISelect' || element.tag === 'Select') && dyn.name === 'options') {
+          codeLines.push(`
+  effect(() => {
+    ${elVar}.setOptions((${dyn.value}) as any);
+  });`);
+        } else if ((element.tag === 'select' || element.tag === 'UISelect' || element.tag === 'Select') && dyn.name === 'placeholder') {
+          codeLines.push(`
+  effect(() => {
+    ${elVar}.setPlaceholder(String(${dyn.value} ?? ''));
+  });`);
         } else if (dyn.name === 'scrollY' || dyn.name === 'scrollTop') {
           codeLines.push(`
   effect(() => {
@@ -620,7 +647,6 @@ ${itemCode}
         codeLines.push(`  ${elVar}.addChild(${childVar});`);
       }
     }
-
 
     // Declarative Motion animation attributes (enter="scale" or enter="fade") on standard nodes
     const enterProp = element.props.find((p) => p.name === 'enter' || p.name === 'transition');

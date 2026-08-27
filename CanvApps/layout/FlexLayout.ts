@@ -27,13 +27,6 @@ export class FlexLayout {
   private static currentViewportWidth = 0;
   private static currentViewportHeight = 0;
 
-  /**
-   * Primary entry point for calculating the layout of an entire UI tree.
-   *
-   * @param root The root UIElement to lay out.
-   * @param containerWidth The available canvas/viewport width.
-   * @param containerHeight The available canvas/viewport height.
-   */
   public static calculateLayout(
     root: UIElement,
     containerWidth: number,
@@ -126,8 +119,8 @@ export class FlexLayout {
       const childAvailableHeight = Math.max(0, innerHeight - margin.top - margin.bottom);
 
       const intrinsic = child.measure(childAvailableWidth, childAvailableHeight);
-      const childW = this.resolveDimension(child.styles.width, innerWidth, intrinsic.width);
-      const childH = this.resolveDimension(child.styles.height, innerHeight, intrinsic.height);
+      const childW = this.resolveDimension(child.styles.width, innerWidth, intrinsic.width, child.styles.minWidth, child.styles.maxWidth);
+      const childH = this.resolveDimension(child.styles.height, innerHeight, intrinsic.height, child.styles.minHeight, child.styles.maxHeight);
 
       if (isRow) {
         return {
@@ -231,9 +224,8 @@ export class FlexLayout {
             element.styles.overflow === 'visible';
           const shrink = userShrink !== undefined ? userShrink : (isScrollable || !isRow ? 0 : 1);
           if (shrink > 0 && line.flexShrinkSum > 0) {
-            const minSize = isRow
-              ? (item.element.styles.minWidth ?? 0)
-              : (item.element.styles.minHeight ?? 0);
+            const rawMin = isRow ? item.element.styles.minWidth : item.element.styles.minHeight;
+            const minSize = FlexLayout.resolveDimension(rawMin, containerInnerMain, 0);
             const targetSize = item.mainSize - (shrinkAmount * shrink) / line.flexShrinkSum;
             item.mainSize = Math.max(minSize, targetSize);
           }
@@ -449,22 +441,26 @@ export class FlexLayout {
     const margin = child.getComputedMargin();
     const intrinsic = child.measure(effectiveParentW, effectiveParentH);
 
-    const childW = this.resolveDimension(child.styles.width, effectiveParentW, intrinsic.width);
-    const childH = this.resolveDimension(child.styles.height, effectiveParentH, intrinsic.height);
+    const childW = this.resolveDimension(child.styles.width, effectiveParentW, intrinsic.width, child.styles.minWidth, child.styles.maxWidth);
+    const childH = this.resolveDimension(child.styles.height, effectiveParentH, intrinsic.height, child.styles.minHeight, child.styles.maxHeight);
 
     let x = effectivePadding.left + margin.left;
     let y = effectivePadding.top + margin.top;
 
-    if (typeof child.styles.left === 'number') {
-      x = child.styles.left + margin.left;
-    } else if (typeof child.styles.right === 'number') {
-      x = effectiveParentW - childW - child.styles.right - margin.right;
+    if (child.styles.left !== undefined) {
+      const leftVal = typeof child.styles.left === 'number' ? child.styles.left : parseFloat(String(child.styles.left)) || 0;
+      x = leftVal + margin.left;
+    } else if (child.styles.right !== undefined) {
+      const rightVal = typeof child.styles.right === 'number' ? child.styles.right : parseFloat(String(child.styles.right)) || 0;
+      x = effectiveParentW - childW - rightVal - margin.right;
     }
 
-    if (typeof child.styles.top === 'number') {
-      y = child.styles.top + margin.top;
-    } else if (typeof child.styles.bottom === 'number') {
-      y = effectiveParentH - childH - child.styles.bottom - margin.bottom;
+    if (child.styles.top !== undefined) {
+      const topVal = typeof child.styles.top === 'number' ? child.styles.top : parseFloat(String(child.styles.top)) || 0;
+      y = topVal + margin.top;
+    } else if (child.styles.bottom !== undefined) {
+      const bottomVal = typeof child.styles.bottom === 'number' ? child.styles.bottom : parseFloat(String(child.styles.bottom)) || 0;
+      y = effectiveParentH - childH - bottomVal - margin.bottom;
     }
 
     child.setLayout(x, y, childW, childH);
@@ -472,28 +468,46 @@ export class FlexLayout {
   }
 
   /**
-   * Resolves dimension values (pixels, percentage strings, or auto fallback).
+   * Resolves dimension values (pixels, percentage strings, or auto fallback) with min/max clamping.
    */
   public static resolveDimension(
     value: DimensionValue | undefined,
     parentDimension: number,
-    autoFallback: number
+    autoFallback: number,
+    minVal?: DimensionValue,
+    maxVal?: DimensionValue
   ): number {
+    let resolved = autoFallback;
     if (typeof value === 'number') {
-      return Math.max(0, value);
-    }
-    if (typeof value === 'string') {
+      resolved = Math.max(0, value);
+    } else if (typeof value === 'string') {
       if (value.endsWith('%')) {
         const pct = parseFloat(value);
         if (!isNaN(pct)) {
-          return Math.max(0, (pct / 100) * parentDimension);
+          resolved = Math.max(0, (pct / 100) * parentDimension);
+        }
+      } else {
+        const num = parseFloat(value);
+        if (!isNaN(num)) {
+          resolved = Math.max(0, num);
         }
       }
-      const num = parseFloat(value);
-      if (!isNaN(num)) {
-        return Math.max(0, num);
+    }
+
+    if (minVal !== undefined) {
+      const minResolved = typeof minVal === 'number' ? minVal : typeof minVal === 'string' && minVal.endsWith('%') ? (parseFloat(minVal) / 100) * parentDimension : parseFloat(minVal);
+      if (!isNaN(minResolved)) {
+        resolved = Math.max(minResolved, resolved);
       }
     }
-    return autoFallback;
+
+    if (maxVal !== undefined) {
+      const maxResolved = typeof maxVal === 'number' ? maxVal : typeof maxVal === 'string' && maxVal.endsWith('%') ? (parseFloat(maxVal) / 100) * parentDimension : parseFloat(maxVal);
+      if (!isNaN(maxResolved)) {
+        resolved = Math.min(maxResolved, resolved);
+      }
+    }
+
+    return resolved;
   }
 }

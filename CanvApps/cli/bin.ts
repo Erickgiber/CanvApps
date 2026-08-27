@@ -11,14 +11,23 @@ async function main() {
       await CLIBuilder.build();
       break;
 
+    case 'format':
+    case 'fmt': {
+      const { execSync } = await import('child_process');
+      const files = args.slice(1).join(' ');
+      execSync(`npx tsx scripts/format.ts ${files}`, { stdio: 'inherit' });
+      break;
+    }
+
     case 'help':
     case '--help':
     case '-h':
       console.log(`
-CanvApps CLI - Multi-Target Canvas UI Build Tool
+CanvApps CLI - Multi-Target Canvas UI Build & Dev Tool
 
 Usage:
   canvapps build              Builds production minified project according to canvapps.config.ts (SPA, PWA, or CAPACITOR)
+  canvapps format [files...]  Formats .cvs files cleanly without breaking strings or logic
   canvapps help               Show this help message
 `);
       break;

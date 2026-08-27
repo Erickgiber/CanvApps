@@ -1,16 +1,17 @@
 import { UIElement } from '../core/UIElement';
 
 /**
- * Subscriber callback type.
+ * Subscriber callback type with strongly typed value.
  */
-type Subscriber = () => void;
+export type Subscriber<T = any> = (value: T) => void;
+type InternalRunner = () => void;
 
 // Active tracking context stack for computed signals and effects
-let activeSubscriber: Subscriber | null = null;
-const subscriberStack: (Subscriber | null)[] = [];
+let activeSubscriber: InternalRunner | null = null;
+const subscriberStack: (InternalRunner | null)[] = [];
 
 let isBatching = false;
-const batchedSubscribers = new Set<Subscriber>();
+const batchedSubscribers = new Set<InternalRunner>();
 
 /**
  * Runs a function without establishing reactive subscriptions on any signals accessed within it.
@@ -50,18 +51,16 @@ export function batch(fn: () => void): void {
  */
 export class Signal<T> {
   private _value: T;
-  private subscribers: Set<Subscriber> = new Set();
+  private subscribers: Set<Subscriber<T>> = new Set();
+  private internalRunners: Set<InternalRunner> = new Set();
 
   constructor(initialValue: T) {
     this._value = initialValue;
   }
 
-  /**
-   * Retrieves the current value and registers the active subscriber if inside an effect/computed.
-   */
   public get value(): T {
     if (activeSubscriber) {
-      this.subscribers.add(activeSubscriber);
+      this.internalRunners.add(activeSubscriber);
     }
     return this._value;
   }
@@ -80,11 +79,18 @@ export class Signal<T> {
    * Manually notifies all registered subscribers.
    */
   public notify(): void {
+    for (const runner of this.internalRunners) {
+      if (isBatching) {
+        batchedSubscribers.add(runner);
+      } else {
+        runner();
+      }
+    }
     for (const sub of this.subscribers) {
       if (isBatching) {
-        batchedSubscribers.add(sub);
+        batchedSubscribers.add(() => sub(this._value));
       } else {
-        sub();
+        sub(this._value);
       }
     }
   }
@@ -94,7 +100,7 @@ export class Signal<T> {
    *
    * @returns Unsubscribe function.
    */
-  public subscribe(sub: Subscriber): () => void {
+  public subscribe(sub: Subscriber<T>): () => void {
     this.subscribers.add(sub);
     return () => {
       this.subscribers.delete(sub);
@@ -133,7 +139,7 @@ export function effect(fn: () => void | (() => void)): () => void {
   let cleanup: void | (() => void);
   let isDisposed = false;
 
-  const runner: Subscriber = () => {
+  const runner: InternalRunner = () => {
     if (isDisposed) {
       return;
     }

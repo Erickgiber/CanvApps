@@ -143,30 +143,26 @@ When dynamic components unmount or list items are filtered (`@each`), `GhostDOM.
 
 ## 📦 Installation
 
-Install `@canvapps/core` (runtime engine) and `@canvapps/vite-plugin` (Vite build tool & HMR):
+Install `@canvapps/core` (which includes the runtime engine, compiler, signals, and Vite plugin):
 
 ### Using npm
 ```bash
 npm install @canvapps/core
-npm install -D @canvapps/vite-plugin
 ```
 
 ### Using pnpm
 ```bash
 pnpm add @canvapps/core
-pnpm add -D @canvapps/vite-plugin
 ```
 
 ### Using yarn
 ```bash
 yarn add @canvapps/core
-yarn add -D @canvapps/vite-plugin
 ```
 
 ### Using bun
 ```bash
 bun add @canvapps/core
-bun add -d @canvapps/vite-plugin
 ```
 
 ### CDN Direct `<script>` Tag (No Build Tools Required)
@@ -407,7 +403,7 @@ Import any `.cvs` component in `<script lang="ts">` and invoke it directly in te
 ```html
 <script lang="ts">
   import SplashView from './views/SplashView.cvs';
-  import DashboardView from './views/DashboardView.cvs';
+  import HomeView from './views/HomeView.cvs';
 
   const showSplash = signal(true);
 </script>
@@ -416,7 +412,7 @@ Import any `.cvs` component in `<script lang="ts">` and invoke it directly in te
   @if (showSplash.value) {
     <SplashView @finish="() => showSplash.value = false" />
   } else {
-    <DashboardView />
+    <HomeView />
   }
 </view>
 ```
@@ -492,7 +488,7 @@ CanvApps includes a first-class, hardware-timed 60/120 FPS declarative animation
 <!-- Smooth Scene Entrance & Directional Exit Transitions -->
 <motion enter="elastic" exit="slide-left" :duration="450" :exitDuration="320">
   <view width="100%" height="100%" flexDirection="column" backgroundColor="#f8fafc">
-    <DashboardContent />
+    <GalleryView />
   </view>
 </motion>
 ```
@@ -545,6 +541,55 @@ KineticFX.burst({
     </text>
   </view>
 </modal>
+```
+
+### 4. Shared Element Transitions & Smart Animate (`:layoutId`)
+
+CanvApps includes a built-in **Smart Animate** engine (similar to Framer Motion or Figma Smart Animate) that fluidly morphs and moves elements across scenes and routes on the 2D Canvas without DOM repaints or layout thrashing.
+
+#### How It Works Under the Hood
+1. **Shared Identity (`layoutId`)**: Assign a matching `:layoutId` prop to an element in the source view (e.g. a link in the right toolbar) and to the corresponding element in the destination view (e.g. the breadcrumb path on the left).
+2. **Pre-Navigation Spatial Snapshot (`SmartAnimate.snapshot(root)`)**: Immediately prior to changing routes, `SmartAnimate` traverses the Canvas element tree and records the exact absolute pixel coordinates (`worldRect: { x, y, width, height }`) of all nodes with a `layoutId`.
+3. **Layout Measurement & Spatial Delta (`SmartAnimate.prepare(root, duration)`)**: When the new route mounts, FlexLayout computes the new destination coordinates. `SmartAnimate` matches corresponding `layoutId` tags, computes the delta ($\text{dx} = \text{origin.x} - \text{dest.x}$, $\text{dy} = \text{origin.y} - \text{dest.y}$), and sets an initial displacement offset (`smartOffsetX`, `smartOffsetY`).
+4. **Hardware-Timed Canvas Interpolation**: During each frame of the 120 FPS render loop, `UIElement.render(ctx)` applies `ctx.translate(smartOffsetX, smartOffsetY)`. An easing curve (cubic deceleration over 350ms) interpolates `smartOffsetX` and `smartOffsetY` back to `0`, creating a smooth, hardware-accelerated gliding motion directly across the Canvas.
+
+```html
+<!-- Origin Link (Right Navigation Bar) -->
+<a
+  href="/docs"
+  label="📖 Documentation"
+  :layoutId="'nav-docs'"
+/>
+
+<!-- Destination Breadcrumb Leaf (Left Breadcrumb Stream) -->
+<text
+  :layoutId="'nav-docs'"
+  fontSize="13"
+  fontWeight="bold"
+>
+  📖 Documentation
+</text>
+```
+
+```ts
+// Triggering Smart Navigation
+import { SmartAnimate, engine } from '@canvapps/core';
+
+export function navigate(targetRoute: string) {
+  const root = engine.getRoot();
+  if (root) {
+    // 1. Snapshot current layout coordinates
+    SmartAnimate.snapshot(root);
+  }
+
+  // 2. Update reactive route
+  currentRoute.value = targetRoute;
+
+  // 3. Prepare smooth 350ms transition
+  if (root) {
+    SmartAnimate.prepare(root, 350);
+  }
+}
 ```
 
 ---
@@ -750,12 +795,7 @@ npm run build:packages
 
 ### Vite Plugin Setup (`vite.config.ts`)
 
-CanvApps provides an official plugin [`@canvapps/vite-plugin`](https://www.npmjs.com/package/@canvapps/vite-plugin) for compiling `.cvs` Single-File Components with instant Hot Module Replacement (HMR).
-
-> [!NOTE]
-> **Vite Plugin + Core Architecture**: `@canvapps/vite-plugin` handles build-time AST compilation and HMR updates, while `@canvapps/core` provides the runtime engine, mathematical Flexbox layout solver, signals, and Ghost DOM.
-
-> 💡 **Quickstart Template:** You can clone the ready-to-use template repository: [google-canvapps](https://github.com/Erickgiber/google-canvapps) (`git clone https://github.com/Erickgiber/google-canvapps.git`).
+CanvApps includes a built-in Vite plugin at `@canvapps/core/vite` for compiling `.cvs` Single-File Components with instant Hot Module Replacement (HMR).
 
 ```ts
 // vite.config.ts

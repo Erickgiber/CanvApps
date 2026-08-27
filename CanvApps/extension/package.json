@@ -68,6 +68,22 @@
         "language": "canvapps",
         "path": "./snippets/canvapps.json"
       }
-    ]
+    ],
+    "commands": [
+      {
+        "command": "canvapps.formatDocument",
+        "title": "Format Document",
+        "category": "CanvApps"
+      }
+    ],
+    "menus": {
+      "editor/context": [
+        {
+          "command": "canvapps.formatDocument",
+          "when": "editorLangId == canvapps",
+          "group": "1_modification"
+        }
+      ]
+    }
   }
 }

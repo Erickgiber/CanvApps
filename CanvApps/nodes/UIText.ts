@@ -56,7 +56,7 @@ export class UIText extends UIElement implements GhostTarget {
    */
   public setSelectable(selectable: boolean): this {
     this.styles.selectable = selectable;
-    this.markRenderDirty();
+    this.markLayoutDirty();
     return this;
   }
 

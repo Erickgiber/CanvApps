@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
+import { formatCVS } from '../../formatter/CVSFormatter';
 
 let tsModule: any = null;
 try {
@@ -228,12 +229,12 @@ function validateCanvAppsDocument(document: vscode.TextDocument): vscode.Diagnos
   // Step C: Mask mustache interpolations {{ ... }} to protect JS expressions (<, >, =>)
   cleanTemplate = cleanTemplate.replace(/\{\{[\s\S]*?\}\}/g, (m) => ' '.repeat(m.length));
 
-  // Step D: Mask control directive headers (@if, @else if, @each, etc.) before the body "{"
-  cleanTemplate = cleanTemplate.replace(/(@(?:if|else\s+if|each))\b[^{]*\{/g, (m) => ' '.repeat(m.length - 1) + '{');
+  // Step D: Mask control directive headers (@if, @else if, @each, etc.) before the body "{" (without crossing HTML tags)
+  cleanTemplate = cleanTemplate.replace(/(@(?:if|else\s+if|each))\b[^<>{]*\{/g, (m) => ' '.repeat(m.length - 1) + '{');
 
   // Step E: Parse and match tags
   const tagStack: { name: string; pos: vscode.Position; index: number; length: number }[] = [];
-  const voidTags = new Set(['slot', 'image', 'input', 'br', 'hr', 'img']);
+  const voidTags = new Set(['slot', 'image', 'input', 'br', 'hr', 'img', 'slider', 'select']);
 
   let i = 0;
   const len = cleanTemplate.length;
@@ -406,7 +407,7 @@ export function activate(context: vscode.ExtensionContext): void {
           const resolvedFilePath = resolveImportPath(currentDir, importSource);
           if (!resolvedFilePath) continue;
 
-          // Case B1: Default import (e.g. `import DashboardView from './views/DashboardView.cvs'`)
+          // Case B1: Default import (e.g. `import HomeView from './views/HomeView.cvs'`)
           const defaultImportMatch = importClause.match(/^[a-zA-Z_$][a-zA-Z0-9_$]*/);
           if (defaultImportMatch && defaultImportMatch[0] === word) {
             return new vscode.Location(vscode.Uri.file(resolvedFilePath), new vscode.Position(0, 0));
@@ -461,6 +462,8 @@ export function activate(context: vscode.ExtensionContext): void {
         input: '### `<input>` (Ghost DOM Input Node)\n\nCombines native IME touch keyboard entry and clipboard support with Pure Canvas rendering.\n\n**Props**: `placeholder`, `placeholderColor`, `:value`, `focusBorderColor`, `@input`, `@submit`, `@change`.',
         modal: '### `<modal>` (Fullscreen Canvas Dialog Overlay)\n\nFrosted glass background blur (`backdrop-filter: blur`), backdrop dimming, and Smart Hero morph animations with zero DOM overhead.\n\n**Props**: `:open`, `backdropBlur`, `backdropFilter`, `backdropColor`, `blur`, `blurRadius`, `animation`, `duration`, `originRect`, `closeOnBackdropClick`, `@close`.',
         'scroll-view': '### `<scroll-view>` (Hardware-Accelerated Scroll Container)\n\nHardware-accelerated scrolling with momentum physics, touch drag panning, mouse wheel, and customizable scrollbars.\n\n**Props**: `scroll`, `scrollDirection`, `showScrollbar`, `scrollY`, `scrollX`, `scrollTop`, `scrollLeft`, `scrollbarColor`, `scrollbarWidth`, `overflow`, `@scroll`.',
+        select: '### `<select>` (Interactive Canvas Dropdown Component)\n\nPure Canvas dropdown selector with reactive bindings, animated chevron, custom styled options menu, and keyboard/touch support.\n\n**Props**: `options`, `:value`, `placeholder`, `backgroundColor`, `borderColor`, `color`, `dropdownBg`, `dropdownTextColor`, `dropdownSelectedBg`, `dropdownBorderColor`, `dropdownHoverBg`, `itemHeight`, `maxDropdownHeight`, `fontSize`, `fontWeight`, `borderRadius`, `disabled`, `@change`, `@input`.',
+        slider: '### `<slider>` (Interactive Hardware-Accelerated Slider)\n\nPure Canvas range slider with drag tracking, custom track and thumb styles, and smooth value interpolation.\n\n**Props**: `min`, `max`, `step`, `:value`, `trackColor`, `progressColor`, `thumbColor`, `thumbRadius`, `disabled`, `@input`, `@change`.',
         a: '### `<a>` (Native Hyperlink & Ghost DOM Anchor Node)\n\nZero-DOM Canvas hyperlink with hover/active underline transitions, built-in SPA router navigation, and native Ghost DOM right-click context menu.\n\n**Props**: `href`, `target`, `rel`, `download`, `color`, `hoverColor`, `activeColor`, `visitedColor`, `underline`, `underlineOffset`, `underlineThickness`, `disabled`, `@click`.',
         link: '### `<link>` (SPA Route Hyperlink Node)\n\nDeclarative Single-Page Application route link. Navigates seamlessly via CanvApps Router without page reload.\n\n**Props**: `href`, `target`, `rel`, `color`, `hoverColor`, `activeColor`, `visitedColor`, `underline`, `disabled`, `@click`.',
         motion: '### `<motion>` (GPU-Timed Motion Wrapper)\n\nSpring physics and timeline animations (`scale-in`, `fade`, `slide-up`, `cinematic-splash`).\n\n**Props**: `animation`, `duration`, `delay`, `spring`.',
@@ -595,9 +598,20 @@ export function activate(context: vscode.ExtensionContext): void {
             { name: 'safeAreaLeft', doc: 'Dynamic left safe-area padding in pixels or boolean.' },
             { name: 'safeAreaRight', doc: 'Dynamic right safe-area padding in pixels or boolean.' },
 
+            // Select bindings
+            { name: 'options', doc: 'Dynamic options array binding (Array<SelectOption | string | number>).' },
+            { name: 'dropdownBg', doc: 'Dynamic background color for floating dropdown popup.' },
+            { name: 'dropdownTextColor', doc: 'Dynamic text color for items in floating dropdown popup.' },
+            { name: 'dropdownSelectedBg', doc: 'Dynamic highlight color for selected item in dropdown popup.' },
+            { name: 'dropdownBorderColor', doc: 'Dynamic border color for floating dropdown popup.' },
+            { name: 'dropdownHoverBg', doc: 'Dynamic hover color for items in floating dropdown popup.' },
+            { name: 'optionHoverBg', doc: 'Dynamic hover color for options in dropdown popup.' },
+            { name: 'optionGap', doc: 'Dynamic gap spacing between options in dropdown popup (pixels).' },
+            { name: 'dropdownShadowColor', doc: 'Dynamic shadow color for floating dropdown popup.' },
+
             // Standard bindings
 
-            { name: 'value', doc: 'Two-way reactive value binding for UIInput.' },
+            { name: 'value', doc: 'Two-way reactive value binding for UIInput / UISelect / UISlider.' },
             { name: 'text', doc: 'Dynamic text content binding.' },
             { name: 'label', doc: 'Dynamic button label binding.' },
             { name: 'disabled', doc: 'Dynamic disabled state binding (boolean).' },
@@ -630,12 +644,14 @@ export function activate(context: vscode.ExtensionContext): void {
           return items;
         }
 
-        // C. Built-in Tag Snippets (<view>, <text>, <button>, <modal>, <scroll-view>, <a>, <link>, etc.)
+        // C. Built-in Tag Snippets (<view>, <text>, <button>, <modal>, <scroll-view>, <a>, <link>, <select>, <slider>, etc.)
         if (linePrefix.endsWith('<') || /<\w*$/.test(linePrefix)) {
           const tags = [
             { name: 'view', snippet: '<view width="${1:100%}" flexDirection="${2|column,row|}" gap="${3:10}">\n\t$0\n</view>' },
             { name: 'text', snippet: '<text fontSize="${1:14}" fontWeight="${2|normal,bold,600|}" color="${3:#ffffff}">$0</text>' },
             { name: 'button', snippet: '<button label="${1:Click Me}" backgroundColor="${2:#3b82f6}" color="#ffffff" borderRadius="12" padding="[8, 16]" @click="${3:handleClick}" />' },
+            { name: 'select', snippet: '<select width="${1:150}" height="${2:38}" :options="${3:options}" :value="${4:selectedVal.value}" @change="${5:handleChange}" />' },
+            { name: 'slider', snippet: '<slider width="${1:200}" height="${2:32}" min="${3:0}" max="${4:100}" :value="${5:sliderVal.value}" @input="${6:handleInput}" />' },
             { name: 'a', snippet: '<a href="${1:https://example.com}"${2: target="_blank"} color="${3:#1a73e8}" hoverColor="${4:#174ea6}" underline="${5|hover,always,never|}">${6:Link text}</a>' },
             { name: 'link', snippet: '<link href="${1:/settings}" color="${2:#1a73e8}" underline="${3|hover,always,never|}">${4:Link text}</link>' },
             { name: 'modal', snippet: '<modal :open="${1:isOpen.value}" backdropBlur="${2:12px}" backdropColor="${3:rgba(15, 23, 42, 0.65)}" @close="${4:closeModal}">\n\t<view width="${5:480}" backgroundColor="#1e293b" borderRadius="16" padding="24" gap="16">\n\t\t<text fontSize="20" fontWeight="bold" color="#ffffff">${6:Modal Title}</text>\n\t\t$0\n\t</view>\n</modal>' },
@@ -694,6 +710,28 @@ export function activate(context: vscode.ExtensionContext): void {
           { name: 'scrollbarColor', doc: 'Scrollbar indicator pill color.', snippet: 'scrollbarColor="${1:rgba(255,255,255,0.3)}"', tags: ['scroll-view', 'uiscrollview', 'scrollview'] },
           { name: 'scrollbarWidth', doc: 'Scrollbar indicator width in pixels.', snippet: 'scrollbarWidth="${1:6}"', tags: ['scroll-view', 'uiscrollview', 'scrollview'] },
           { name: 'overflow', doc: 'Overflow clipping behavior ("scroll", "hidden", "visible").', snippet: 'overflow="${1|scroll,hidden,visible|}"' },
+
+          // Select / Dropdown specific
+          { name: 'options', doc: 'Array of option items (Array<{ label: string, value: any, disabled?: boolean }> or string[]).', snippet: 'options="${1:options}"', tags: ['select', 'uiselect'] },
+          { name: 'dropdownBg', doc: 'Background color of the floating dropdown list.', snippet: 'dropdownBg="${1:#0d131f}"', tags: ['select', 'uiselect'] },
+          { name: 'dropdownTextColor', doc: 'Text color of items inside the floating dropdown list.', snippet: 'dropdownTextColor="${1:#f1f5f9}"', tags: ['select', 'uiselect'] },
+          { name: 'dropdownSelectedBg', doc: 'Background color for currently selected item in dropdown list.', snippet: 'dropdownSelectedBg="${1:#0284c7}"', tags: ['select', 'uiselect'] },
+          { name: 'dropdownBorderColor', doc: 'Border stroke color for floating dropdown menu.', snippet: 'dropdownBorderColor="${1:#334155}"', tags: ['select', 'uiselect'] },
+          { name: 'dropdownHoverBg', doc: 'Background color on hovered dropdown items.', snippet: 'dropdownHoverBg="${1:#f1f5f9}"', tags: ['select', 'uiselect'] },
+          { name: 'optionHoverBg', doc: 'Custom background color on hovered dropdown options.', snippet: 'optionHoverBg="${1:#f1f5f9}"', tags: ['select', 'uiselect'] },
+          { name: 'optionGap', doc: 'Vertical gap in pixels between dropdown options.', snippet: 'optionGap="${1:2}"', tags: ['select', 'uiselect'] },
+          { name: 'dropdownShadowColor', doc: 'Shadow color for floating dropdown menu.', snippet: 'dropdownShadowColor="${1:rgba(0, 0, 0, 0.14)}"', tags: ['select', 'uiselect'] },
+          { name: 'itemHeight', doc: 'Row height for individual dropdown items in pixels.', snippet: 'itemHeight="${1:32}"', tags: ['select', 'uiselect'] },
+          { name: 'maxDropdownHeight', doc: 'Maximum height of dropdown menu before scrolling.', snippet: 'maxDropdownHeight="${1:200}"', tags: ['select', 'uiselect'] },
+
+          // Slider specific
+          { name: 'min', doc: 'Minimum value of the slider range.', snippet: 'min="${1:0}"', tags: ['slider', 'uislider'] },
+          { name: 'max', doc: 'Maximum value of the slider range.', snippet: 'max="${1:100}"', tags: ['slider', 'uislider'] },
+          { name: 'step', doc: 'Step granularity of the slider value.', snippet: 'step="${1:1}"', tags: ['slider', 'uislider'] },
+          { name: 'trackColor', doc: 'Background track color for slider.', snippet: 'trackColor="${1:#334155}"', tags: ['slider', 'uislider'] },
+          { name: 'progressColor', doc: 'Active progress fill track color for slider.', snippet: 'progressColor="${1:#0284c7}"', tags: ['slider', 'uislider'] },
+          { name: 'thumbColor', doc: 'Color of slider circular thumb handle.', snippet: 'thumbColor="${1:#38bdf8}"', tags: ['slider', 'uislider'] },
+          { name: 'thumbRadius', doc: 'Radius of slider circular thumb handle in pixels.', snippet: 'thumbRadius="${1:8}"', tags: ['slider', 'uislider'] },
 
           // General Box & Layout
           { name: 'width', doc: 'Element width in pixels or percentage ("100%").', snippet: 'width="${1:100%}"' },
@@ -791,7 +829,36 @@ export function activate(context: vscode.ExtensionContext): void {
     'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'
   );
 
-  context.subscriptions.push(definitionProvider, hoverProvider, completionProvider);
+  // 4. Document Formatting Provider (Right Click -> Format Document, Shift+Alt+F, Format on Save)
+  const formattingProvider = vscode.languages.registerDocumentFormattingEditProvider('canvapps', {
+    provideDocumentFormattingEdits(document: vscode.TextDocument): vscode.TextEdit[] {
+      try {
+        const fullText = document.getText();
+        const formatted = formatCVS(fullText);
+
+        if (formatted === fullText) return [];
+
+        const fullRange = new vscode.Range(
+          document.positionAt(0),
+          document.positionAt(fullText.length)
+        );
+
+        return [vscode.TextEdit.replace(fullRange, formatted)];
+      } catch (err) {
+        console.error('CanvApps Formatter Error:', err);
+        return [];
+      }
+    },
+  });
+
+  const formatCommand = vscode.commands.registerCommand('canvapps.formatDocument', async () => {
+    const editor = vscode.window.activeTextEditor;
+    if (editor && editor.document.languageId === 'canvapps') {
+      await vscode.commands.executeCommand('editor.action.formatDocument');
+    }
+  });
+
+  context.subscriptions.push(definitionProvider, hoverProvider, completionProvider, formattingProvider, formatCommand);
 }
 
 export function deactivate(): void {}

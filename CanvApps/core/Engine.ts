@@ -4,58 +4,19 @@ import { EventDispatcher } from '../events/EventDispatcher';
 import { GhostDOM, GhostTarget } from '../ghost/GhostDOM';
 import { initSafeAreaProbe } from './safeArea';
 import { setThemeColor } from './theme';
+import { CanvAppsErrorOverlay } from '../debug/ErrorOverlay';
 
-/**
- * Options for configuring the CanvApps rendering engine.
- */
 export interface EngineOptions {
-  /**
-   * Target canvas element or selector string. If omitted, a canvas is created.
-   */
   canvas?: HTMLCanvasElement | string;
-
-  /**
-   * Parent container element or selector to auto-mount and fit the canvas.
-   */
   container?: HTMLElement | string;
-
-  /**
-   * Background clear color for each frame (e.g. '#ffffff' or 'transparent').
-   */
   backgroundColor?: string;
-
-  /**
-   * Manually override device pixel ratio. Defaults to `window.devicePixelRatio`.
-   */
   dpr?: number;
-
-  /**
-   * Whether to automatically listen for window/container resize events.
-   */
   autoResize?: boolean;
-
-  /**
-   * Global text selection strategy. If false (default), non-selectable texts do not generate Ghost DOM nodes.
-   */
   selectable?: boolean;
-
-  /**
-   * Automatic Safe Area Insets (Notch / Dynamic Island / Status Bar) tracking.
-   * Defaults to true.
-   */
   safeArea?: boolean;
-
-  /**
-   * Theme Color and Status Bar synchronization.
-   * Defaults to true. Automatically keeps <meta name="theme-color"> and overscroll background in sync.
-   */
   themeColor?: boolean | string | { light: string; dark: string };
 }
 
-/**
- * Central orchestrator managing the Canvas rendering loop, HiDPI / Retina resolution scaling,
- * dirty-tree layout passes, event dispatching, Ghost DOM accessibility/inputs, and frame repaints.
- */
 export class Engine {
   public readonly canvas: HTMLCanvasElement;
   public readonly ctx: CanvasRenderingContext2D;
@@ -75,9 +36,14 @@ export class Engine {
 
   private static activeEngine: Engine | null = null;
 
-  /**
-   * Invalidates the currently active engine for an immediate vsync repaint.
-   */
+  public static getActive(): Engine | null {
+    return this.activeEngine;
+  }
+
+  public static getActiveRoot(): UIElement | null {
+    return this.activeEngine ? this.activeEngine.root : null;
+  }
+
   public static invalidateActive(): void {
     if (this.activeEngine) {
       this.activeEngine.invalidate();
@@ -86,18 +52,18 @@ export class Engine {
 
   constructor(options: EngineOptions = {}) {
     Engine.activeEngine = this;
+    CanvAppsErrorOverlay.initGlobalErrorHandling();
+
     if (options.selectable !== undefined) {
       UIElement.defaultSelectable = options.selectable;
     }
     if (options.safeArea !== undefined) {
       UIElement.enableSafeArea = options.safeArea;
     }
-
     if (options.safeArea !== false) {
       initSafeAreaProbe();
     }
 
-    // 1. Resolve canvas instance
     if (typeof options.canvas === 'string') {
       const el = document.querySelector(options.canvas);
       if (!(el instanceof HTMLCanvasElement)) {
@@ -110,7 +76,7 @@ export class Engine {
       this.canvas = document.createElement('canvas');
     }
 
-    // Configure touch-safe styles on canvas to eliminate mobile browser blue tap highlights, context menus, and image copying
+    // Disable default mobile callouts and highlights on the canvas
     this.canvas.style.display = 'block';
     (this.canvas.style as any).webkitTapHighlightColor = 'transparent';
     (this.canvas.style as any).tapHighlightColor = 'transparent';
@@ -121,11 +87,9 @@ export class Engine {
     (this.canvas.style as any).webkitUserDrag = 'none';
     this.canvas.style.outline = 'none';
 
-    // Prevent default context menu (copy image, inspect, save image) and dragging
     this.canvas.addEventListener('contextmenu', (e) => e.preventDefault());
     this.canvas.addEventListener('dragstart', (e) => e.preventDefault());
 
-    // Inject global mobile tap-highlight reset stylesheet
     if (typeof document !== 'undefined' && !document.getElementById('canvapps-global-touch-styles')) {
       const style = document.createElement('style');
       style.id = 'canvapps-global-touch-styles';
@@ -141,7 +105,6 @@ export class Engine {
       document.head.appendChild(style);
     }
 
-    // 2. Initialize 2D rendering context with alpha channel enabled
     const ctx = this.canvas.getContext('2d', { alpha: true });
     if (!ctx) {
       throw new Error('Engine: Failed to acquire 2D Canvas rendering context.');
@@ -151,7 +114,6 @@ export class Engine {
     this.dpr = options.dpr ?? (typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1);
     this.backgroundColor = options.backgroundColor ?? 'transparent';
 
-    // Synchronize initial theme color with status bar meta tags if configured
     if (options.themeColor !== false) {
       if (typeof options.themeColor === 'string' || typeof options.themeColor === 'object') {
         setThemeColor(options.themeColor);
@@ -160,8 +122,6 @@ export class Engine {
       }
     }
 
-
-    // 3. Mount to container if specified
     let mountParent: HTMLElement | undefined;
     if (options.container) {
       const parent =
@@ -170,7 +130,7 @@ export class Engine {
           : options.container;
       if (parent instanceof HTMLElement) {
         mountParent = parent;
-        parent.style.position = 'relative'; // Ensure absolute GhostDOM overlays properly
+        parent.style.position = 'relative';
         (parent.style as any).webkitTapHighlightColor = 'transparent';
         (parent.style as any).tapHighlightColor = 'transparent';
         parent.style.touchAction = 'none';
@@ -179,7 +139,6 @@ export class Engine {
       }
     }
 
-    // 4. Initialize EventDispatcher & GhostDOM
     this.events = new EventDispatcher({
       canvas: this.canvas,
       getRoot: () => this.root,
@@ -188,7 +147,6 @@ export class Engine {
 
     this.ghost = new GhostDOM(mountParent);
 
-    // 5. Setup auto-resizing
     if (options.autoResize !== false && typeof window !== 'undefined') {
       this.setupAutoResize(options.container);
     } else {
@@ -196,12 +154,6 @@ export class Engine {
     }
   }
 
-  /**
-   * Sets or replaces the root element hierarchy.
-   *
-   * @param root The root UIElement.
-   * @returns This engine instance for chaining.
-   */
   public setRoot(root: UIElement): this {
     this.root = root;
     this.root.markLayoutDirty();
@@ -209,16 +161,10 @@ export class Engine {
     return this;
   }
 
-  /**
-   * Returns the current root element.
-   */
   public getRoot(): UIElement | null {
     return this.root;
   }
 
-  /**
-   * Configures automatic dimension tracking using ResizeObserver and window events.
-   */
   private setupAutoResize(container?: HTMLElement | string): void {
     const target =
       typeof container === 'string'
@@ -246,12 +192,6 @@ export class Engine {
     }
   }
 
-  /**
-   * Resizes the canvas backing store accounting for HiDPI/Retina display scale factor.
-   *
-   * @param cssWidth Width in CSS logical pixels.
-   * @param cssHeight Height in CSS logical pixels.
-   */
   public resize(cssWidth: number, cssHeight: number): void {
     if (this.width === cssWidth && this.height === cssHeight) {
       return;
@@ -261,24 +201,18 @@ export class Engine {
     this.height = cssHeight;
     this.dpr = typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1;
 
-    // Scale physical backing store buffer
     this.canvas.width = Math.round(cssWidth * this.dpr);
     this.canvas.height = Math.round(cssHeight * this.dpr);
 
-    // Set CSS display dimensions
     this.canvas.style.width = `${cssWidth}px`;
     this.canvas.style.height = `${cssHeight}px`;
 
-    // Invalidate layout and trigger redraw
     if (this.root) {
       this.root.markLayoutDirty();
     }
     this.invalidate();
   }
 
-  /**
-   * Updates the engine background clear color and optionally syncs status bar meta tags.
-   */
   public setBackgroundColor(color: string, syncTheme = true): this {
     this.backgroundColor = color;
     if (syncTheme && color && color !== 'transparent') {
@@ -288,17 +222,10 @@ export class Engine {
     return this;
   }
 
-  /**
-   * Marks the engine dirty, ensuring a redraw pass is executed on next animation frame.
-   */
   public invalidate(): void {
     this.isDirty = true;
   }
 
-
-  /**
-   * Starts the continuous rendering loop.
-   */
   public start(): this {
     if (this.isRunning) {
       return this;
@@ -317,9 +244,6 @@ export class Engine {
     return this;
   }
 
-  /**
-   * Pauses the rendering loop.
-   */
   public stop(): this {
     this.isRunning = false;
     if (this.rafId !== null) {
@@ -329,9 +253,6 @@ export class Engine {
     return this;
   }
 
-  /**
-   * Executes a single layout calculation, ghost DOM synchronization, and canvas render pass if dirty.
-   */
   public renderFrame(): void {
     if (!this.root) {
       return;
@@ -346,40 +267,52 @@ export class Engine {
 
     this.isDirty = false;
 
-    // 1. Layout pass (strictly executed when layout is marked dirty)
-    if (needsLayout) {
-      FlexLayout.calculateLayout(this.root, this.width, this.height);
+    try {
+      if (needsLayout) {
+        FlexLayout.calculateLayout(this.root, this.width, this.height);
+      } else {
+        this.root.updateWorldTransform(0, 0);
+      }
       this.syncGhostDOM(this.root);
-    } else {
-      this.root.updateWorldTransform(0, 0);
+
+      // Disable pointer events on underlying ghost text while select dropdown is open
+      const hasOpenSelect = Boolean(UIElement.activeOpenSelect && (UIElement.activeOpenSelect as any).isDropdownOpen?.());
+      this.ghost.setShield(hasOpenSelect);
+
+      this.ctx.save();
+      this.ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
+
+      if (this.backgroundColor && this.backgroundColor !== 'transparent') {
+        this.ctx.fillStyle = this.backgroundColor;
+        this.ctx.fillRect(0, 0, this.width, this.height);
+      } else {
+        this.ctx.clearRect(0, 0, this.width, this.height);
+      }
+
+      this.root.render(this.ctx);
+
+      // Draw top-layer select dropdown floating over the scene
+      if (UIElement.activeOpenSelect && (UIElement.activeOpenSelect as any).isDropdownOpen?.()) {
+        (UIElement.activeOpenSelect as any).drawDropdown?.(this.ctx);
+      }
+
+      // Draw top-layer modal portals
+      const activeModals = this.findActiveModals(this.root);
+      for (const modal of activeModals) {
+        modal.render(this.ctx);
+      }
+
+      this.ctx.restore();
+    } catch (err: any) {
+      CanvAppsErrorOverlay.showError({
+        title: 'CanvApps Render Error',
+        message: err.message || 'Error occurred while rendering canvas tree',
+        stack: err.stack,
+      });
+      console.error('[CanvApps Render Error]:', err);
     }
-
-    // 2. Clear canvas with retina scaling
-    this.ctx.save();
-    this.ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
-
-    if (this.backgroundColor && this.backgroundColor !== 'transparent') {
-      this.ctx.fillStyle = this.backgroundColor;
-      this.ctx.fillRect(0, 0, this.width, this.height);
-    } else {
-      this.ctx.clearRect(0, 0, this.width, this.height);
-    }
-
-    // 3. Render tree
-    this.root.render(this.ctx);
-
-    // 4. Render top-layer modal overlay portals
-    const activeModals = this.findActiveModals(this.root);
-    for (const modal of activeModals) {
-      modal.render(this.ctx);
-    }
-
-    this.ctx.restore();
   }
 
-  /**
-   * Discovers all active modals across the UI hierarchy.
-   */
   private findActiveModals(root: UIElement): UIElement[] {
     const modals: UIElement[] = [];
     const traverse = (element: UIElement) => {
@@ -397,9 +330,6 @@ export class Engine {
     return modals;
   }
 
-  /**
-   * Recursively discovers, updates, and prunes GhostDOM targets across the element hierarchy.
-   */
   private syncGhostDOM(root: UIElement): void {
     const activeIds = new Set<string>();
 
@@ -429,9 +359,6 @@ export class Engine {
     this.ghost.prune(activeIds);
   }
 
-  /**
-   * Cleans up observers, stops rendering, and detaches listeners.
-   */
   public destroy(): void {
     this.stop();
     this.events.destroy();

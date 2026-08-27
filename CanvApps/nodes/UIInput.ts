@@ -69,9 +69,7 @@ export class UIInput extends UIElement implements GhostTarget {
     this.setupPointerListeners();
   }
 
-  // ---------------------------------------------------------------------------
   // Pointer & Selection Listeners
-  // ---------------------------------------------------------------------------
 
   private setupPointerListeners(): void {
     const onGlobalPointerUp = () => {
@@ -182,9 +180,7 @@ export class UIInput extends UIElement implements GhostTarget {
     };
   }
 
-  // ---------------------------------------------------------------------------
   // GhostTarget Implementation
-  // ---------------------------------------------------------------------------
 
   public getGhostType(): 'input' {
     return 'input';
@@ -369,9 +365,7 @@ export class UIInput extends UIElement implements GhostTarget {
     return `${weight} ${size}px ${family}`;
   }
 
-  // ---------------------------------------------------------------------------
   // Canvas Rendering
-  // ---------------------------------------------------------------------------
 
   public draw(ctx: CanvasRenderingContext2D): void {
     const { width, height } = this.layoutRect;
@@ -398,7 +392,6 @@ export class UIInput extends UIElement implements GhostTarget {
 
     ctx.save();
 
-    // 1. Background
     if (backgroundColor && backgroundColor !== 'transparent') {
       ctx.beginPath();
       this.applyPath(ctx, 0, 0, width, height, borderRadius);
@@ -406,7 +399,6 @@ export class UIInput extends UIElement implements GhostTarget {
       ctx.fill();
     }
 
-    // 2. Border (active/focus ring)
     const effectiveBorderColor = this.isFocused
       ? (focusBorderColor && focusBorderColor !== 'transparent' ? focusBorderColor : undefined)
       : (borderColor && borderColor !== 'transparent' ? borderColor : undefined);
@@ -430,7 +422,6 @@ export class UIInput extends UIElement implements GhostTarget {
       ctx.stroke();
     }
 
-    // 3. Typography & Selection
     ctx.font = this.getFontString();
     ctx.textBaseline = 'middle';
 
@@ -463,7 +454,6 @@ export class UIInput extends UIElement implements GhostTarget {
       ctx.fillText(displayText, textX, textY);
     }
 
-    // 4. Cursor Caret rendering when focused
     if (this.isFocused && this.isCaretVisible && !this.hasSelection()) {
       const textBeforeCursor = displayText.slice(0, this.cursorIndex);
       const caretX = textX + mCtx.measureText(textBeforeCursor).width;

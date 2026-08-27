@@ -1,9 +1,6 @@
 import { UIElement } from '../core/UIElement';
 import { CanvasPointerEvent } from './types';
 
-/**
- * Options for configuring the centralized EventDispatcher.
- */
 export interface EventDispatcherOptions {
   canvas: HTMLCanvasElement;
   getRoot: () => UIElement | null;
@@ -109,7 +106,13 @@ export class EventDispatcher {
       return null;
     }
 
-    // 1. Check open top-layer modals first (highest hit priority)
+    if (UIElement.activeOpenSelect && (UIElement.activeOpenSelect as any).isDropdownOpen?.()) {
+      const hit = UIElement.activeOpenSelect.hitTest(canvasX, canvasY);
+      if (hit) {
+        return hit;
+      }
+    }
+
     const findOpenModal = (element: UIElement): UIElement | null => {
       if ((element as any).isModal === true && (element as any).isModalOpen?.()) {
         return element;
@@ -132,7 +135,6 @@ export class EventDispatcher {
     return root.hitTest(canvasX, canvasY);
   }
 
-  // ---------------------------------------------------------------------------
   private isPointerDown = false;
   private pointerStartX = 0;
   private pointerStartY = 0;
@@ -144,9 +146,7 @@ export class EventDispatcher {
   private isDraggingScroll = false;
   private activeScroller: UIElement | null = null;
 
-  // ---------------------------------------------------------------------------
   // Native Event Handlers
-  // ---------------------------------------------------------------------------
 
   private handlePointerDown(e: PointerEvent): void {
     // Clear any active text selection when clicking on the canvas or UI elements
@@ -171,6 +171,11 @@ export class EventDispatcher {
 
     const { x, y } = this.clientToCanvas(e.clientX, e.clientY);
     const target = this.hitTest(x, y);
+
+    // Dismiss active open select if clicked outside
+    if (UIElement.activeOpenSelect && target !== UIElement.activeOpenSelect) {
+      (UIElement.activeOpenSelect as any).closeDropdown?.();
+    }
 
     // Focus management
     if (target !== this.focusedElement) {

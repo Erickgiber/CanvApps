@@ -1,6 +1,7 @@
 <script lang="ts">
   import { sessionStore, navigateRoute } from '../stores/session.store';
   import { galleryData, GalleryItem, toggleSaveGalleryItem, toggleLikeGalleryItem, resetScrollToTop, restoreGalleryScroll } from '../stores/gallery.store';
+  import { t } from '../i18n';
 
   // 1. Responsive Viewport Signals
   const { isMobile, isTablet, isDesktop, width } = useBreakpoints();
@@ -8,21 +9,21 @@
 
   // 2. Resolve Active Item from Subroute Parameter (retaining last valid item during transitions)
   const itemId = computed(() => {
-    const route = sessionStore.state.activeRoute;
-    if (route.startsWith('/gallery/')) {
-      return route.replace('/gallery/', '').split('?')[0].split('#')[0].trim();
-    }
-    return '';
-  });
+      const route = sessionStore.state.activeRoute;
+      if (route.startsWith('/gallery/')) {
+        return route.replace('/gallery/', '').split('?')[0].split('#')[0].trim();
+      }
+      return '';
+    });
 
   let lastValidItem: GalleryItem | null = null;
   const currentItem = computed(() => {
-    const id = itemId.value;
-    if (!id) return lastValidItem;
-    const found = galleryData.value.find((p) => p.id === id) || null;
-    if (found) lastValidItem = found;
-    return found || lastValidItem;
-  });
+      const id = itemId.value;
+      if (!id) return lastValidItem;
+      const found = galleryData.value.find((p) => p.id === id) || null;
+      if (found) lastValidItem = found;
+      return found || lastValidItem;
+    });
 
   const itemTags = computed(() => currentItem.value?.tags || []);
 
@@ -30,8 +31,8 @@
   if (typeof window !== 'undefined') {
     resetScrollToTop();
     queueMicrotask(() => {
-      resetScrollToTop();
-    });
+        resetScrollToTop();
+      });
   }
 
   // 4. User Actions
@@ -58,137 +59,309 @@
 </script>
 
 <!-- Mobile/Responsive Gallery Detail View Container with Scale Animation -->
-<motion animation="scale-in" :duration="450">
-  <view width="100%" flexDirection="column" :padding={isMobile.value ? [10, 8] : [20, 24]} :gap={isMobile.value ? 12 : 18} flexShrink="0">
+<motion
+  display="flex"
+  flexDirection="column"
+  width="100%"
+  alignItems="center"
+  animation="scale-in"
+  :duration="450"
+>
+  <view
+    width="100%"
+    maxWidth="1120"
+    flexDirection="column"
+    :padding={isMobile.value ? [10, 8] : [20, 24]}
+    :gap={isMobile.value ? 12 : 18}
+    flexShrink="0"
+  >
 
     <!-- 1. Top Navigation Bar with Back Button & Breadcrumbs -->
-    <view width="100%" flexDirection="row" alignItems="center" justifyContent="space-between" flexShrink="0">
-      <view flexDirection="row" alignItems="center" gap="10">
-        <button 
-          label="← Volver a la Galería" 
-          :backgroundColor={isDark.value ? '#22222a' : '#f1f5f9'} 
-          :hoverBackgroundColor={isDark.value ? '#2c2c36' : '#e2e8f0'} 
-          :color={isDark.value ? '#e0e0e0' : '#1e293b'} 
-          borderRadius="14" 
-          padding="[8, 14]" 
-          fontSize="12" 
-          fontWeight="bold" 
-          borderWidth="1" 
-          :borderColor={isDark.value ? '#333342' : '#cbd5e1'} 
-          @click="goBack" 
+    <view
+      width="100%"
+      flexDirection="row"
+      alignItems="center"
+      justifyContent="space-between"
+      flexShrink="0"
+    >
+      <view
+        flexDirection="row"
+        alignItems="center"
+        gap="10"
+      >
+        <a
+          href="/gallery"
+          :label="t.value.gallery.backButton"
+          :color={isDark.value ? '#38bdf8' : '#0284c7'}
+          fontSize="12"
+          fontWeight="bold"
+          underline="hover"
         />
       </view>
 
       @if (currentItem.value) {
-        <view padding="[4, 10]" borderRadius="12" :backgroundColor={isDark.value ? '#1e293b' : '#e0f2fe'} borderWidth="1" :borderColor={isDark.value ? '#333355' : '#bae6fd'}>
-          <text fontSize="11" fontWeight="bold" :color={isDark.value ? '#38bdf8' : '#0284c7'}>{{ currentItem.value?.category }}</text>
+        <view
+          padding="[4, 10]"
+          borderRadius="12"
+          :backgroundColor={isDark.value ? '#1e293b' : '#e0f2fe'}
+          borderWidth="1"
+          :borderColor={isDark.value ? '#333355' : '#bae6fd'}
+        >
+          <text
+            fontSize="11"
+            fontWeight="bold"
+            :color={isDark.value ? '#38bdf8' : '#0284c7'}
+          >
+            {{ currentItem.value?.category }}
+          </text>
         </view>
       }
     </view>
 
     <!-- 2. Main Gallery Detail Card Scene -->
     @if (currentItem.value) {
-      <view 
-        width="100%" 
-        flexDirection="column" 
-        :backgroundColor={isDark.value ? '#18181e' : '#ffffff'} 
-        borderRadius="20" 
-        overflow="hidden" 
-        borderWidth="1" 
-        :borderColor={isDark.value ? '#282834' : '#e2e8f0'} 
-        :boxShadow={isDark.value ? { offsetX: 0, offsetY: 12, blur: 36, color: 'rgba(0,0,0,0.65)' } : { offsetX: 0, offsetY: 12, blur: 36, color: 'rgba(0,0,0,0.08)' }} 
+      <view
+        width="100%"
+        flexDirection="column"
+        :backgroundColor={isDark.value ? '#0d131f' : '#ffffff'}
+        borderRadius="20"
+        overflow="hidden"
+        borderWidth="1"
+        :borderColor={isDark.value ? '#1e293b' : '#e2e8f0'}
+        :boxShadow={isDark.value ? { offsetX: 0, offsetY: 12, blur: 36, color: 'rgba(0,0,0,0.65)' } : { offsetX: 0, offsetY: 12, blur: 36, color: 'rgba(0,0,0,0.08)' }}
         flexShrink="0"
       >
-        
+
         <!-- Large High-Resolution Image -->
-        <view width="100%" position="relative" flexShrink="0">
-          <image 
-            :src="currentItem.value?.src" 
-            width="100%" 
-            :height={isMobile.value ? 340 : 500} 
-            fit="cover" 
-            borderRadius="[20, 20, 0, 0]" 
-            :backgroundColor={isDark.value ? '#111115' : '#f1f5f9'} 
+        <view
+          width="100%"
+          position="relative"
+          flexShrink="0"
+        >
+          <image
+            :src="currentItem.value?.src"
+            width="100%"
+            :height={isMobile.value ? 340 : 500}
+            fit="cover"
+            borderRadius="[20, 20, 0, 0]"
+            :backgroundColor={isDark.value ? '#080c14' : '#f1f5f9'}
           />
 
           <!-- Floating Save Action on Top Right -->
-          <view position="absolute" right="12" top="12">
-            <button 
-              :label={currentItem.value?.isSaved ? 'Saved to Board ✓' : 'Save'} 
-              :backgroundColor={currentItem.value?.isSaved ? (isDark.value ? '#111111' : '#e2e8f0') : '#0284c7'} 
-              :color={currentItem.value?.isSaved ? (isDark.value ? '#ffffff' : '#334155') : '#ffffff'} 
-              borderRadius="16" 
-              padding="[7, 14]" 
-              fontSize="12" 
-              fontWeight="bold" 
-              @click="handleSave" 
+          <view
+            position="absolute"
+            right="12"
+            top="12"
+          >
+            <button
+              :label="currentItem.value?.isSaved ? t.value.gallery.savedButton : t.value.gallery.saveButton"
+              :backgroundColor={currentItem.value?.isSaved ? (isDark.value ? '#1e293b' : '#e2e8f0') : '#0284c7'}
+              :color={currentItem.value?.isSaved ? (isDark.value ? '#ffffff' : '#334155') : '#ffffff'}
+              borderRadius="16"
+              padding="[7, 14]"
+              fontSize="12"
+              fontWeight="bold"
+              @click="handleSave"
             />
           </view>
         </view>
 
         <!-- Details Content Container -->
-        <view width="100%" padding="[16, 18]" flexDirection="column" gap="14" flexShrink="0">
-          
+        <view
+          width="100%"
+          padding="[16, 18]"
+          flexDirection="column"
+          gap="14"
+          flexShrink="0"
+        >
+
           <!-- Title and Description -->
-          <view width="100%" flexDirection="column" gap="6" flexShrink="0">
-            <text :fontSize={isMobile.value ? 18 : 24} fontWeight="bold" :color={isDark.value ? '#ffffff' : '#0f172a'} :wordWrap="true">
+          <view
+            width="100%"
+            flexDirection="column"
+            gap="6"
+            flexShrink="0"
+          >
+            <text
+              :fontSize={isMobile.value ? 18 : 24}
+              fontWeight="bold"
+              :color={isDark.value ? '#ffffff' : '#0f172a'}
+              :wordWrap="true"
+            >
               {{ currentItem.value?.title }}
             </text>
-            <text :fontSize={isMobile.value ? 13 : 14} :color={isDark.value ? '#aaaaaa' : '#475569'} :lineHeight="20" :wordWrap="true">
+            <text
+              :fontSize={isMobile.value ? 13 : 14}
+              :color={isDark.value ? '#94a3b8' : '#475569'}
+              :lineHeight="20"
+              :wordWrap="true"
+            >
               {{ currentItem.value?.description }}
             </text>
           </view>
 
           <!-- Tags List -->
-          <view width="100%" flexDirection="row" gap="6" overflow="auto" padding="[2, 0]" flexShrink="0">
+          <view
+            width="100%"
+            flexDirection="row"
+            gap="6"
+            overflow="auto"
+            padding="[2, 0]"
+            flexShrink="0"
+          >
             @each itemTags.value as tag {
-              <view padding="[3, 8]" borderRadius="8" :backgroundColor={isDark.value ? '#22222c' : '#f1f5f9'} borderWidth="1" :borderColor={isDark.value ? '#30303e' : '#e2e8f0'}>
-                <text fontSize="11" :color={isDark.value ? '#94a3b8' : '#64748b'}>{{ tag }}</text>
+              <view
+                padding="[3, 8]"
+                borderRadius="8"
+                :backgroundColor={isDark.value ? '#162032' : '#f1f5f9'}
+                borderWidth="1"
+                :borderColor={isDark.value ? '#1e293b' : '#e2e8f0'}
+              >
+                <text
+                  fontSize="11"
+                  :color={isDark.value ? '#94a3b8' : '#64748b'}
+                >
+                  {{ tag }}
+                </text>
               </view>
             }
           </view>
 
           <!-- Author Info Card & Follow Action -->
-          <view width="100%" flexDirection="row" alignItems="center" justifyContent="space-between" :padding={isMobile.value ? [10, 12] : [12, 16]} borderRadius="16" :backgroundColor={isDark.value ? '#20202a' : '#f8fafc'} borderWidth="1" :borderColor={isDark.value ? '#2e2e3c' : '#e2e8f0'} flexShrink="0">
-            <view flexDirection="row" alignItems="center" gap="10">
-              <view width="40" height="40" :backgroundColor={currentItem.value?.avatarColor || '#e11d48'} borderRadius="20" alignItems="center" justifyContent="center">
-                <text fontSize="16" fontWeight="bold" color="#ffffff">{{ (currentItem.value?.author || 'A').charAt(0) }}</text>
+          <view
+            width="100%"
+            flexDirection="row"
+            alignItems="center"
+            justifyContent="space-between"
+            :padding={isMobile.value ? [10, 12] : [12, 16]}
+            borderRadius="16"
+            :backgroundColor={isDark.value ? '#162032' : '#f8fafc'}
+            borderWidth="1"
+            :borderColor={isDark.value ? '#1e293b' : '#e2e8f0'}
+            flexShrink="0"
+          >
+            <view
+              flexDirection="row"
+              alignItems="center"
+              gap="10"
+            >
+              <view
+                width="40"
+                height="40"
+                :backgroundColor={currentItem.value?.avatarColor || '#e11d48'}
+                borderRadius="20"
+                alignItems="center"
+                justifyContent="center"
+              >
+                <text
+                  fontSize="16"
+                  fontWeight="bold"
+                  color="#ffffff"
+                >
+                  {{ (currentItem.value?.author || 'A').charAt(0) }}
+                </text>
               </view>
               <view flexDirection="column" gap="2">
-                <text :fontSize={isMobile.value ? 13 : 14} fontWeight="bold" :color={isDark.value ? '#ffffff' : '#0f172a'}>{{ currentItem.value?.author }}</text>
-                <text fontSize="11" :color={isDark.value ? '#888888' : '#64748b'}>{{ currentItem.value?.authorHandle }}</text>
+                <text
+                  :fontSize={isMobile.value ? 13 : 14}
+                  fontWeight="bold"
+                  :color={isDark.value ? '#ffffff' : '#0f172a'}
+                >
+                  {{ currentItem.value?.author }}
+                </text>
+                <text
+                  fontSize="11"
+                  :color={isDark.value ? '#94a3b8' : '#64748b'}
+                >
+                  {{ currentItem.value?.authorHandle }}
+                </text>
               </view>
             </view>
-            <button label="Follow" :backgroundColor={isDark.value ? '#323240' : '#e2e8f0'} :color={isDark.value ? '#f0f0f0' : '#1e293b'} borderRadius="14" padding="[6, 14]" fontSize="11" fontWeight="bold" />
+            <button
+              label="Follow"
+              :backgroundColor={isDark.value ? '#1e293b' : '#e2e8f0'}
+              :color={isDark.value ? '#f1f5f9' : '#1e293b'}
+              borderRadius="14"
+              padding="[6, 14]"
+              fontSize="11"
+              fontWeight="bold"
+            />
           </view>
 
           <!-- Footer Actions: Interactive Like Button & Category Info -->
-          <view width="100%" flexDirection="row" alignItems="center" justifyContent="space-between" flexShrink="0" padding="[4, 0]">
-            <button 
-              :label={currentItem.value?.isLiked ? '♥ Liked (' + (currentItem.value?.likes || 0) + ')' : '♡ Like (' + (currentItem.value?.likes || 0) + ')'} 
-              :color={currentItem.value?.isLiked ? '#ff4d6d' : (isDark.value ? '#ffffff' : '#1e293b')} 
-              :backgroundColor={isDark.value ? '#282834' : '#f1f5f9'} 
-              borderRadius="14" 
-              padding="[6, 14]" 
-              fontSize="12" 
-              fontWeight="bold" 
-              @click="handleLike" 
+          <view
+            width="100%"
+            flexDirection="row"
+            alignItems="center"
+            justifyContent="space-between"
+            flexShrink="0"
+            padding="[4, 0]"
+          >
+            <button
+              :label="currentItem.value?.isLiked ? '♥ Liked (' + (currentItem.value?.likes || 0) + ')' : '♡ Like (' + (currentItem.value?.likes || 0) + ')'"
+              :color={currentItem.value?.isLiked ? '#ff4d6d' : (isDark.value ? '#ffffff' : '#1e293b')}
+              :backgroundColor={isDark.value ? '#162032' : '#f1f5f9'}
+              borderRadius="14"
+              padding="[6, 14]"
+              fontSize="12"
+              fontWeight="bold"
+              @click="handleLike"
             />
-            <text fontSize="11" :color={isDark.value ? '#666677' : '#94a3b8'}>CanvApps Hardware Canvas 2D</text>
+            <text fontSize="11" :color={isDark.value ? '#64748b' : '#94a3b8'}>
+              CanvApps Hardware Canvas 2D
+            </text>
           </view>
 
         </view>
 
       </view>
-    } else {
+      else {
       <!-- 3. Fallback: Item Not Found State -->
-      <view width="100%" :backgroundColor={isDark.value ? '#18181f' : '#ffffff'} borderRadius="20" borderWidth="1" :borderColor={isDark.value ? '#282834' : '#e2e8f0'} padding="[32, 20]" flexDirection="column" alignItems="center" justifyContent="center" gap="14" flexShrink="0">
+      <view
+        width="100%"
+        :backgroundColor={isDark.value ? '#0d131f' : '#ffffff'}
+        borderRadius="20"
+        borderWidth="1"
+        :borderColor={isDark.value ? '#1e293b' : '#e2e8f0'}
+        padding="[32, 20]"
+        flexDirection="column"
+        alignItems="center"
+        justifyContent="center"
+        gap="14"
+        flexShrink="0"
+      >
         <text fontSize="32">🔍</text>
-        <view flexDirection="column" alignItems="center" gap="4">
-          <text fontSize="16" fontWeight="bold" :color={isDark.value ? '#ffffff' : '#0f172a'}>Elemento no encontrado</text>
-          <text fontSize="12" :color={isDark.value ? '#888888' : '#64748b'} textAlign="center">No pudimos encontrar los detalles para el elemento especificado en la ruta.</text>
+        <view
+          flexDirection="column"
+          alignItems="center"
+          gap="4"
+        >
+          <text
+            fontSize="16"
+            fontWeight="bold"
+            :color={isDark.value ? '#ffffff' : '#0f172a'}
+          >
+            {{ t.value.gallery.notFoundTitle }}
+          </text>
+          <text
+            fontSize="12"
+            :color={isDark.value ? '#94a3b8' : '#64748b'}
+            textAlign="center"
+          >
+            {{ t.value.gallery.notFoundDesc }}
+          </text>
         </view>
-        <button label="Volver a la Galería" backgroundColor="#0284c7" hoverBackgroundColor="#0369a1" color="#ffffff" borderRadius="12" padding="[8, 16]" fontSize="12" fontWeight="bold" @click="goBack" />
+        <button
+          :label="t.value.gallery.backButton"
+          backgroundColor="#0284c7"
+          hoverBackgroundColor="#0369a1"
+          color="#ffffff"
+          borderRadius="12"
+          padding="[8, 16]"
+          fontSize="12"
+          fontWeight="bold"
+          @click="goBack"
+        />
       </view>
     }
 

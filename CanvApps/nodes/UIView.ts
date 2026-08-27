@@ -11,11 +11,6 @@ export class UIView extends UIElement {
     super(styles);
   }
 
-  /**
-   * Draws the container background, shadows, and borders onto the canvas.
-   *
-   * @param ctx The Canvas 2D rendering context translated to (worldRect.x, worldRect.y).
-   */
   public draw(ctx: CanvasRenderingContext2D): void {
     const { width, height } = this.layoutRect;
     if (width <= 0 || height <= 0) {
@@ -27,7 +22,6 @@ export class UIView extends UIElement {
 
     ctx.save();
 
-    // 1. Box shadow pass
     if (boxShadow) {
       ctx.save();
       ctx.shadowColor = boxShadow.color;
@@ -43,7 +37,6 @@ export class UIView extends UIElement {
       ctx.restore();
     }
 
-    // 2. Background fill pass
     if (backgroundColor && backgroundColor !== 'transparent') {
       ctx.beginPath();
       this.applyPath(ctx, 0, 0, width, height, borderRadius);
@@ -51,7 +44,6 @@ export class UIView extends UIElement {
       ctx.fill();
     }
 
-    // 3. Border stroke pass
     const effectiveBorderWidth = borderWidth ?? border?.width ?? 0;
     const effectiveBorderColor = borderColor ?? border?.color;
 

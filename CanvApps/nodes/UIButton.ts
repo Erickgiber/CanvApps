@@ -14,6 +14,7 @@ export interface ButtonStyles extends VisualStyles {
   hoverBackgroundColor?: string;
   activeBackgroundColor?: string;
   disabled?: boolean;
+  disableActive?: boolean | string;
 }
 
 /**
@@ -30,7 +31,6 @@ export class UIButton extends UIElement {
       padding: defaultPadding,
       backgroundColor: '#0284c7',
       hoverBackgroundColor: '#0369a1',
-      activeBackgroundColor: '#075985',
       borderRadius: 8,
       cursor: 'pointer',
       flexDirection: 'row',
@@ -107,7 +107,7 @@ export class UIButton extends UIElement {
     const {
       backgroundColor = '#0284c7',
       hoverBackgroundColor = '#0369a1',
-      activeBackgroundColor = '#075985',
+      activeBackgroundColor = this.styles.activeBackgroundColor,
       borderRadius,
       boxShadow,
       borderWidth,
@@ -121,10 +121,14 @@ export class UIButton extends UIElement {
       fontFamily = 'system-ui, -apple-system, sans-serif',
     } = this.styles;
 
+    const shouldDisableActive = 
+      this.styles.disableActive === true || 
+      this.styles.disableActive === 'true';
+
     let currentBg = backgroundColor;
     if (disabled) {
       currentBg = '#475569';
-    } else if (this.isPressed && activeBackgroundColor) {
+    } else if (this.isPressed && !shouldDisableActive && activeBackgroundColor) {
       currentBg = activeBackgroundColor;
     } else if (this.isHovered && hoverBackgroundColor) {
       currentBg = hoverBackgroundColor;
@@ -132,7 +136,6 @@ export class UIButton extends UIElement {
 
     ctx.save();
 
-    // 1. Box shadow
     if (boxShadow && !this.isPressed && !disabled) {
       ctx.save();
       ctx.shadowColor = boxShadow.color;
@@ -147,7 +150,6 @@ export class UIButton extends UIElement {
       ctx.restore();
     }
 
-    // 2. Background
     if (currentBg && currentBg !== 'transparent') {
       ctx.beginPath();
       this.applyPath(ctx, 0, 0, width, height, borderRadius);
@@ -155,7 +157,6 @@ export class UIButton extends UIElement {
       ctx.fill();
     }
 
-    // 3. Border
     if (borderWidth && borderWidth > 0 && borderColor) {
       ctx.beginPath();
       const half = borderWidth / 2;
@@ -172,7 +173,6 @@ export class UIButton extends UIElement {
       ctx.stroke();
     }
 
-    // 4. Center Label Text / Icon
     if (label) {
       const textColor = labelColor ?? color ?? '#ffffff';
       ctx.font = `${fontWeight} ${fontSize}px ${fontFamily}`;

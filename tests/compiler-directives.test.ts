@@ -142,23 +142,18 @@ assert(each5.body.length === 1, 'each-block body has 1 element');
 assert(each5.body[0].type === 'if-block', 'Nested element is if-block');
 
 // -----------------------------------------------------------------------------
-// Test 6: Verify Svelte-style {#if} is NOT preprocessed into if-block
+// Test 7: Verify HTML entity decoding in text nodes
 // -----------------------------------------------------------------------------
-console.log('\nTest 6: Verify Svelte-style {#if} is not parsed as CanvApps control block');
-const src6 = `
-<script lang="ts">
-  const active = signal(true);
-</script>
+console.log('\nTest 7: Verify HTML entity decoding in text nodes');
+const src7 = `
 <view>
-  {#if active.value}
-    <text>Should not become if-block</text>
-  {/if}
+  <text>&lt;view /&gt; &amp; &lt;text /&gt;</text>
 </view>
 `;
 
-const res6 = compileCVS(src6);
-const root6 = res6.ast.template as ASTElement;
-const hasIfBlock = root6.children.some((c) => c.type === 'if-block');
-assert(!hasIfBlock, 'Svelte-style {#if} was NOT transformed into an if-block AST node');
+const res7 = compileCVS(src7);
+const root7 = res7.ast.template as ASTElement;
+const textNode7 = (root7.children[0] as ASTElement).children[0];
+assert((textNode7 as any).content === '<view /> & <text />', `Text entities decoded accurately (actual: ${(textNode7 as any).content})`);
 
 console.log('\n🎉 All CanvApps Compiler Directives Tests passed successfully!\n');

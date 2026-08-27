@@ -12,9 +12,6 @@ import { getSafeAreaInsets } from './safeArea';
  * propagation, hit-testing mechanics, and Canvas 2D render pipeline orchestration.
  */
 export abstract class UIElement {
-  /**
-   * Unique identifier for this element.
-   */
   public readonly id: string;
 
   /**
@@ -44,14 +41,8 @@ export abstract class UIElement {
    */
   public worldRect: Rect = { x: 0, y: 0, width: 0, height: 0 };
 
-  /**
-   * Flag indicating whether this node requires layout recalculation.
-   */
   public isLayoutDirty = true;
 
-  /**
-   * Flag indicating whether this node requires canvas redraw.
-   */
   public isRenderDirty = true;
 
   /**
@@ -65,6 +56,14 @@ export abstract class UIElement {
   public isHovered = false;
   public isPressed = false;
   public isFocused = false;
+
+  /**
+   * Smart Animate / Shared Element dynamic offset & scale properties.
+   */
+  public smartOffsetX: number = 0;
+  public smartOffsetY: number = 0;
+  public smartScaleX: number = 1;
+  public smartScaleY: number = 1;
 
   private listeners: Map<UIEventType, Set<CanvasEventListener>> = new Map();
   private static idCounter = 0;
@@ -81,8 +80,10 @@ export abstract class UIElement {
   public static enableSafeArea = true;
 
   /**
-   * Registers an element into the global ID lookup registry.
+   * Global reference to currently open UISelect instance (for priority hit-testing and outside dismissal).
    */
+  public static activeOpenSelect: UIElement | null = null;
+
   public static registerElement(id: string, element: UIElement): void {
     const cleanId = id.startsWith('#') ? id.slice(1) : id;
     this.elementRegistry.set(cleanId, element);
@@ -146,10 +147,7 @@ export abstract class UIElement {
     }
   }
 
-  // ---------------------------------------------------------------------------
   // Hierarchy Management
-  // ---------------------------------------------------------------------------
-
 
   public addChild(child: UIElement): this {
     if (child.parent === this) {
@@ -276,9 +274,7 @@ export abstract class UIElement {
     'label',
   ]);
 
-  // ---------------------------------------------------------------------------
   // Style and Invalidation
-  // ---------------------------------------------------------------------------
 
   public setStyle(styles: Partial<VisualStyles>): this {
     if (styles.scrollTop !== undefined) {
@@ -322,6 +318,7 @@ export abstract class UIElement {
       curr.isRenderDirty = true;
       curr = curr.parent;
     }
+    Engine.invalidateActive();
   }
 
   public markRenderDirty(): void {
@@ -332,11 +329,55 @@ export abstract class UIElement {
       curr.isRenderDirty = true;
       curr = curr.parent;
     }
+    Engine.invalidateActive();
   }
 
-  // ---------------------------------------------------------------------------
   // Coordinate Space and Box Model
-  // ---------------------------------------------------------------------------
+
+  /**
+   * Parses arbitrary insets into a normalized Insets object.
+   */
+  private static parseInsetValues(val: any): Insets | null {
+    if (val === undefined || val === null) return null;
+    if (typeof val === 'number') {
+      return { top: val, right: val, bottom: val, left: val };
+    }
+    if (Array.isArray(val)) {
+      if (val.length === 2) {
+        const [vertical, horizontal] = val.map(Number);
+        return { top: vertical || 0, right: horizontal || 0, bottom: vertical || 0, left: horizontal || 0 };
+      }
+      if (val.length === 4) {
+        const [top, right, bottom, left] = val.map(Number);
+        return { top: top || 0, right: right || 0, bottom: bottom || 0, left: left || 0 };
+      }
+    }
+    if (typeof val === 'string') {
+      const trimmed = val.trim();
+      if (trimmed.startsWith('[') && trimmed.endsWith(']')) {
+        try {
+          const parsed = JSON.parse(trimmed);
+          if (Array.isArray(parsed)) {
+            return UIElement.parseInsetValues(parsed);
+          }
+        } catch {
+          const parts = trimmed.slice(1, -1).split(',').map((s) => parseFloat(s.trim())).filter((n) => !isNaN(n));
+          return UIElement.parseInsetValues(parts);
+        }
+      }
+      const parts = trimmed.replace(/px/g, '').split(/[\s,]+/).map((s) => parseFloat(s.trim())).filter((n) => !isNaN(n));
+      if (parts.length === 1) {
+        return { top: parts[0], right: parts[0], bottom: parts[0], left: parts[0] };
+      }
+      if (parts.length === 2) {
+        return { top: parts[0], right: parts[1], bottom: parts[0], left: parts[1] };
+      }
+      if (parts.length === 4) {
+        return { top: parts[0], right: parts[1], bottom: parts[2], left: parts[3] };
+      }
+    }
+    return null;
+  }
 
   /**
    * Resolves the 4-directional computed padding insets including safe-area insets.
@@ -351,25 +392,12 @@ export abstract class UIElement {
       left: paddingLeft ?? 0,
     };
 
-    if (typeof padding === 'number') {
-      insets.top = paddingTop ?? padding;
-      insets.right = paddingRight ?? padding;
-      insets.bottom = paddingBottom ?? padding;
-      insets.left = paddingLeft ?? padding;
-    } else if (Array.isArray(padding)) {
-      if (padding.length === 2) {
-        const [vertical, horizontal] = padding;
-        insets.top = paddingTop ?? vertical;
-        insets.right = paddingRight ?? horizontal;
-        insets.bottom = paddingBottom ?? vertical;
-        insets.left = paddingLeft ?? horizontal;
-      } else if (padding.length === 4) {
-        const [top, right, bottom, left] = padding;
-        insets.top = paddingTop ?? top;
-        insets.right = paddingRight ?? right;
-        insets.bottom = paddingBottom ?? bottom;
-        insets.left = paddingLeft ?? left;
-      }
+    const parsed = UIElement.parseInsetValues(padding);
+    if (parsed) {
+      insets.top = paddingTop ?? parsed.top;
+      insets.right = paddingRight ?? parsed.right;
+      insets.bottom = paddingBottom ?? parsed.bottom;
+      insets.left = paddingLeft ?? parsed.left;
     }
 
     // Apply safe area insets (Notch, Status Bar, Home Indicator) if configured
@@ -404,42 +432,22 @@ export abstract class UIElement {
   public getComputedMargin(): Insets {
     const { margin, marginTop, marginRight, marginBottom, marginLeft } = this.styles;
 
-    if (typeof margin === 'number') {
-      return {
-        top: marginTop ?? margin,
-        right: marginRight ?? margin,
-        bottom: marginBottom ?? margin,
-        left: marginLeft ?? margin,
-      };
-    }
-
-    if (Array.isArray(margin)) {
-      if (margin.length === 2) {
-        const [vertical, horizontal] = margin;
-        return {
-          top: marginTop ?? vertical,
-          right: marginRight ?? horizontal,
-          bottom: marginBottom ?? vertical,
-          left: marginLeft ?? horizontal,
-        };
-      }
-      if (margin.length === 4) {
-        const [top, right, bottom, left] = margin;
-        return {
-          top: marginTop ?? top,
-          right: marginRight ?? right,
-          bottom: marginBottom ?? bottom,
-          left: marginLeft ?? left,
-        };
-      }
-    }
-
-    return {
+    const insets: Insets = {
       top: marginTop ?? 0,
       right: marginRight ?? 0,
       bottom: marginBottom ?? 0,
       left: marginLeft ?? 0,
     };
+
+    const parsed = UIElement.parseInsetValues(margin);
+    if (parsed) {
+      insets.top = marginTop ?? parsed.top;
+      insets.right = marginRight ?? parsed.right;
+      insets.bottom = marginBottom ?? parsed.bottom;
+      insets.left = marginLeft ?? parsed.left;
+    }
+
+    return insets;
   }
 
   /**
@@ -452,7 +460,35 @@ export abstract class UIElement {
    */
   public measure(availableWidth: number, availableHeight: number): Size {
     const padding = this.getComputedPadding();
-    const innerAvailableW = Math.max(0, availableWidth - padding.left - padding.right);
+
+    let containerResolvedW = availableWidth;
+    if (typeof this.styles.width === 'number') {
+      containerResolvedW = this.styles.width;
+    } else if (typeof this.styles.width === 'string') {
+      if (this.styles.width.endsWith('%')) {
+        const pct = parseFloat(this.styles.width);
+        if (!isNaN(pct)) {
+          containerResolvedW = (pct / 100) * availableWidth;
+        }
+      } else {
+        const num = parseFloat(this.styles.width);
+        if (!isNaN(num)) {
+          containerResolvedW = num;
+        }
+      }
+    }
+    if (this.styles.maxWidth !== undefined) {
+      const maxVal = this.styles.maxWidth as any;
+      const maxW = typeof maxVal === 'number' ? maxVal : typeof maxVal === 'string' && maxVal.endsWith('%') ? (parseFloat(maxVal) / 100) * availableWidth : parseFloat(maxVal);
+      if (!isNaN(maxW)) containerResolvedW = Math.min(maxW, containerResolvedW);
+    }
+    if (this.styles.minWidth !== undefined) {
+      const minVal = this.styles.minWidth as any;
+      const minW = typeof minVal === 'number' ? minVal : typeof minVal === 'string' && minVal.endsWith('%') ? (parseFloat(minVal) / 100) * availableWidth : parseFloat(minVal);
+      if (!isNaN(minW)) containerResolvedW = Math.max(minW, containerResolvedW);
+    }
+
+    const innerAvailableW = Math.max(0, containerResolvedW - padding.left - padding.right);
     const innerAvailableH = Math.max(0, availableHeight - padding.top - padding.bottom);
 
     let intrinsicW = 0;
@@ -574,17 +610,33 @@ export abstract class UIElement {
       }
     }
 
+    // Apply min/max width constraints
+    if (this.styles.minWidth !== undefined) {
+      const minVal = this.styles.minWidth as any;
+      const minW = typeof minVal === 'number' ? minVal : typeof minVal === 'string' && minVal.endsWith('%') ? (parseFloat(minVal) / 100) * availableWidth : parseFloat(minVal);
+      if (!isNaN(minW)) width = Math.max(minW, width);
+    }
+    if (this.styles.maxWidth !== undefined) {
+      const maxVal = this.styles.maxWidth as any;
+      const maxW = typeof maxVal === 'number' ? maxVal : typeof maxVal === 'string' && maxVal.endsWith('%') ? (parseFloat(maxVal) / 100) * availableWidth : parseFloat(maxVal);
+      if (!isNaN(maxW)) width = Math.min(maxW, width);
+    }
+
+    // Apply min/max height constraints
+    if (this.styles.minHeight !== undefined) {
+      const minHVal = this.styles.minHeight as any;
+      const minH = typeof minHVal === 'number' ? minHVal : typeof minHVal === 'string' && minHVal.endsWith('%') ? (parseFloat(minHVal) / 100) * availableHeight : parseFloat(minHVal);
+      if (!isNaN(minH)) height = Math.max(minH, height);
+    }
+    if (this.styles.maxHeight !== undefined) {
+      const maxHVal = this.styles.maxHeight as any;
+      const maxH = typeof maxHVal === 'number' ? maxHVal : typeof maxHVal === 'string' && maxHVal.endsWith('%') ? (parseFloat(maxHVal) / 100) * availableHeight : parseFloat(maxHVal);
+      if (!isNaN(maxH)) height = Math.min(maxH, height);
+    }
+
     return { width, height };
   }
 
-  /**
-   * Sets computed layout coordinates and dimensions.
-   *
-   * @param x Left position relative to parent.
-   * @param y Top position relative to parent.
-   * @param width Computed width.
-   * @param height Computed height.
-   */
   public setLayout(x: number, y: number, width: number, height: number): void {
     this.layoutRect.x = x;
     this.layoutRect.y = y;
@@ -701,9 +753,7 @@ export abstract class UIElement {
     };
   }
 
-  // ---------------------------------------------------------------------------
   // Hit Testing
-  // ---------------------------------------------------------------------------
 
   /**
    * Determines if a world coordinate point falls within this element's bounding rect.
@@ -758,15 +808,8 @@ export abstract class UIElement {
     return this;
   }
 
-  // ---------------------------------------------------------------------------
   // Rendering
-  // ---------------------------------------------------------------------------
 
-  /**
-   * Main recursive rendering entry point with hardware transform & alpha application.
-   *
-   * @param ctx Active 2D Canvas rendering context.
-   */
   public render(ctx: CanvasRenderingContext2D): void {
     if (!this.visible || this.styles.display === 'none') {
       this.isRenderDirty = false;
@@ -789,6 +832,18 @@ export abstract class UIElement {
     // Apply composite opacity
     if (typeof this.styles.opacity === 'number' && this.styles.opacity < 1) {
       ctx.globalAlpha *= Math.max(0, Math.min(1, this.styles.opacity));
+    }
+
+    // Apply Smart Animate / Shared Element morphing offset and scale
+    if (this.smartOffsetX !== 0 || this.smartOffsetY !== 0 || this.smartScaleX !== 1 || this.smartScaleY !== 1) {
+      const centerX = this.worldRect.x + this.worldRect.width / 2;
+      const centerY = this.worldRect.y + this.worldRect.height / 2;
+      ctx.translate(this.smartOffsetX, this.smartOffsetY);
+      if (this.smartScaleX !== 1 || this.smartScaleY !== 1) {
+        ctx.translate(centerX, centerY);
+        ctx.scale(this.smartScaleX, this.smartScaleY);
+        ctx.translate(-centerX, -centerY);
+      }
     }
 
     // Apply translate offset (translateX / translateY)
@@ -892,7 +947,6 @@ export abstract class UIElement {
 
     ctx.save();
 
-    // 1. Vertical scrollbar
     if (canScrollY && this.worldRect.height > 0) {
       const trackMargin = 3;
       const trackX = this.worldRect.x + this.worldRect.width - scrollbarSize - trackMargin;
@@ -918,7 +972,6 @@ export abstract class UIElement {
       ctx.fill();
     }
 
-    // 2. Horizontal scrollbar
     if (canScrollX && this.worldRect.width > 0) {
       const trackMargin = 3;
       const trackX = this.worldRect.x + padding.left + trackMargin;
@@ -994,9 +1047,7 @@ export abstract class UIElement {
     ctx.closePath();
   }
 
-  // ---------------------------------------------------------------------------
   // Event Handling & Propagation
-  // ---------------------------------------------------------------------------
 
   /**
    * Registers an event listener on this element.
@@ -1054,8 +1105,12 @@ export abstract class UIElement {
    * @param event The event payload.
    */
   public emit(type: UIEventType, event: CanvasPointerEvent | any = {}): void {
-    if (event) {
-      event.currentTarget = this;
+    if (event && typeof event === 'object') {
+      try {
+        event.currentTarget = this;
+      } catch {
+        // Native browser Events have read-only currentTarget getter
+      }
     }
     const set = this.listeners.get(type);
     if (set) {
@@ -1089,12 +1144,5 @@ export abstract class UIElement {
     this.markRenderDirty();
   }
 
-  /**
-   * Abstract drawing method implemented by concrete visual nodes (e.g. UIView, UIText).
-   *
-   * Coordinates in this method are relative to the element's local origin (0, 0).
-   *
-   * @param ctx The Canvas 2D rendering context translated to the element's local origin.
-   */
   public abstract draw(ctx: CanvasRenderingContext2D): void;
 }

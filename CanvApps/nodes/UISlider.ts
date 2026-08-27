@@ -275,13 +275,11 @@ export class UISlider extends UIElement {
     const ratio = range > 0 ? Math.max(0, Math.min(1, (this.value - this.min) / range)) : 0;
     const currentProgressX = startX + ratio * trackW;
 
-    // 1. Background Track
     ctx.beginPath();
     ctx.roundRect(startX, centerY - trackHalfH, trackW, trackHeight, trackHalfH);
     ctx.fillStyle = disabled ? '#1e293b' : trackColor;
     ctx.fill();
 
-    // 2. Active Progress Fill
     if (ratio > 0) {
       ctx.beginPath();
       ctx.roundRect(startX, centerY - trackHalfH, Math.max(trackHeight, currentProgressX - startX), trackHeight, trackHalfH);
@@ -289,7 +287,6 @@ export class UISlider extends UIElement {
       ctx.fill();
     }
 
-    // 3. Thumb Knob
     const shouldDrawThumb =
       showThumb === 'always' ||
       showThumb === true ||

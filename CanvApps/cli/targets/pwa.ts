@@ -13,19 +13,16 @@ export class PWATargetBuilder {
     const pwa = config.pwa ?? {};
     console.log(`📱 [CanvApps CLI]: Generating PWA metadata and offline Service Worker for "${config.title || 'CanvApps App'}"...`);
 
-    // 1. Generate web manifest
     const manifest = this.generateManifest(config, pwa);
     const manifestPath = path.join(outputDir, 'manifest.json');
     fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2), 'utf-8');
     console.log(`  ✓ Generated: ${manifestPath}`);
 
-    // 2. Generate Service Worker (sw.js)
     const swContent = this.generateServiceWorker(pwa, config.banner !== false);
     const swPath = path.join(outputDir, 'sw.js');
     fs.writeFileSync(swPath, swContent, 'utf-8');
     console.log(`  ✓ Generated: ${swPath}`);
 
-    // 3. Inject PWA headers into index.html
     const indexPath = path.join(outputDir, 'index.html');
     if (fs.existsSync(indexPath)) {
       let html = fs.readFileSync(indexPath, 'utf-8');

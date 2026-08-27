@@ -1,0 +1,228 @@
+<script lang="ts">
+  import { sessionStore, currentRoute, toggleTheme, toggleGlobalSound } from '../stores/session.store';
+  import { t, currentLocale, setLocale } from '../i18n';
+
+  // Responsive signals
+  const { isMobile } = useBreakpoints();
+  const isDark = computed(() => sessionStore.state.theme === 'dark');
+  const isSoundOn = computed(() => sessionStore.state.isSoundEnabled);
+
+  const langOptions = [
+    { label: '🇺🇸 EN', value: 'en' },
+    { label: '🇪🇸 ES', value: 'es' },
+  ];
+
+  // Derive route segment info reactively
+  const isDocs = computed(() => currentRoute.value === '/docs');
+  const isShowcasesHub = computed(() => currentRoute.value === '/showcases');
+  const isGallery = computed(() => currentRoute.value === '/showcases/gallery' || currentRoute.value === '/gallery');
+  const isGalleryDetail = computed(() => currentRoute.value.startsWith('/gallery/'));
+  const isMusic = computed(() => currentRoute.value.startsWith('/showcases/music') || currentRoute.value.startsWith('/music'));
+  const isShowcaseSubApp = computed(() => isGallery.value || isGalleryDetail.value || isMusic.value);
+
+  // Reactive Hyperlink definitions for navigation
+  const navLinks = computed(() => [
+      { id: 'docs', href: '/docs', label: '📖 ' + t.value.breadcrumb.docs },
+      { id: 'showcases', href: '/showcases', label: '🚀 ' + t.value.breadcrumb.showcases },
+      { id: 'github', href: 'https://github.com/Erickgiber/CanvApps', label: '⭐ GitHub', isExternal: true },
+    ]);
+
+  // Filter visible quick links in the right toolbar based on current route
+  const visibleNavLinks = computed(() => {
+      return navLinks.value.filter((item) => {
+          if (item.href === '/docs' && isDocs.value) return false;
+          if (item.href === '/showcases' && (isShowcasesHub.value || isShowcaseSubApp.value)) return false;
+          return true;
+        });
+    });
+
+  const activeAppTitle = computed(() => {
+      if (isDocs.value) return '📖 ' + t.value.breadcrumb.docs;
+      if (isShowcasesHub.value) return '🚀 ' + t.value.breadcrumb.showcases;
+      if (isGallery.value) return '🎨 ' + t.value.breadcrumb.gallery;
+      if (isGalleryDetail.value) return '🖼️ ' + t.value.breadcrumb.galleryDetail;
+      if (isMusic.value) return '🎵 ' + t.value.breadcrumb.music;
+      return t.value.breadcrumb.notFound;
+    });
+
+  const activeLeafLayoutId = computed(() => {
+      if (isDocs.value) return 'nav-docs';
+      if (isShowcasesHub.value) return 'nav-showcases';
+      return 'breadcrumb-leaf';
+    });
+
+  function handleTheme() {
+    toggleTheme();
+  }
+
+  function handleSound() {
+    toggleGlobalSound();
+  }
+
+  function handleLangSelect(e: any) {
+    const val = typeof e === 'object' && e !== null && 'value' in e ? e.value : String(e);
+    if (val === 'en' || val === 'es') {
+      setLocale(val);
+    }
+  }
+</script>
+
+<!-- Universal Reactive Breadcrumb & Global Toolbar Component (Smart Animate & MaxWidth 1120) -->
+<view
+  width="100%"
+  maxWidth="1120"
+  flexDirection="row"
+  alignItems="center"
+  justifyContent="space-between"
+  padding="[6, 0]"
+  flexShrink="0"
+>
+  <!-- Left Section: Reactive Path Segments with Smart Animate Logo -->
+  <view
+    flexDirection="row"
+    alignItems="center"
+    :gap={isMobile.value ? 6 : 10}
+    flexShrink="0"
+  >
+    <image
+      src="/logo.svg"
+      width="28"
+      height="28"
+      layoutId="brand-logo"
+    />
+
+    <!-- Home Root Link -->
+    <a
+      href="/"
+      :label="currentRoute.value === '/' ? 'CanvApps' : t.value.breadcrumb.home"
+      :color={isDark.value ? '#38bdf8' : '#0284c7'}
+      :fontSize={isMobile.value ? 17 : 20}
+      fontWeight="bold"
+      underline="never"
+      keepColor="true"
+    />
+
+    <text
+      @if="currentRoute.value !== '/'"
+      :fontSize={isMobile.value ? 12 : 13}
+      :color={isDark.value ? '#64748b' : '#cbd5e1'}
+    >
+      /
+    </text>
+
+    <!-- Showcases Parent Link (when inside a sub-app) -->
+    @if (isShowcaseSubApp.value) {
+      <a
+        href="/showcases"
+        :label="'🚀 ' + t.value.breadcrumb.showcases"
+        :color={isDark.value ? '#38bdf8' : '#0284c7'}
+        :fontSize={isMobile.value ? 12 : 13}
+        fontWeight="bold"
+        underline="never"
+        keepColor="true"
+        layoutId="nav-showcases"
+      />
+      <text
+        :fontSize={isMobile.value ? 12 : 13}
+        :color={isDark.value ? '#64748b' : '#cbd5e1'}
+      >
+        /
+      </text>
+    }
+
+    <!-- Current Active Page Leaf with Smart Animate matching ID -->
+    <text
+      @if="currentRoute.value !== '/'"
+      :layoutId="activeLeafLayoutId.value"
+      :fontSize={isMobile.value ? 12 : 13}
+      fontWeight="bold"
+      :color={isDark.value ? '#f1f5f9' : '#0f172a'}
+    >
+      {{ activeAppTitle.value }}
+    </text>
+  </view>
+
+  <!-- Right Section: Quick Links & Theme/Sound Toggles with Smart Animate -->
+  <view
+    flexDirection="row"
+    alignItems="center"
+    :gap={isMobile.value ? 6 : 12}
+    flexShrink="0"
+  >
+    @each visibleNavLinks.value as nav {
+      <a
+        :href="nav.href"
+        :label="nav.label"
+        :target={nav.isExternal ? '_blank' : '_self'}
+        :color={isDark.value ? '#cbd5e1' : '#0284c7'}
+        :fontSize={isMobile.value ? 12 : 13}
+        fontWeight="bold"
+        underline="never"
+        keepColor="true"
+        :layoutId="'nav-' + nav.id"
+      />
+    }
+
+    <!-- Grouped Sound & Theme Controls (Tightly Coupled on the Far Right) -->
+    <view
+      flexDirection="row"
+      alignItems="center"
+      gap="4"
+    >
+      <!-- Language Selector Dropdown (EN / ES) with reduced right padding -->
+      <select
+        :width={65}
+        height="28"
+        padding="[2, 4, 2, 8]"
+        :options="langOptions"
+        :value="currentLocale.value"
+        :backgroundColor={isDark.value ? 'rgba(22, 32, 50, 0.9)' : 'rgba(241, 245, 249, 0.9)'}
+        :borderColor={isDark.value ? '#1e293b' : '#cbd5e1'}
+        :color={isDark.value ? '#38bdf8' : '#0284c7'}
+        :dropdownBg={isDark.value ? '#0d131f' : '#ffffff'}
+        :dropdownBorderColor={isDark.value ? '#334155' : '#e2e8f0'}
+        :dropdownTextColor={isDark.value ? '#f1f5f9' : '#0f172a'}
+        :dropdownHoverBg={isDark.value ? '#1e293b' : '#f1f5f9'}
+        optionGap="2"
+        dropdownSelectedBg="#0284c7"
+        borderRadius="8"
+        fontSize="11"
+        fontWeight="bold"
+        @change="handleLangSelect"
+      />
+      <!-- Global Sound Toggle -->
+      <button
+        :label={isSoundOn.value ? '🔊' : '🔇'}
+        :backgroundColor={isDark.value ? 'rgba(22, 32, 50, 0.9)' : 'rgba(241, 245, 249, 0.9)'}
+        :hoverBackgroundColor={isDark.value ? '#1e293b' : '#e2e8f0'}
+        :labelColor={isDark.value ? '#38bdf8' : '#0284c7'}
+        borderWidth="1"
+        :borderColor={isDark.value ? '#1e293b' : '#cbd5e1'}
+        borderRadius="8"
+        padding="[5, 8]"
+        height="28"
+        fontSize="11"
+        fontWeight="bold"
+        disableActive="true"
+        @click="handleSound"
+      />
+
+      <!-- Global Theme Toggle -->
+      <button
+        :label={isDark.value ? '☀️' : '🌙'}
+        :backgroundColor={isDark.value ? 'rgba(22, 32, 50, 0.9)' : 'rgba(241, 245, 249, 0.9)'}
+        :hoverBackgroundColor={isDark.value ? '#1e293b' : '#e2e8f0'}
+        :labelColor={isDark.value ? '#f1f5f9' : '#475569'}
+        borderWidth="1"
+        :borderColor={isDark.value ? '#1e293b' : '#cbd5e1'}
+        borderRadius="8"
+        padding="[5, 8]"
+        height="28"
+        fontSize="11"
+        fontWeight="bold"
+        disableActive="true"
+        @click="handleTheme"
+      />
+    </view>
+  </view>
+</view>

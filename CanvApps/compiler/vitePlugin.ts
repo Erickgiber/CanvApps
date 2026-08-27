@@ -12,9 +12,6 @@ export const CANVAPPS_HTML_BANNER = `<!--
   🌐 Open Source • MIT License • https://github.com/Erickgiber/CanvApps
 -->`;
 
-/**
- * Options for configuring the CanvApps Vite plugin.
- */
 export interface CanvAppsPluginOptions {
   /**
    * Whether to inject the official CanvApps open-source build watermark comments into final application bundles and HTML.
@@ -66,7 +63,30 @@ if (import.meta.hot) {
           map: result.map,
         };
       } catch (err: any) {
-        this.error(`[CanvApps Compiler Error in ${id}]: ${err.message || err}`);
+        const errMsg = err.message || String(err);
+        const escapedCode = JSON.stringify(rawCode);
+        const escapedId = JSON.stringify(id);
+        const escapedMsg = JSON.stringify(errMsg);
+
+        console.error(`\n❌ [CanvApps Compiler Error in ${id}]:\n${errMsg}\n`);
+
+        return {
+          code: `
+import { showErrorOverlay } from '@canvapps/core';
+if (typeof window !== 'undefined') {
+  showErrorOverlay({
+    title: 'CanvApps Syntax / Compilation Error',
+    message: ${escapedMsg},
+    file: ${escapedId},
+    sourceCode: ${escapedCode}
+  });
+}
+export default function ErrorPlaceholder() {
+  throw new Error(${escapedMsg});
+};
+`,
+          map: null,
+        };
       }
     },
 
@@ -103,4 +123,3 @@ if (import.meta.hot) {
 }
 
 export default canvappsPlugin;
-

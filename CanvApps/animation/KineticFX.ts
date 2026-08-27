@@ -35,6 +35,8 @@ interface ActiveFlyingToken {
   alpha: number;
   onHit?: () => void;
   hasHit: boolean;
+  targetRef?: any;
+  arcHeight?: number;
 }
 
 interface StardustParticle {
@@ -155,17 +157,17 @@ export class KineticFX {
       return { x: target.clientX, y: target.clientY };
     }
 
-    // 1. Resolve UIElement by String ID selector (e.g. '#counter-badge' or 'counter-badge')
     if (typeof target === 'string') {
       const uiEl = UIElement.getElementById(target);
       if (uiEl && uiEl.worldRect && uiEl.worldRect.width > 0) {
+        const rootCanvas = typeof document !== 'undefined' ? (document.querySelector('canvas') as HTMLCanvasElement) : null;
+        const cRect = rootCanvas ? rootCanvas.getBoundingClientRect() : { left: 0, top: 0 };
         return {
-          x: uiEl.worldRect.x + uiEl.worldRect.width / 2,
-          y: uiEl.worldRect.y + uiEl.worldRect.height / 2,
+          x: cRect.left + uiEl.worldRect.x + uiEl.worldRect.width / 2,
+          y: cRect.top + uiEl.worldRect.y + uiEl.worldRect.height / 2,
         };
       }
 
-      // 2. Resolve HTML DOM element selector
       if (typeof document !== 'undefined') {
         const el = document.querySelector(target);
         if (el) {
@@ -175,18 +177,18 @@ export class KineticFX {
       }
     }
 
-    // 3. Resolve direct UIElement instance
     if (target instanceof UIElement || (target && target.worldRect)) {
       const wRect = target.worldRect;
       if (wRect && wRect.width > 0) {
+        const rootCanvas = typeof document !== 'undefined' ? (document.querySelector('canvas') as HTMLCanvasElement) : null;
+        const cRect = rootCanvas ? rootCanvas.getBoundingClientRect() : { left: 0, top: 0 };
         return {
-          x: wRect.x + wRect.width / 2,
-          y: wRect.y + wRect.height / 2,
+          x: cRect.left + wRect.x + wRect.width / 2,
+          y: cRect.top + wRect.y + wRect.height / 2,
         };
       }
     }
 
-    // 4. Resolve direct HTMLElement instance
     if (typeof HTMLElement !== 'undefined' && target instanceof HTMLElement) {
       const rect = target.getBoundingClientRect();
       return { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
@@ -229,6 +231,8 @@ export class KineticFX {
       alpha: 1,
       onHit: options.onHit,
       hasHit: false,
+      targetRef: options.to,
+      arcHeight,
     };
 
     this.flyingTokens.push(token);
@@ -296,10 +300,9 @@ export class KineticFX {
   public static liquidHeart(options: LiquidHeartOptions): void {
     this.init();
 
-    const { x, y, color = '#ff4d6d', count = 14, size = 32 } = options;
+    const { x, y, color = '#ff4d6d', count = 14 } = options;
     const now = typeof performance !== 'undefined' ? performance.now() : Date.now();
 
-    // 1. Central Heart Pop Pulse
     this.heartPulses.push({
       x,
       y,
@@ -308,7 +311,6 @@ export class KineticFX {
       duration: 650,
     });
 
-    // 2. Holographic Shockwave
     this.shockwaves.push({
       x,
       y,
@@ -318,18 +320,17 @@ export class KineticFX {
       alpha: 0.95,
     });
 
-    // 3. Floating Hearts & Sparkles Swarm
     const glyphs = ['❤️', '💖', '✨', '💕', '🌟'];
     for (let i = 0; i < count; i++) {
       const angle = (Math.PI * 2 * i) / count + (Math.random() - 0.5) * 0.5;
-      const speed = Math.random() * 3.5 + 1.8;
+      const speed = Math.random() * 2.8 + 1.8;
       const glyph = glyphs[Math.floor(Math.random() * glyphs.length)];
 
       this.floatingHearts.push({
         startX: x + Math.cos(angle) * (Math.random() * 12),
         x: x + Math.cos(angle) * 10,
         y: y + Math.sin(angle) * 8,
-        vy: -(Math.random() * 2.8 + 2.2), // float upward
+        vy: -speed, // float upward
         wobbleSpeed: Math.random() * 0.008 + 0.004,
         wobbleAmp: Math.random() * 18 + 10,
         wobblePhase: Math.random() * Math.PI * 2,
@@ -345,7 +346,6 @@ export class KineticFX {
       });
     }
 
-    // 4. Stardust Sparkle Sprinkles
     for (let i = 0; i < 10; i++) {
       const angle = Math.random() * Math.PI * 2;
       const speed = Math.random() * 3 + 1;
@@ -383,11 +383,19 @@ export class KineticFX {
 
       const now = typeof performance !== 'undefined' ? performance.now() : Date.now();
 
-      // 1. Update and Render Flying Tokens
       for (let i = this.flyingTokens.length - 1; i >= 0; i--) {
         const t = this.flyingTokens[i];
         const elapsed = now - t.startTime;
         const progress = Math.min(1, elapsed / t.duration);
+
+        // Dynamic target tracking for real-time scrolling synchronization
+        if (t.targetRef) {
+          const curTarget = KineticFX.resolveCoords(t.targetRef);
+          t.targetX = curTarget.x;
+          t.targetY = curTarget.y;
+          t.controlX = (t.startX + t.targetX) / 2;
+          t.controlY = Math.min(t.startY, t.targetY) - (t.arcHeight ?? 40);
+        }
 
         // Quadratic Bezier Interpolation
         const inv = 1 - progress;
@@ -397,20 +405,6 @@ export class KineticFX {
         // Scale & Opacity dynamics
         t.scale = 1.3 - progress * 0.35;
         t.alpha = progress > 0.85 ? (1 - progress) / 0.15 : 1;
-
-        // Spawn glowing stardust trailing particles
-        if (Math.random() < 0.75) {
-          this.particles.push({
-            x: t.currentX + (Math.random() - 0.5) * 6,
-            y: t.currentY + (Math.random() - 0.5) * 6,
-            vx: (Math.random() - 0.5) * 1.5,
-            vy: (Math.random() - 0.5) * 1.5,
-            radius: Math.random() * 2 + 1.5,
-            color: t.color,
-            alpha: 0.85,
-            decay: 0.04,
-          });
-        }
 
         // Draw Token Pill Badge
         this.ctx.save();
@@ -469,7 +463,6 @@ export class KineticFX {
         }
       }
 
-      // 2. Update and Render Shockwaves
       for (let i = this.shockwaves.length - 1; i >= 0; i--) {
         const sw = this.shockwaves[i];
         sw.radius += (sw.maxRadius - sw.radius) * 0.16 + 1.2;
@@ -490,7 +483,6 @@ export class KineticFX {
         this.ctx.restore();
       }
 
-      // 3. Update and Render Particles
       for (let i = this.particles.length - 1; i >= 0; i--) {
         const p = this.particles[i];
         p.x += p.vx;
@@ -515,7 +507,6 @@ export class KineticFX {
         this.ctx.restore();
       }
 
-      // 4. Update and Render Central Heart Pulses
       for (let i = this.heartPulses.length - 1; i >= 0; i--) {
         const hp = this.heartPulses[i];
         const elapsed = now - hp.startTime;
@@ -550,7 +541,6 @@ export class KineticFX {
         this.ctx.restore();
       }
 
-      // 5. Update and Render Floating Hearts Swarm (Sine-wave organic drift)
       for (let i = this.floatingHearts.length - 1; i >= 0; i--) {
         const h = this.floatingHearts[i];
         const elapsed = now - h.startTime;

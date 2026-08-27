@@ -1,4 +1,4 @@
-import { createStore, computed, signal, Signal, batch } from '@canvapps';
+import { createStore, computed, signal } from '@canvapps';
 
 /**
  * Timed Lyric line structure.

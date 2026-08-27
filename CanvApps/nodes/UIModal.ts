@@ -33,7 +33,6 @@ export interface ModalStyles extends VisualStyles {
   closeOnBackdropClick?: boolean;
 }
 
-
 // Silky smooth quartic-out fluid deceleration curve
 function fluidEase(t: number): number {
   return 1 - Math.pow(1 - t, 3.5);
@@ -103,7 +102,6 @@ export class UIModal extends UIElement {
     return this;
   }
 
-
   constructor(styles: ModalStyles = {}) {
     super({
       position: 'absolute',
@@ -160,9 +158,6 @@ export class UIModal extends UIElement {
     return this.isAnimating;
   }
 
-  /**
-   * Retrieves the active animation type (defaults to 'hero').
-   */
   private getAnimationType(): ModalAnimationType {
     if (!this.isAnimationEnabled()) return 'none';
     return this.styles.animation ?? 'hero';
@@ -409,7 +404,6 @@ export class UIModal extends UIElement {
     const progress = this.animProgress;
     const eased = fluidEase(progress);
 
-    // 1. Draw Hardware-Accelerated Frosted Glass Backdrop Blur (backdrop-filter: blur)
     const blurRadius = this.getBackdropBlurRadius();
     const effectiveBlur = blurRadius * Math.max(0, Math.min(1, progress * 1.2));
 
@@ -438,15 +432,12 @@ export class UIModal extends UIElement {
       }
     }
 
-    // 2. Draw Fullscreen Dark / Tinted Backdrop Overlay
     ctx.save();
     ctx.fillStyle = this.styles.backdropColor ?? (blurRadius > 0 ? 'rgba(0, 0, 0, 0.52)' : 'rgba(0, 0, 0, 0.78)');
     const backdropAlpha = Math.max(0, Math.min(1, progress * 1.4));
     ctx.globalAlpha = backdropAlpha;
     ctx.fillRect(0, 0, fullCanvasWidth, fullCanvasHeight);
     ctx.restore();
-
-    // 3. Render Modal Dialog Card with Hero Morph Transition
 
     const originRect = this.styles.originRect || this.originRect;
     const card = this.getModalCard();

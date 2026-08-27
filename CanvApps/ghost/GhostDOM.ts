@@ -26,7 +26,6 @@ export interface GhostTarget extends UIElement {
   onSelectionChange?(start: number, end: number): void;
 }
 
-
 /**
  * GhostDOM Manager: Mounts semantically accurate HTML elements matching
  * interactive and selectable Canvas nodes in real-time.
@@ -104,6 +103,10 @@ export class GhostDOM {
         #canvapps-ghost-dom-overlay .canvapps-ghost-text::-moz-selection {
           background-color: rgba(37, 99, 235, 0.28) !important;
           color: transparent !important;
+        }
+        #canvapps-ghost-dom-overlay.canvapps-overlay-shield,
+        #canvapps-ghost-dom-overlay.canvapps-overlay-shield * {
+          pointer-events: none !important;
         }
       `;
       document.head.appendChild(style);
@@ -288,7 +291,7 @@ export class GhostDOM {
       ghost.setAttribute('name', elName);
       ghost.setAttribute('data-canvapps-id', elId);
 
-      if (type !== 'text' && type !== 'anchor' && type !== 'link') {
+      if (type === 'input' || type === 'textarea') {
         // Single Source of Truth: Canvas renders the visible text at 120 FPS.
         // Ghost DOM input has opacity 1 and transparent text fill to capture native IME/keyboard
         // events without double-rendering text or triggering anti-phishing transparent overlay heuristics.
@@ -307,6 +310,54 @@ export class GhostDOM {
           resize: 'none',
           cursor: 'text',
           boxSizing: 'border-box',
+          zIndex: '1',
+        });
+      } else if (type === 'text') {
+        Object.assign(ghost.style, {
+          position: 'absolute',
+          opacity: '1',
+          pointerEvents: selectable ? 'auto' : 'none',
+          userSelect: selectable ? 'text' : 'none',
+          WebkitUserSelect: selectable ? 'text' : 'none',
+          cursor: selectable ? 'text' : 'default',
+          border: 'none',
+          outline: 'none',
+          background: 'transparent',
+          color: 'transparent',
+          padding: '0',
+          margin: '0',
+          whiteSpace: 'pre-wrap',
+          wordBreak: 'break-word',
+          overflow: 'hidden',
+          zIndex: '1',
+        });
+      } else if (type === 'anchor' || type === 'link') {
+        Object.assign(ghost.style, {
+          position: 'absolute',
+          opacity: '0',
+          pointerEvents: 'auto',
+          border: 'none',
+          outline: 'none',
+          background: 'transparent',
+          color: 'transparent',
+          padding: '0',
+          margin: '0',
+          cursor: (target.styles as any)?.disabled ? 'not-allowed' : 'pointer',
+          zIndex: '1',
+          userSelect: 'none',
+          WebkitUserSelect: 'none',
+        });
+      } else {
+        Object.assign(ghost.style, {
+          position: 'absolute',
+          opacity: '0',
+          pointerEvents: 'none',
+          border: 'none',
+          outline: 'none',
+          background: 'transparent',
+          color: 'transparent',
+          padding: '0',
+          margin: '0',
           zIndex: '1',
         });
       }
@@ -475,6 +526,7 @@ export class GhostDOM {
         width: `${Math.max(1, width)}px`,
         height: `${Math.max(1, height)}px`,
         display: isVisible ? 'block' : 'none',
+        pointerEvents: 'none',
       });
     }
   }
@@ -597,6 +649,18 @@ export class GhostDOM {
 
   }
 
+  /**
+   * Sets or clears the overlay shield. When shielded, all ghost overlay children
+   * ignore pointer events (pointer-events: none !important) so that top-layer dropdowns
+   * or modals have exclusive access to canvas pointer events.
+   */
+  public setShield(enabled: boolean): void {
+    if (enabled) {
+      this.container.classList.add('canvapps-overlay-shield');
+    } else {
+      this.container.classList.remove('canvapps-overlay-shield');
+    }
+  }
 
   /**
    * Removes a specific ghost target by its element ID.

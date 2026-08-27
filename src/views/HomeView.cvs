@@ -1,0 +1,728 @@
+<script lang="ts">
+  import { sessionStore, toggleTheme, toggleGlobalSound, navigateRoute } from '../stores/session.store';
+  import { soundManager } from '../utils/sound';
+  import { t } from '../i18n';
+
+  // Responsive viewport signals
+  const { isMobile, isTablet, isDesktop } = useBreakpoints();
+  const isDark = computed(() => sessionStore.state.theme === 'dark');
+  const isSoundOn = computed(() => sessionStore.state.isSoundEnabled);
+
+  // Interactive Basketball Mini-Game Signals & LocalStorage Persistence
+  const initialHighScore = typeof window !== 'undefined' ? Number(localStorage.getItem('canvapps_basketball_highscore') ?? '0') : 0;
+
+  const basketballScore = signal(0);
+  const highScore = signal(initialHighScore);
+  const timeLeft = signal(10);
+  const gameState = signal<'idle' | 'playing' | 'gameover' | 'victory'>('idle');
+  const isCopied = signal(false);
+  let gameTimer: any = null;
+
+  const targetGoal = computed(() => Math.max(20, highScore.value > 0 ? highScore.value : 20));
+
+  // Real-time FPS Meter Signal
+  const currentFps = signal(120);
+  const frameTimeMs = signal(8.33);
+
+  // Performance loop for real-time FPS calculation
+  if (typeof window !== 'undefined') {
+    let lastTime = performance.now();
+    let frameCount = 0;
+    let fpsTimer = performance.now();
+
+    const measureFps = (now: number) => {
+      frameCount++;
+      const delta = now - lastTime;
+      lastTime = now;
+
+      if (now - fpsTimer >= 350) {
+        const measuredFps = Math.round((frameCount * 1000) / (now - fpsTimer));
+        currentFps.value = Math.min(144, Math.max(30, measuredFps));
+        frameTimeMs.value = Number((1000 / currentFps.value).toFixed(2));
+        frameCount = 0;
+        fpsTimer = now;
+      }
+      requestAnimationFrame(measureFps);
+    };
+    requestAnimationFrame(measureFps);
+  }
+
+  // Mini-Game Continuous Actions
+  function startGame() {
+    if (gameTimer) clearInterval(gameTimer);
+    basketballScore.value = 0;
+    timeLeft.value = 10;
+    gameState.value = 'playing';
+
+    gameTimer = setInterval(() => {
+        if (timeLeft.value > 0 && gameState.value === 'playing') {
+          timeLeft.update((t) => t - 1);
+          if (timeLeft.value === 0) {
+            clearInterval(gameTimer);
+            gameTimer = null;
+            if (basketballScore.value >= targetGoal.value) {
+              gameState.value = 'victory';
+              soundManager.playChime();
+            } else {
+              gameState.value = 'gameover';
+              soundManager.playPop(300);
+            }
+          }
+        }
+      }, 1000);
+  }
+
+  function resetGame() {
+    if (gameTimer) {
+      clearInterval(gameTimer);
+      gameTimer = null;
+    }
+    basketballScore.value = 0;
+    timeLeft.value = 30;
+    gameState.value = 'idle';
+  }
+
+  function launchBasketball(e: any) {
+    if (gameState.value !== 'playing') {
+      startGame();
+    }
+
+    soundManager.playPop(480);
+    const startX = e?.clientX ?? e?.x ?? (typeof window !== 'undefined' ? window.innerWidth / 2 - 100 : 200);
+    const startY = e?.clientY ?? e?.y ?? (typeof window !== 'undefined' ? window.innerHeight / 2 : 200);
+    const duration = 650;
+
+    KineticFX.flyToken({
+        from: { x: startX, y: startY },
+        to: '#basketball-hoop',
+        text: '🏀',
+        color: '#f97316',
+        backgroundColor: '#ea580c',
+        borderColor: '#fed7aa',
+        duration,
+        onHit: () => {
+          basketballScore.update((n) => n + 2);
+          if (basketballScore.value > highScore.value) {
+            highScore.value = basketballScore.value;
+            if (typeof window !== 'undefined') {
+              localStorage.setItem('canvapps_basketball_highscore', String(basketballScore.value));
+            }
+          }
+          soundManager.playChime();
+        },
+      });
+  }
+
+  function copyInstallCommand() {
+    soundManager.playChime();
+    if (typeof navigator !== 'undefined' && navigator.clipboard) {
+      navigator.clipboard.writeText('npm create canvapps@latest my-app').catch(() => {});
+    }
+    isCopied.value = true;
+    setTimeout(() => {
+        isCopied.value = false;
+      }, 2200);
+  }
+
+  function handleThemeToggle() {
+    toggleTheme();
+  }
+
+  function handleSoundToggle() {
+    toggleGlobalSound();
+  }
+</script>
+
+<view
+  width="100%"
+  flexDirection="column"
+  alignItems="center"
+  gap="30"
+>
+
+  <!-- ========================================================================= -->
+  <!-- 2. OPEN HERO PRESENTATION (No Giant Border Box, Direct Canvas Flow)        -->
+  <!-- ========================================================================= -->
+  <motion
+    display="flex"
+    flexDirection="column"
+    width="100%"
+    alignItems="center"
+    gap="30"
+    animation="hero"
+    duration="500"
+  >
+    <view
+      width="100%"
+      maxWidth="900"
+      flexDirection="column"
+      alignItems="center"
+      justifyContent="center"
+      :gap={isMobile.value ? 16 : 22}
+      flexShrink="0"
+    >
+
+      <!-- Main Headline with Modern Typography -->
+      <view
+        width="100%"
+        flexDirection="column"
+        alignItems="center"
+        gap="10"
+        flexShrink="0"
+      >
+        <image
+          src="/logo.svg"
+          width="100"
+          height="100"
+        />
+        <text
+          :fontSize={isMobile.value ? 26 : isTablet.value ? 38 : 48}
+          fontWeight="bold"
+          :color={isDark.value ? '#f1f5f9' : '#0284c7'}
+          textAlign="center"
+          width="100%"
+          wordWrap="true"
+        >
+          {{ t.value.home.heroTitle }}
+        </text>
+        <text
+          :fontSize={isMobile.value ? 13 : 16}
+          :color={isDark.value ? '#94a3b8' : '#475569'}
+          textAlign="center"
+          wordWrap="true"
+          lineHeight="1.5"
+        >
+          {{ t.value.home.heroSubtitle }}
+        </text>
+      </view>
+
+      <!-- Standalone Terminal Command Pill (Clean & Non-Colliding) -->
+      <view
+        width="100%"
+        maxWidth="560"
+        flexDirection="row"
+        alignItems="center"
+        justifyContent="space-between"
+        padding="[10, 16]"
+        :backgroundColor={isDark.value ? '#0f172a' : '#0f172a'}
+        borderRadius="12"
+        borderWidth="1"
+        borderColor="#1e293b"
+        gap="12"
+        flexShrink="0"
+      >
+        <view
+          flexDirection="row"
+          alignItems="center"
+          gap="10"
+          flexShrink="1"
+        >
+          <text fontSize="14" fontWeight="bold" color="#38bdf8">$</text>
+          <text
+            :fontSize={isMobile.value ? 11 : 13}
+            fontWeight="bold"
+            color="#f8fafc"
+          >
+            npm create canvapps@latest my-app
+          </text>
+        </view>
+        <button
+          :label="isCopied.value ? t.value.home.copiedCommand : t.value.home.copyCommand"
+          :backgroundColor={isCopied.value ? '#16a34a' : '#0284c7'}
+          hoverBackgroundColor="#0369a1"
+          labelColor="#ffffff"
+          borderRadius="8"
+          padding="[6, 12]"
+          fontSize="12"
+          fontWeight="bold"
+          flexShrink="0"
+          @click="copyInstallCommand"
+        />
+      </view>
+
+    </view>
+
+    <!-- ========================================================================= -->
+    <!-- 3. STANDALONE INTERACTIVE BASKETBALL MINI-GAME (Transparent, No Container) -->
+    <!-- ========================================================================= -->
+    <view
+      width="100%"
+      maxWidth="1120"
+      flexDirection="column"
+      gap="16"
+      flexShrink="0"
+    >
+      <!-- Mini Game HUD Bar (Transparent, Clean Spacing) -->
+      <view
+        width="100%"
+        flexDirection={isMobile.value ? 'column' : 'row'}
+        alignItems={isMobile.value ? 'flex-start' : 'center'}
+        justifyContent="space-between"
+        :gap={isMobile.value ? 10 : 16}
+        flexShrink="0"
+      >
+        <!-- Game Title & Status Badge -->
+        <view
+          flexDirection="row"
+          alignItems="center"
+          gap="10"
+        >
+          <text
+            :fontSize={isMobile.value ? 16 : 18}
+            fontWeight="bold"
+            :color={isDark.value ? '#f1f5f9' : '#0f172a'}
+          >
+            {{ t.value.home.gameTitle }}
+          </text>
+
+          @if (gameState.value === 'playing') {
+            <view
+              padding="[3, 8]"
+              backgroundColor="rgba(34, 197, 94, 0.15)"
+              borderRadius="8"
+            >
+              <text
+                fontSize="11"
+                fontWeight="bold"
+                color="#22c55e"
+              >
+                {{ t.value.home.gamePlaying }}
+              </text>
+            </view>
+          }
+          @if (gameState.value === 'victory') {
+            <view
+              padding="[3, 8]"
+              backgroundColor="rgba(249, 115, 22, 0.15)"
+              borderRadius="8"
+            >
+              <text
+                fontSize="11"
+                fontWeight="bold"
+                color="#f97316"
+              >
+                {{ t.value.home.gameVictory }}
+              </text>
+            </view>
+          }
+          @if (gameState.value === 'gameover') {
+            <view
+              padding="[3, 8]"
+              backgroundColor="rgba(239, 68, 68, 0.15)"
+              borderRadius="8"
+            >
+              <text
+                fontSize="11"
+                fontWeight="bold"
+                color="#ef4444"
+              >
+                {{ t.value.home.gameOver }}
+              </text>
+            </view>
+          }
+        </view>
+
+        <!-- Game Real-time Stats Counter (Timer, Dynamic Goal, Score, High Score) -->
+        <view
+          flexDirection="row"
+          alignItems="center"
+          :gap={isMobile.value ? 8 : 12}
+          flexWrap="wrap"
+        >
+          <!-- Time Countdown Badge -->
+          <view
+            flexDirection="row"
+            alignItems="center"
+            gap="6"
+            padding="[6, 12]"
+            :backgroundColor={isDark.value ? '#162032' : '#f1f5f9'}
+            borderRadius="10"
+            borderWidth="1"
+            :borderColor={timeLeft.value <= 5 && gameState.value === 'playing' ? '#ef4444' : (isDark.value ? '#1e293b' : '#e2e8f0')}
+          >
+            <text
+              fontSize="12"
+              fontWeight="bold"
+              :color={timeLeft.value <= 5 && gameState.value === 'playing' ? '#ef4444' : (isDark.value ? '#cbd5e1' : '#475569')}
+            >
+              {{ t.value.home.gameTime }}: {{ timeLeft.value }}s
+            </text>
+          </view>
+
+          <!-- Current Score Badge (Continuous Score) -->
+          <view
+            flexDirection="row"
+            alignItems="center"
+            gap="6"
+            padding="[6, 12]"
+            :backgroundColor={isDark.value ? '#162032' : '#f1f5f9'}
+            borderRadius="10"
+            borderWidth="1"
+            :borderColor={isDark.value ? '#1e293b' : '#e2e8f0'}
+          >
+            <text
+              fontSize="12"
+              fontWeight="bold"
+              color="#f97316"
+            >
+              {{ t.value.home.gameScore }}: {{ basketballScore.value }} pts
+            </text>
+          </view>
+
+          <!-- High Score Badge (From LocalStorage) -->
+          <view
+            flexDirection="row"
+            alignItems="center"
+            gap="6"
+            padding="[6, 12]"
+            :backgroundColor={isDark.value ? '#162032' : '#f1f5f9'}
+            borderRadius="10"
+            borderWidth="1"
+            :borderColor={isDark.value ? '#1e293b' : '#e2e8f0'}
+          >
+            <text
+              fontSize="12"
+              fontWeight="bold"
+              :color={isDark.value ? '#fbbf24' : '#d97706'}
+            >
+              {{ t.value.home.gameHighScore }}: {{ highScore.value }} pts
+            </text>
+          </view>
+        </view>
+      </view>
+
+      <!-- Mini Game Interactive Playing Field (No Container, No Border, Transparent) -->
+      <view
+        width="100%"
+        flexDirection={isMobile.value ? 'column' : 'row'}
+        alignItems="center"
+        justifyContent="space-between"
+        :gap={isMobile.value ? 14 : 20}
+        flexShrink="0"
+      >
+        <!-- Launch Button, Speed UISelect Dropdown & Reset Button -->
+        <view
+          flexDirection="row"
+          alignItems="center"
+          gap="10"
+          flexWrap="wrap"
+        >
+          <button
+            :label="gameState.value === 'playing' ? t.value.home.gameLaunchBtn : (gameState.value === 'victory' || gameState.value === 'gameover' ? t.value.home.gameRestartBtn : t.value.home.gameLaunchBtn)"
+            backgroundColor="#ea580c"
+            hoverBackgroundColor="#c2410c"
+            labelColor="#ffffff"
+            borderRadius="12"
+            :padding={isMobile.value ? [12, 18] : [14, 24]}
+            fontSize="14"
+            fontWeight="bold"
+            disableActive="true"
+            @click="launchBasketball"
+          />
+
+          @if (gameState.value === 'playing') {
+            <button
+              :label="t.value.home.gameRestartBtn"
+              :backgroundColor={isDark.value ? '#162032' : '#f1f5f9'}
+              :hoverBackgroundColor={isDark.value ? '#1e293b' : '#e2e8f0'}
+              :labelColor={isDark.value ? '#cbd5e1' : '#475569'}
+              borderRadius="12"
+              :padding={isMobile.value ? [12, 14] : [14, 18]}
+              fontSize="13"
+              fontWeight="bold"
+              disableActive="true"
+              @click="resetGame"
+            />
+          }
+        </view>
+
+        <!-- Basketball Hoop Target Node -->
+        <view
+          id="basketball-hoop"
+          width="64"
+          height="48"
+          borderRadius="12"
+          alignItems="center"
+          justifyContent="center"
+          borderWidth="2"
+          borderColor="#fed7aa"
+        >
+          <text fontSize="24">🗑️</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- ========================================================================= -->
+    <!-- 4. VALUE PROPOSITIONS (Generous Proportions, No Text Overflow)            -->
+    <!-- ========================================================================= -->
+    <view
+      width="100%"
+      maxWidth="1120"
+      flexDirection="column"
+      gap="14"
+      flexShrink="0"
+    >
+      <text
+        :fontSize={isMobile.value ? 18 : 22}
+        fontWeight="bold"
+        :color={isDark.value ? '#f1f5f9' : '#0f172a'}
+      >
+        {{ t.value.home.featuresTitle }}
+      </text>
+
+      <!-- 6 Feature Cards -->
+      <view
+        width="100%"
+        flexDirection={isMobile.value ? 'column' : 'row'}
+        flexWrap="wrap"
+        :gap={isMobile.value ? 12 : 16}
+        flexShrink="0"
+      >
+        <!-- Card 1 -->
+        <view
+          :width={isMobile.value ? '100%' : '31.8%'}
+          :height={isMobile.value ? 'auto' : 136}
+          flexDirection="column"
+          padding="[20, 20]"
+          :backgroundColor={isDark.value ? '#0d131f' : '#ffffff'}
+          borderRadius="16"
+          borderWidth="1"
+          :borderColor={isDark.value ? '#1e293b' : '#e2e8f0'}
+          gap="10"
+          flexShrink="0"
+        >
+          <text
+            fontSize="15"
+            fontWeight="bold"
+            :color={isDark.value ? '#38bdf8' : '#0284c7'}
+          >
+            {{ t.value.home.card1Title }}
+          </text>
+          <text
+            fontSize="12"
+            :color={isDark.value ? '#94a3b8' : '#64748b'}
+            lineHeight="1.5"
+          >
+            {{ t.value.home.card1Desc }}
+          </text>
+        </view>
+
+        <!-- Card 2 -->
+        <view
+          :width={isMobile.value ? '100%' : '31.8%'}
+          :height={isMobile.value ? 'auto' : 136}
+          flexDirection="column"
+          padding="[20, 20]"
+          :backgroundColor={isDark.value ? '#0d131f' : '#ffffff'}
+          borderRadius="16"
+          borderWidth="1"
+          :borderColor={isDark.value ? '#1e293b' : '#e2e8f0'}
+          gap="10"
+          flexShrink="0"
+        >
+          <text
+            fontSize="15"
+            fontWeight="bold"
+            :color={isDark.value ? '#a855f7' : '#9333ea'}
+          >
+            {{ t.value.home.card2Title }}
+          </text>
+          <text
+            fontSize="12"
+            :color={isDark.value ? '#94a3b8' : '#64748b'}
+            lineHeight="1.5"
+          >
+            {{ t.value.home.card2Desc }}
+          </text>
+        </view>
+
+        <!-- Card 3 -->
+        <view
+          :width={isMobile.value ? '100%' : '31.8%'}
+          :height={isMobile.value ? 'auto' : 136}
+          flexDirection="column"
+          padding="[20, 20]"
+          :backgroundColor={isDark.value ? '#0d131f' : '#ffffff'}
+          borderRadius="16"
+          borderWidth="1"
+          :borderColor={isDark.value ? '#1e293b' : '#e2e8f0'}
+          gap="10"
+          flexShrink="0"
+        >
+          <text
+            fontSize="15"
+            fontWeight="bold"
+            :color={isDark.value ? '#22c55e' : '#16a34a'}
+          >
+            {{ t.value.home.card3Title }}
+          </text>
+          <text
+            fontSize="12"
+            :color={isDark.value ? '#94a3b8' : '#64748b'}
+            lineHeight="1.5"
+          >
+            {{ t.value.home.card3Desc }}
+          </text>
+        </view>
+
+        <!-- Card 4 -->
+        <view
+          :width={isMobile.value ? '100%' : '31.8%'}
+          :height={isMobile.value ? 'auto' : 136}
+          flexDirection="column"
+          padding="[20, 20]"
+          :backgroundColor={isDark.value ? '#0d131f' : '#ffffff'}
+          borderRadius="16"
+          borderWidth="1"
+          :borderColor={isDark.value ? '#1e293b' : '#e2e8f0'}
+          gap="10"
+          flexShrink="0"
+        >
+          <text
+            fontSize="15"
+            fontWeight="bold"
+            :color={isDark.value ? '#fbbf24' : '#d97706'}
+          >
+            {{ t.value.home.card4Title }}
+          </text>
+          <text
+            fontSize="12"
+            :color={isDark.value ? '#94a3b8' : '#64748b'}
+            lineHeight="1.5"
+          >
+            {{ t.value.home.card4Desc }}
+          </text>
+        </view>
+
+        <!-- Card 5 -->
+        <view
+          :width={isMobile.value ? '100%' : '31.8%'}
+          :height={isMobile.value ? 'auto' : 136}
+          flexDirection="column"
+          padding="[20, 20]"
+          :backgroundColor={isDark.value ? '#0d131f' : '#ffffff'}
+          borderRadius="16"
+          borderWidth="1"
+          :borderColor={isDark.value ? '#1e293b' : '#e2e8f0'}
+          gap="10"
+          flexShrink="0"
+        >
+          <text
+            fontSize="15"
+            fontWeight="bold"
+            :color={isDark.value ? '#38bdf8' : '#0284c7'}
+          >
+            {{ t.value.home.card5Title }}
+          </text>
+          <text
+            fontSize="12"
+            :color={isDark.value ? '#94a3b8' : '#64748b'}
+            lineHeight="1.5"
+          >
+            {{ t.value.home.card5Desc }}
+          </text>
+        </view>
+
+        <!-- Card 6 -->
+        <view
+          :width={isMobile.value ? '100%' : '31.8%'}
+          :height={isMobile.value ? 'auto' : 136}
+          flexDirection="column"
+          padding="[20, 20]"
+          :backgroundColor={isDark.value ? '#0d131f' : '#ffffff'}
+          borderRadius="16"
+          borderWidth="1"
+          :borderColor={isDark.value ? '#1e293b' : '#e2e8f0'}
+          gap="10"
+          flexShrink="0"
+        >
+          <text
+            fontSize="15"
+            fontWeight="bold"
+            :color={isDark.value ? '#f87171' : '#dc2626'}
+          >
+            {{ t.value.home.card6Title }}
+          </text>
+          <text
+            fontSize="12"
+            :color={isDark.value ? '#94a3b8' : '#64748b'}
+            lineHeight="1.5"
+          >
+            {{ t.value.home.card6Desc }}
+          </text>
+        </view>
+
+      </view>
+    </view>
+
+    <!-- ========================================================================= -->
+  </motion>
+
+  <!-- ========================================================================= -->
+  <!-- 6. FOOTER (With Official SVG Logo & FPS Meter Aligned to MaxWidth 1120)    -->
+  <!-- ========================================================================= -->
+  <view
+    width="100%"
+    maxWidth="1120"
+    flexDirection={isMobile.value ? 'column' : 'row'}
+    alignItems="center"
+    justifyContent="space-between"
+    padding="[20, 0]"
+    :gap={isMobile.value ? 12 : 16}
+    flexShrink="0"
+  >
+    <!-- Left: CanvApps Framework Logo & License -->
+    <view
+      flexDirection="row"
+      alignItems="center"
+      gap="8"
+    >
+      <image
+        src="/logo.svg"
+        width="20"
+        height="20"
+      />
+      <text
+        fontSize="13"
+        fontWeight="bold"
+        :color={isDark.value ? '#f1f5f9' : '#0284c7'}
+      >
+        {{ t.value.home.footerTitle }}
+      </text>
+      <text fontSize="12" :color={isDark.value ? '#64748b' : '#94a3b8'}>
+        • {{ t.value.common.mitLicense }}
+      </text>
+    </view>
+
+    <!-- Right: Real-Time FPS Meter (Aligned inside maxWidth 1120 on the opposite side) -->
+    <view
+      flexDirection="row"
+      alignItems="center"
+      gap="6"
+      padding="[5, 10]"
+      :backgroundColor={isDark.value ? 'rgba(15, 23, 42, 0.88)' : 'rgba(255, 255, 255, 0.88)'}
+      borderRadius="16"
+      borderWidth="1"
+      :borderColor={isDark.value ? '#1e293b' : '#e2e8f0'}
+      :boxShadow={isDark.value ? { offsetX: 0, offsetY: 4, blur: 12, color: 'rgba(0,0,0,0.5)' } : { offsetX: 0, offsetY: 2, blur: 8, color: 'rgba(0,0,0,0.06)' }}
+    >
+      <view
+        width="7"
+        height="7"
+        borderRadius="4"
+        backgroundColor="#22c55e"
+      />
+      <text
+        fontSize="11"
+        fontWeight="bold"
+        color="#22c55e"
+      >
+        {{ currentFps.value }} {{ t.value.common.fps }}
+      </text>
+      <text fontSize="10" :color={isDark.value ? '#94a3b8' : '#64748b'}>
+        ({{ frameTimeMs.value }}ms)
+      </text>
+    </view>
+  </view>
+
+</view>

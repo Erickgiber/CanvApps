@@ -1,25 +1,37 @@
 <script lang="ts">
-  import AppHeader from '../components/AppHeader.cvs';
-  import { sessionStore } from '../stores/session.store';
+  import Breadcrumb from '../components/Breadcrumb.cvs';
+  import { sessionStore, currentRoute, toggleTheme, toggleGlobalSound } from '../stores/session.store';
 
   // Responsive signals
   const { isMobile } = useBreakpoints();
   const isDark = computed(() => sessionStore.state.theme === 'dark');
+  const isSoundOn = computed(() => sessionStore.state.isSoundEnabled);
 
-  function onHeaderNavigate(target: string) {
-    if (typeof (props as any)?.onNavigate === 'function') {
-      (props as any).onNavigate(target);
-    }
+  function handleThemeToggle() {
+    toggleTheme();
+  }
+
+  function handleSoundToggle() {
+    toggleGlobalSound();
   }
 </script>
 
-<!-- Persistent Application Master Layout with Topnav Safe Area Support -->
-<view id="app-layout-scroll" width="100%" height="100%" flexDirection="column" overflow="auto" safeArea="top" :backgroundColor={isDark.value ? '#101010' : '#f8fafc'} :padding={isMobile.value ? [8, 10] : [14, 20]} :gap={isMobile.value ? 8 : 12}>
+<!-- Application Master Layout with Universal Breadcrumb Header -->
+<view
+  id="app-layout-scroll"
+  width="100%"
+  height="100%"
+  flexDirection="column"
+  overflow="auto"
+  safeArea="top"
+  :backgroundColor={isDark.value ? '#080c14' : '#f8fafc'}
+  :padding={isMobile.value ? [6, 6] : [10, 16]}
+  gap="6"
+  alignItems="center"
+>
+  <!-- Universal Breadcrumb Header for all routes-->
+  <Breadcrumb />
 
-  <!-- 1. Persistent Top Header (Topnav) -->
-  <AppHeader :activeRoute="(props as any)?.activeRoute" @navigate="onHeaderNavigate" flexShrink="0" />
-
-  <!-- 2. Dynamic View Content Area -->
+  <!-- Dynamic View Content Area -->
   <slot />
 </view>
-

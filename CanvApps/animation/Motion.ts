@@ -109,7 +109,7 @@ export class Motion {
       if (elapsed <= entranceDuration) {
         // Phase 1: Sub-pixel letter convergence, elastic scale entrance, and opacity fade-in
         const t = Math.min(1, elapsed / entranceDuration);
-        
+
         // Elastic Ease-Out Scale (0.5 -> 1.0)
         const c1 = 1.6;
         const c3 = c1 + 1;
@@ -139,7 +139,7 @@ export class Motion {
         // Phase 3: Negative Scale Exit Transition (scale 1.0 -> exitScale, opacity 1.0 -> 0.0)
         const exitElapsed = elapsed - (entranceDuration + holdDuration);
         const t = Math.min(1, exitElapsed / exitDuration);
-        
+
         // Ease-In-Cubic zoom out
         const exitEased = t * t * t;
         const scale = Math.max(exitScale, 1.0 - (1.0 - exitScale) * exitEased);

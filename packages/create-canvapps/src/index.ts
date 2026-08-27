@@ -320,7 +320,9 @@ app.mount('#app-container');
     <button
       :label={isDark.value ? '☀️ Switch to Light' : '🌙 Switch to Dark'}
       :backgroundColor={isDark.value ? '#1e293b' : '#e2e8f0'}
+      :hoverBackgroundColor={isDark.value ? '#334155' : '#cbd5e1'}
       :labelColor={isDark.value ? '#f1f5f9' : '#0f172a'}
+      hoverLabelColor="#f1f5f9"
       borderRadius="12"
       padding="[8, 18]"
       fontSize="12"

@@ -1,6 +1,6 @@
 {
   "name": "create-canvapps",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "Scaffold a new CanvApps Canvas-native reactive application in seconds",
   "type": "module",
   "bin": {
@@ -33,6 +33,10 @@
     "url": "git+https://github.com/Erickgiber/CanvApps.git",
     "directory": "packages/create-canvapps"
   },
+  "bugs": {
+    "url": "https://github.com/Erickgiber/CanvApps/issues"
+  },
+  "homepage": "https://erickgiber.github.io/CanvApps",
   "publishConfig": {
     "access": "public"
   },

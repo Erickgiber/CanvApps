@@ -32,6 +32,13 @@ jobs:
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
+      - name: Publish Create CLI (create-canvapps)
+        run: |
+          cd packages/create-canvapps
+          npm publish --access public --provenance
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
       - name: Publish Vite Plugin (vite-plugin-canvapps)
         run: |
           cd packages/vite-plugin-canvapps

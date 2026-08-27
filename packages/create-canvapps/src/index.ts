@@ -84,6 +84,15 @@ import canvappsPlugin from '@canvapps/core/vite';
 
 export default defineConfig({
   plugins: [canvappsPlugin()],
+  resolve: {
+    alias: [
+      { find: /^@canvapps$/, replacement: '@canvapps/core' },
+      { find: /^canvapps$/, replacement: '@canvapps/core' },
+    ],
+  },
+  optimizeDeps: {
+    include: ['@canvapps/core'],
+  },
   server: {
     port: 3000,
   },
@@ -128,30 +137,47 @@ export default defineConfig({
   // 5. index.html
   const indexHtml = `<!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <title>${projectName}</title>
-    <style>
-      html, body {
-        margin: 0;
-        padding: 0;
-        width: 100%;
-        height: 100%;
-        overflow: hidden;
-        background-color: #0a0e17;
-        font-family: system-ui, -apple-system, sans-serif;
-      }
-      #app {
-        width: 100%;
-        height: 100%;
-      }
-    </style>
-  </head>
-  <body>
-    <div id="app"></div>
-    <script type="module" src="/src/main.ts"></script>
-  </body>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <title>${projectName}</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <meta name="theme-color" content="#0a0e17" />
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+      -webkit-touch-callout: none;
+    }
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background-color: #0a0e17;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      touch-action: manipulation;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    #app-container {
+      width: 100%;
+      height: 100%;
+      display: flex;
+    }
+    canvas {
+      -webkit-touch-callout: none;
+      -webkit-user-select: none;
+      user-select: none;
+      outline: none;
+    }
+  </style>
+</head>
+<body oncontextmenu="return false;">
+  <div id="app-container"></div>
+  <script type="module" src="/src/main.ts"></script>
+</body>
 </html>
 `;
   fs.writeFileSync(path.join(root, 'index.html'), indexHtml);
@@ -164,7 +190,26 @@ dist-app
 `;
   fs.writeFileSync(path.join(root, '.gitignore'), gitIgnore);
 
-  // 7. src directory
+  // 7. public/favicon.svg
+  const publicDir = path.join(root, 'public');
+  fs.mkdirSync(publicDir, { recursive: true });
+
+  const faviconSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="32" height="32">
+  <defs>
+    <linearGradient id="cvsGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38bdf8" />
+      <stop offset="100%" stop-color="#0284c7" />
+    </linearGradient>
+  </defs>
+  <path d="M 18 5 H 8 A 3.5 3.5 0 0 0 4.5 8.5 V 15.5 A 3.5 3.5 0 0 0 8 19 H 18"
+        fill="none" stroke="url(#cvsGrad)" stroke-width="3"
+        stroke-linecap="round" stroke-linejoin="round" />
+  <circle cx="13" cy="12" r="2.5" fill="#38bdf8" />
+</svg>
+`;
+  fs.writeFileSync(path.join(publicDir, 'favicon.svg'), faviconSvg);
+
+  // 8. src directory
   const srcDir = path.join(root, 'src');
   fs.mkdirSync(srcDir, { recursive: true });
 
@@ -172,9 +217,9 @@ dist-app
   const envDts = `/// <reference types="vite/client" />
 
 declare module '*.cvs' {
-  import { CVSComponent } from '@canvapps/core';
-  const component: CVSComponent;
+  const component: any;
   export default component;
+  export function createComponent(props?: Record<string, any>): any;
 }
 `;
   fs.writeFileSync(path.join(srcDir, 'canvapps-env.d.ts'), envDts);
@@ -184,7 +229,7 @@ declare module '*.cvs' {
 import App from './App.cvs';
 
 const app = createApp(App);
-app.mount('#app');
+app.mount('#app-container');
 `;
   fs.writeFileSync(path.join(srcDir, 'main.ts'), mainTs);
 

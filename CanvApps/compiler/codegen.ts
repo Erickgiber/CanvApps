@@ -39,7 +39,7 @@ export class CVSCodeGenerator {
     }
 
     return `
-import { UIView, UIText, UIButton, UIInput, UIModal, UIMotion, UIImage, UIScrollView, UIAnchor, UILink, UIElement, KineticFX, Motion, createRouter, useRouter, effect, signal, computed, batch, untrack, createStore, persistentSignal, useBreakpoints, useMediaQuery, useWindowSize, useSafeArea, getSafeAreaInsets, setThemeColor, getThemeColor, getThemeMode, configureThemePalette } from '@canvapps';
+import { UIView, UIText, UIButton, UIInput, UIModal, UIMotion, UIImage, UIScrollView, UIAnchor, UILink, UISlider, UIElement, KineticFX, Motion, createRouter, useRouter, effect, signal, computed, batch, untrack, createStore, persistentSignal, useBreakpoints, useMediaQuery, useWindowSize, useSafeArea, getSafeAreaInsets, setThemeColor, getThemeColor, getThemeMode, configureThemePalette } from '@canvapps';
 
 ${importLines.join('\n')}
 
@@ -375,6 +375,8 @@ ${itemCode}
       codeLines.push(`  const ${elVar} = new UIMotion(${JSON.stringify(staticStyles)});`);
     } else if (element.tag === 'scroll-view' || element.tag === 'UIScrollView' || element.tag === 'ScrollView') {
       codeLines.push(`  const ${elVar} = new UIScrollView(${JSON.stringify(staticStyles)});`);
+    } else if (element.tag === 'slider' || element.tag === 'UISlider' || element.tag === 'Slider') {
+      codeLines.push(`  const ${elVar} = new UISlider(${JSON.stringify(staticStyles)});`);
     } else {
       // Default to UIView container
       codeLines.push(`  const ${elVar} = new UIView(${JSON.stringify(staticStyles)});`);
@@ -432,6 +434,20 @@ ${itemCode}
           codeLines.push(`  ${elVar}.setScroll((${dyn.value}) as any);`);
         } else if ((element.tag === 'scroll-view' || element.tag === 'UIScrollView' || element.tag === 'ScrollView') && dyn.name === 'showScrollbar') {
           codeLines.push(`  ${elVar}.setShowScrollbar((${dyn.value}) as any);`);
+        } else if ((element.tag === 'slider' || element.tag === 'UISlider' || element.tag === 'Slider') && dyn.name === 'value') {
+          codeLines.push(`  ${elVar}.setValue(Number(${dyn.value} ?? 0));`);
+        } else if ((element.tag === 'slider' || element.tag === 'UISlider' || element.tag === 'Slider') && dyn.name === 'min') {
+          codeLines.push(`  ${elVar}.setMin(Number(${dyn.value} ?? 0));`);
+        } else if ((element.tag === 'slider' || element.tag === 'UISlider' || element.tag === 'Slider') && dyn.name === 'max') {
+          codeLines.push(`  ${elVar}.setMax(Number(${dyn.value} ?? 100));`);
+        } else if ((element.tag === 'slider' || element.tag === 'UISlider' || element.tag === 'Slider') && dyn.name === 'progressColor') {
+          codeLines.push(`  ${elVar}.setProgressColor(String(${dyn.value}));`);
+        } else if ((element.tag === 'slider' || element.tag === 'UISlider' || element.tag === 'Slider') && dyn.name === 'trackColor') {
+          codeLines.push(`  ${elVar}.setTrackColor(String(${dyn.value}));`);
+        } else if ((element.tag === 'slider' || element.tag === 'UISlider' || element.tag === 'Slider') && dyn.name === 'thumbColor') {
+          codeLines.push(`  ${elVar}.setThumbColor(String(${dyn.value}));`);
+        } else if ((element.tag === 'slider' || element.tag === 'UISlider' || element.tag === 'Slider') && dyn.name === 'disabled') {
+          codeLines.push(`  ${elVar}.setDisabled(Boolean(${dyn.value}));`);
         } else if (dyn.name === 'scrollY' || dyn.name === 'scrollTop') {
           codeLines.push(`  ${elVar}.scrollTop = Number(${dyn.value} ?? 0);`);
         } else if (dyn.name === 'scrollX' || dyn.name === 'scrollLeft') {
@@ -530,6 +546,41 @@ ${itemCode}
           codeLines.push(`
   effect(() => {
     ${elVar}.setShowScrollbar((${dyn.value}) as any);
+  });`);
+        } else if ((element.tag === 'slider' || element.tag === 'UISlider' || element.tag === 'Slider') && dyn.name === 'value') {
+          codeLines.push(`
+  effect(() => {
+    ${elVar}.setValue(Number(${dyn.value} ?? 0));
+  });`);
+        } else if ((element.tag === 'slider' || element.tag === 'UISlider' || element.tag === 'Slider') && dyn.name === 'min') {
+          codeLines.push(`
+  effect(() => {
+    ${elVar}.setMin(Number(${dyn.value} ?? 0));
+  });`);
+        } else if ((element.tag === 'slider' || element.tag === 'UISlider' || element.tag === 'Slider') && dyn.name === 'max') {
+          codeLines.push(`
+  effect(() => {
+    ${elVar}.setMax(Number(${dyn.value} ?? 100));
+  });`);
+        } else if ((element.tag === 'slider' || element.tag === 'UISlider' || element.tag === 'Slider') && dyn.name === 'progressColor') {
+          codeLines.push(`
+  effect(() => {
+    ${elVar}.setProgressColor(String(${dyn.value}));
+  });`);
+        } else if ((element.tag === 'slider' || element.tag === 'UISlider' || element.tag === 'Slider') && dyn.name === 'trackColor') {
+          codeLines.push(`
+  effect(() => {
+    ${elVar}.setTrackColor(String(${dyn.value}));
+  });`);
+        } else if ((element.tag === 'slider' || element.tag === 'UISlider' || element.tag === 'Slider') && dyn.name === 'thumbColor') {
+          codeLines.push(`
+  effect(() => {
+    ${elVar}.setThumbColor(String(${dyn.value}));
+  });`);
+        } else if ((element.tag === 'slider' || element.tag === 'UISlider' || element.tag === 'Slider') && dyn.name === 'disabled') {
+          codeLines.push(`
+  effect(() => {
+    ${elVar}.setDisabled(Boolean(${dyn.value}));
   });`);
         } else if (dyn.name === 'scrollY' || dyn.name === 'scrollTop') {
           codeLines.push(`

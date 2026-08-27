@@ -57,12 +57,49 @@ interface ShockwaveFX {
   alpha: number;
 }
 
+export interface LiquidHeartOptions {
+  x: number;
+  y: number;
+  color?: string;
+  size?: number;
+  count?: number;
+}
+
+interface FloatingHeartItem {
+  startX: number;
+  x: number;
+  y: number;
+  vy: number;
+  wobbleSpeed: number;
+  wobbleAmp: number;
+  wobblePhase: number;
+  glyph: string;
+  color: string;
+  size: number;
+  alpha: number;
+  decay: number;
+  scale: number;
+  rotation: number;
+  rotationSpeed: number;
+  startTime: number;
+}
+
+interface CentralHeartPulse {
+  x: number;
+  y: number;
+  color: string;
+  startTime: number;
+  duration: number;
+}
+
 export class KineticFX {
   private static canvas: HTMLCanvasElement | null = null;
   private static ctx: CanvasRenderingContext2D | null = null;
   private static flyingTokens: ActiveFlyingToken[] = [];
   private static particles: StardustParticle[] = [];
   private static shockwaves: ShockwaveFX[] = [];
+  private static floatingHearts: FloatingHeartItem[] = [];
+  private static heartPulses: CentralHeartPulse[] = [];
   private static isLoopRunning = false;
 
   /**
@@ -251,6 +288,82 @@ export class KineticFX {
     this.startLoop();
   }
 
+  /**
+   * Spawns a mesmerizing, ultra-smooth Liquid Heart explosion animation.
+   * Features an elastic spring-pulsing center heart, holographic shockwave,
+   * and floating hearts drifting upwards along organic sine-wave trails.
+   */
+  public static liquidHeart(options: LiquidHeartOptions): void {
+    this.init();
+
+    const { x, y, color = '#ff4d6d', count = 14, size = 32 } = options;
+    const now = typeof performance !== 'undefined' ? performance.now() : Date.now();
+
+    // 1. Central Heart Pop Pulse
+    this.heartPulses.push({
+      x,
+      y,
+      color,
+      startTime: now,
+      duration: 650,
+    });
+
+    // 2. Holographic Shockwave
+    this.shockwaves.push({
+      x,
+      y,
+      radius: 6,
+      maxRadius: 55,
+      color,
+      alpha: 0.95,
+    });
+
+    // 3. Floating Hearts & Sparkles Swarm
+    const glyphs = ['❤️', '💖', '✨', '💕', '🌟'];
+    for (let i = 0; i < count; i++) {
+      const angle = (Math.PI * 2 * i) / count + (Math.random() - 0.5) * 0.5;
+      const speed = Math.random() * 3.5 + 1.8;
+      const glyph = glyphs[Math.floor(Math.random() * glyphs.length)];
+
+      this.floatingHearts.push({
+        startX: x + Math.cos(angle) * (Math.random() * 12),
+        x: x + Math.cos(angle) * 10,
+        y: y + Math.sin(angle) * 8,
+        vy: -(Math.random() * 2.8 + 2.2), // float upward
+        wobbleSpeed: Math.random() * 0.008 + 0.004,
+        wobbleAmp: Math.random() * 18 + 10,
+        wobblePhase: Math.random() * Math.PI * 2,
+        glyph,
+        color,
+        size: Math.random() * 8 + 14,
+        alpha: 1.0,
+        decay: Math.random() * 0.016 + 0.012,
+        scale: Math.random() * 0.4 + 0.8,
+        rotation: (Math.random() - 0.5) * 0.4,
+        rotationSpeed: (Math.random() - 0.5) * 0.04,
+        startTime: now,
+      });
+    }
+
+    // 4. Stardust Sparkle Sprinkles
+    for (let i = 0; i < 10; i++) {
+      const angle = Math.random() * Math.PI * 2;
+      const speed = Math.random() * 3 + 1;
+      this.particles.push({
+        x,
+        y,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed - 0.8,
+        radius: Math.random() * 2 + 1.5,
+        color: Math.random() > 0.5 ? '#ffffff' : color,
+        alpha: 1,
+        decay: Math.random() * 0.03 + 0.02,
+      });
+    }
+
+    this.startLoop();
+  }
+
   private static startLoop(): void {
     if (this.isLoopRunning) {
       return;
@@ -402,7 +515,77 @@ export class KineticFX {
         this.ctx.restore();
       }
 
-      if (this.flyingTokens.length > 0 || this.particles.length > 0 || this.shockwaves.length > 0) {
+      // 4. Update and Render Central Heart Pulses
+      for (let i = this.heartPulses.length - 1; i >= 0; i--) {
+        const hp = this.heartPulses[i];
+        const elapsed = now - hp.startTime;
+        const progress = Math.min(1, elapsed / hp.duration);
+
+        if (progress >= 1) {
+          this.heartPulses.splice(i, 1);
+          continue;
+        }
+
+        // Elastic spring scale: 0.3 -> 1.55 -> 1.0 -> 0.8
+        const t = progress;
+        const scale =
+          t < 0.3
+            ? 0.4 + (1.55 - 0.4) * (t / 0.3)
+            : t < 0.6
+            ? 1.55 - (1.55 - 1.0) * ((t - 0.3) / 0.3)
+            : 1.0 - 0.3 * ((t - 0.6) / 0.4);
+        const alpha = t > 0.5 ? Math.max(0, (1 - t) / 0.5) : 1.0;
+        const yOffset = -t * 22; // gently float upward
+
+        this.ctx.save();
+        this.ctx.translate(hp.x, hp.y + yOffset);
+        this.ctx.scale(scale, scale);
+        this.ctx.globalAlpha = alpha;
+        this.ctx.shadowColor = hp.color;
+        this.ctx.shadowBlur = 18;
+        this.ctx.font = 'bold 36px system-ui, sans-serif';
+        this.ctx.textAlign = 'center';
+        this.ctx.textBaseline = 'middle';
+        this.ctx.fillText('❤️', 0, 0);
+        this.ctx.restore();
+      }
+
+      // 5. Update and Render Floating Hearts Swarm (Sine-wave organic drift)
+      for (let i = this.floatingHearts.length - 1; i >= 0; i--) {
+        const h = this.floatingHearts[i];
+        const elapsed = now - h.startTime;
+        h.y += h.vy;
+        h.vy *= 0.985;
+        h.x = h.startX + Math.sin(elapsed * h.wobbleSpeed + h.wobblePhase) * h.wobbleAmp;
+        h.rotation += h.rotationSpeed;
+        h.alpha -= h.decay;
+
+        if (h.alpha <= 0.01) {
+          this.floatingHearts.splice(i, 1);
+          continue;
+        }
+
+        this.ctx.save();
+        this.ctx.translate(h.x, h.y);
+        this.ctx.rotate(h.rotation);
+        this.ctx.scale(h.scale, h.scale);
+        this.ctx.globalAlpha = Math.max(0, Math.min(1, h.alpha));
+        this.ctx.shadowColor = h.color;
+        this.ctx.shadowBlur = 10;
+        this.ctx.font = `${Math.round(h.size)}px system-ui, sans-serif`;
+        this.ctx.textAlign = 'center';
+        this.ctx.textBaseline = 'middle';
+        this.ctx.fillText(h.glyph, 0, 0);
+        this.ctx.restore();
+      }
+
+      if (
+        this.flyingTokens.length > 0 ||
+        this.particles.length > 0 ||
+        this.shockwaves.length > 0 ||
+        this.floatingHearts.length > 0 ||
+        this.heartPulses.length > 0
+      ) {
         requestAnimationFrame(render);
       } else {
         this.isLoopRunning = false;

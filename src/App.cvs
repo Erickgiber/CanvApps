@@ -3,6 +3,7 @@
   import DashboardView from './views/DashboardView.cvs';
   import GalleryView from './views/GalleryView.cvs';
   import GalleryDetailView from './views/GalleryDetailView.cvs';
+  import MusicPlayerView from './views/MusicPlayerView.cvs';
   import NotFoundView from './views/NotFoundView.cvs';
   import AppLayout from './layouts/AppLayout.cvs';
   import { signal } from '@canvapps';
@@ -38,8 +39,12 @@
         <GalleryDetailView />
       }
 
+      @if (sessionStore.state.activeRoute === '/music' || sessionStore.state.activeRoute.startsWith('/music')) {
+        <MusicPlayerView />
+      }
+
       <!-- 404 Fallback Scene for unmapped routes -->
-      @if (sessionStore.state.activeRoute !== '/' && sessionStore.state.activeRoute !== '/gallery' && !sessionStore.state.activeRoute.startsWith('/gallery/')) {
+      @if (sessionStore.state.activeRoute !== '/' && sessionStore.state.activeRoute !== '/gallery' && !sessionStore.state.activeRoute.startsWith('/gallery/') && sessionStore.state.activeRoute !== '/music' && !sessionStore.state.activeRoute.startsWith('/music')) {
         <NotFoundView />
       }
     </AppLayout>

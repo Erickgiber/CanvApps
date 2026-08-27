@@ -1,0 +1,623 @@
+<script lang="ts">
+  import { sessionStore } from '../stores/session.store';
+  import {
+    musicStore,
+    currentTrack,
+    filteredTracks,
+    musicGenres,
+    activeLyricIndex,
+    formatDuration,
+    togglePlay,
+    playTrack,
+    nextTrack,
+    prevTrack,
+    seekTrack,
+    setVolume,
+    toggleMute,
+    toggleShuffle,
+    toggleRepeat,
+    toggleLikeTrack,
+    setActiveTab,
+    setActiveGenre,
+    setAudioPreset,
+    audioFrequencies,
+    Track,
+  } from '../stores/music.store';
+
+  // Responsive viewport signals
+  const { isMobile, isTablet, isDesktop } = useBreakpoints();
+  const isDark = computed(() => sessionStore.state.theme === 'dark');
+
+  // Slider interaction handlers
+  function onSeekInput(e: any) {
+    const val = Number(e?.value ?? e?.target?.value ?? 0);
+    seekTrack(val);
+  }
+
+  function onSeekChange(e: any) {
+    const val = Number(e?.value ?? e?.target?.value ?? 0);
+    seekTrack(val);
+  }
+
+  function onVolumeInput(e: any) {
+    const val = Number(e?.value ?? e?.target?.value ?? 0);
+    setVolume(val / 100);
+  }
+
+  // Smooth, creative liquid heart animation on Like click
+  function handleLikeClick(e: any) {
+    const track = currentTrack.value;
+    if (!track) return;
+
+    toggleLikeTrack(track.id);
+
+    const x = e?.clientX ?? e?.x ?? (typeof window !== 'undefined' ? window.innerWidth / 2 : 200);
+    const y = e?.clientY ?? e?.y ?? (typeof window !== 'undefined' ? window.innerHeight / 2 : 200);
+
+    KineticFX.liquidHeart({
+      x,
+      y,
+      color: '#ff4d6d',
+      count: 14,
+      size: 32,
+    });
+  }
+
+  function handleSearchInput(e: any) {
+    const text = e?.value ?? e?.target?.value ?? '';
+    musicStore.update((prev) => ({ ...prev, searchQuery: text }));
+  }
+</script>
+
+<!-- Master Responsive Music Studio Container with Ambient Liquid Glow -->
+<motion animation="scale-in" :duration="450">
+  <view width="100%" flexDirection="column" :padding={isMobile.value ? [4, 4] : [14, 20]} :gap={isMobile.value ? 10 : 16} flexShrink="0">
+
+    <!-- 1. iOS Floating Glass Pill Tabs Header -->
+    <view 
+      width="100%" 
+      flexDirection="row" 
+      alignItems="center" 
+      justifyContent="space-between" 
+      :padding={isMobile.value ? [8, 10] : [12, 16]} 
+      :backgroundColor={isDark.value ? 'rgba(20, 20, 28, 0.72)' : 'rgba(255, 255, 255, 0.85)'} 
+      borderRadius="20" 
+      borderWidth="1" 
+      :borderColor={isDark.value ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.08)'} 
+      :boxShadow={isDark.value ? { offsetX: 0, offsetY: 8, blur: 24, color: 'rgba(0,0,0,0.35)' } : { offsetX: 0, offsetY: 4, blur: 16, color: 'rgba(0,0,0,0.06)' }}
+      flexShrink="0"
+    >
+      <!-- Brand & Now Playing Indicator -->
+      <view flexDirection="row" alignItems="center" gap="8" flexShrink="0">
+        <view width="30" height="30" borderRadius="15" :backgroundColor="currentTrack.value.themeColor" alignItems="center" justifyContent="center">
+          <text fontSize="14" fontWeight="bold" color="#ffffff">🎵</text>
+        </view>
+        <view flexDirection="column" gap="1">
+          <text :fontSize={isMobile.value ? 13 : 15} fontWeight="bold" :color={isDark.value ? '#ffffff' : '#0f172a'}>
+            {{ isMobile.value ? 'Music Studio' : 'CanvApps Music Studio' }}
+          </text>
+          <text fontSize="10" :color={musicStore.state.isPlaying ? '#22c55e' : (isDark.value ? '#888899' : '#64748b')}>
+            {{ musicStore.state.isPlaying ? '● Reproduciendo' : '○ Pausado' }}
+          </text>
+        </view>
+      </view>
+
+      <!-- Glass Capsule Tab Buttons -->
+      <view flexDirection="row" :gap={isMobile.value ? 4 : 6} overflow="auto" padding="[2, 0]" flexShrink="0">
+        <button 
+          label="🎵" 
+          :backgroundColor={musicStore.state.activeTab === 'player' ? currentTrack.value.themeColor : (isDark.value ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)')} 
+          :color={musicStore.state.activeTab === 'player' ? '#ffffff' : (isDark.value ? '#9e9eb0' : '#475569')} 
+          borderRadius="12" 
+          :padding={isMobile.value ? [5, 10] : [6, 14]} 
+          fontSize="12" 
+          fontWeight="bold" 
+          borderWidth="1" 
+          :borderColor={musicStore.state.activeTab === 'player' ? currentTrack.value.accentColor : 'transparent'} 
+          flexShrink="0"
+          @click="() => setActiveTab('player')" 
+        />
+        <button 
+          label="📋" 
+          :backgroundColor={musicStore.state.activeTab === 'queue' ? currentTrack.value.themeColor : (isDark.value ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)')} 
+          :color={musicStore.state.activeTab === 'queue' ? '#ffffff' : (isDark.value ? '#9e9eb0' : '#475569')} 
+          borderRadius="12" 
+          :padding={isMobile.value ? [5, 10] : [6, 14]} 
+          fontSize="12" 
+          fontWeight="bold" 
+          borderWidth="1" 
+          :borderColor={musicStore.state.activeTab === 'queue' ? currentTrack.value.accentColor : 'transparent'} 
+          flexShrink="0"
+          @click="() => setActiveTab('queue')" 
+        />
+        <button 
+          label="🎤" 
+          :backgroundColor={musicStore.state.activeTab === 'lyrics' ? currentTrack.value.themeColor : (isDark.value ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)')} 
+          :color={musicStore.state.activeTab === 'lyrics' ? '#ffffff' : (isDark.value ? '#9e9eb0' : '#475569')} 
+          borderRadius="12" 
+          :padding={isMobile.value ? [5, 10] : [6, 14]} 
+          fontSize="12" 
+          fontWeight="bold" 
+          borderWidth="1" 
+          :borderColor={musicStore.state.activeTab === 'lyrics' ? currentTrack.value.accentColor : 'transparent'} 
+          flexShrink="0"
+          @click="() => setActiveTab('lyrics')" 
+        />
+        <button 
+          label="🎛️" 
+          :backgroundColor={musicStore.state.activeTab === 'fx' ? currentTrack.value.themeColor : (isDark.value ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)')} 
+          :color={musicStore.state.activeTab === 'fx' ? '#ffffff' : (isDark.value ? '#9e9eb0' : '#475569')} 
+          borderRadius="12" 
+          :padding={isMobile.value ? [5, 10] : [6, 14]} 
+          fontSize="12" 
+          fontWeight="bold" 
+          borderWidth="1" 
+          :borderColor={musicStore.state.activeTab === 'fx' ? currentTrack.value.accentColor : 'transparent'} 
+          flexShrink="0"
+          @click="() => setActiveTab('fx')" 
+        />
+      </view>
+
+    </view>
+
+    <!-- 2. Main Body: Split View on Desktop / Clean Single View on Mobile -->
+    <view width="100%" :flexDirection={isMobile.value ? 'column' : 'row'} :gap={isMobile.value ? 10 : 16} alignItems="flex-start" flexShrink="0">
+
+      <!-- ======================================================== -->
+      <!-- TAB 0 / LEFT COLUMN: Liquid Glass Now Playing Card Scene -->
+      <!-- ======================================================== -->
+      @if (!isMobile.value || musicStore.state.activeTab === 'player') {
+        <view 
+          :width={isMobile.value ? '100%' : '48%'} 
+          flexDirection="column" 
+          :backgroundColor={isDark.value ? 'rgba(20, 20, 28, 0.72)' : 'rgba(255, 255, 255, 0.88)'} 
+          borderRadius="28" 
+          borderWidth="1" 
+          :borderColor={isDark.value ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.08)'} 
+          :padding={isMobile.value ? [16, 14] : [22, 22]} 
+          :gap={isMobile.value ? 14 : 18} 
+          :boxShadow={isDark.value ? { offsetX: 0, offsetY: 18, blur: 45, color: 'rgba(0,0,0,0.5)' } : { offsetX: 0, offsetY: 8, blur: 24, color: 'rgba(0,0,0,0.08)' }}
+          flexShrink="0"
+        >
+          
+          <!-- Liquid Morphing Album Art & Depth Vinyl Disc Deck -->
+          <view width="100%" position="relative" alignItems="center" justifyContent="center" :padding={isMobile.value ? [10, 0] : [14, 0]} flexShrink="0">
+            
+            <!-- Vinyl Record Disc (Pops out when playing with realistic grooves) -->
+            <view 
+              position="absolute" 
+              :left={musicStore.state.isPlaying ? (isMobile.value ? '50%' : '52%') : '30%'} 
+              :width={isMobile.value ? 180 : 230} 
+              :height={isMobile.value ? 180 : 230} 
+              borderRadius="120" 
+              backgroundColor="#09090c" 
+              borderWidth="2" 
+              borderColor="#1e1e24" 
+              alignItems="center" 
+              justifyContent="center"
+              :boxShadow={musicStore.state.isPlaying ? { offsetX: 0, offsetY: 10, blur: 28, color: 'rgba(0,0,0,0.65)' } : undefined}
+            >
+              <!-- Vinyl Concentric Grooves -->
+              <view :width={isMobile.value ? 140 : 184} :height={isMobile.value ? 140 : 184} borderRadius="95" borderWidth="1" borderColor="#15151b" alignItems="center" justifyContent="center">
+                <view :width={isMobile.value ? 100 : 138} :height={isMobile.value ? 100 : 138} borderRadius="70" borderWidth="1" borderColor="#111116" alignItems="center" justifyContent="center">
+                  <!-- Vinyl Center Label -->
+                  <view :width={isMobile.value ? 56 : 74} :height={isMobile.value ? 56 : 74} borderRadius="38" :backgroundColor="currentTrack.value.themeColor" alignItems="center" justifyContent="center">
+                    <view width="10" height="10" borderRadius="5" backgroundColor="#09090c" />
+                  </view>
+                </view>
+              </view>
+            </view>
+
+            <!-- Album Cover Card (Specular Liquid Glass Border & Smooth Corners) -->
+            <view 
+              :width={isMobile.value ? 210 : 260} 
+              :height={isMobile.value ? 210 : 260} 
+              borderRadius="22" 
+              overflow="hidden" 
+              borderWidth="1" 
+              :borderColor={isDark.value ? 'rgba(255, 255, 255, 0.2)' : 'rgba(255, 255, 255, 0.9)'} 
+              :boxShadow={{ offsetX: 0, offsetY: 14, blur: 34, color: 'rgba(0,0,0,0.45)' }}
+              position="relative"
+            >
+              <image :src="currentTrack.value.cover" width="100%" height="100%" fit="cover" />
+            </view>
+
+          </view>
+
+          <!-- Track Info Row with High-Contrast Typography & Glass Like Button -->
+          <view width="100%" flexDirection="row" alignItems="center" justifyContent="space-between" :padding={isMobile.value ? [2, 2] : [4, 6]} flexShrink="0">
+            <view flexDirection="column" gap="2" flexGrow="1">
+              <text :fontSize={isMobile.value ? 17 : 22} fontWeight="bold" :color={isDark.value ? '#ffffff' : '#0f172a'} textOverflow="ellipsis">
+                {{ currentTrack.value.title }}
+              </text>
+              <text :fontSize={isMobile.value ? 12 : 14} :color={isDark.value ? '#9e9eb4' : '#64748b'}>
+                {{ currentTrack.value.artist }} • {{ currentTrack.value.album }}
+              </text>
+            </view>
+
+            <!-- iOS Frosted Glass Like Button (Triggers Liquid Heart Particle Animation) -->
+            <button 
+              :label={musicStore.state.likedTrackIds.includes(currentTrack.value.id) ? '❤️' : '🤍'} 
+              :backgroundColor={musicStore.state.likedTrackIds.includes(currentTrack.value.id) ? 'rgba(255, 77, 109, 0.18)' : (isDark.value ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)')} 
+              :hoverBackgroundColor={isDark.value ? 'rgba(255, 255, 255, 0.15)' : 'rgba(0, 0, 0, 0.1)'} 
+              borderWidth="1" 
+              :borderColor={musicStore.state.likedTrackIds.includes(currentTrack.value.id) ? 'rgba(255, 77, 109, 0.4)' : (isDark.value ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.08)')} 
+              width="44" 
+              height="44" 
+              borderRadius="22" 
+              fontSize="18" 
+              @click="handleLikeClick" 
+            />
+          </view>
+
+          <!-- iOS Progress Scrubber Slider -->
+          <view width="100%" flexDirection="column" gap="4" flexShrink="0" :padding={isMobile.value ? [2, 2] : [4, 4]}>
+            <slider 
+              width="100%" 
+              height="24" 
+              :value="musicStore.state.currentTime" 
+              :min="0" 
+              :max="musicStore.state.duration" 
+              :progressColor="currentTrack.value.accentColor" 
+              :trackColor={isDark.value ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.12)'} 
+              thumbColor="#ffffff" 
+              :thumbBorderColor="currentTrack.value.themeColor" 
+              :thumbRadius={isMobile.value ? 7 : 7} 
+              :thumbHoverRadius={isMobile.value ? 9 : 9} 
+              @input="onSeekInput" 
+              @change="onSeekChange" 
+            />
+
+            <!-- Timestamps -->
+            <view width="100%" flexDirection="row" justifyContent="space-between" alignItems="center">
+              <text fontSize="11" :color={isDark.value ? '#888899' : '#64748b'}>
+                {{ formatDuration(musicStore.state.currentTime) }}
+              </text>
+              <text fontSize="11" :color={isDark.value ? '#888899' : '#64748b'}>
+                -{{ formatDuration(musicStore.state.duration - musicStore.state.currentTime) }}
+              </text>
+            </view>
+          </view>
+
+          <!-- Ergonomic Centered Playback Deck -->
+          <view width="100%" flexDirection="row" alignItems="center" justifyContent="space-around" :padding={isMobile.value ? [2, 0] : [6, 0]} flexShrink="0">
+            
+            <!-- Shuffle -->
+            <button 
+              label="🔀" 
+              :backgroundColor={musicStore.state.shuffle ? (isDark.value ? 'rgba(30, 215, 96, 0.2)' : '#dcfce7') : 'transparent'} 
+              :color={musicStore.state.shuffle ? '#1ed760' : (isDark.value ? '#888899' : '#64748b')} 
+              width="38" 
+              height="38" 
+              borderRadius="19" 
+              fontSize="14" 
+              @click="toggleShuffle" 
+            />
+
+            <!-- Previous -->
+            <button 
+              label="⏮️" 
+              :backgroundColor={isDark.value ? 'rgba(255, 255, 255, 0.06)' : 'rgba(0, 0, 0, 0.05)'} 
+              :hoverBackgroundColor={isDark.value ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.1)'} 
+              borderWidth="1" 
+              :borderColor={isDark.value ? 'rgba(255, 255, 255, 0.08)' : 'transparent'} 
+              width="44" 
+              height="44" 
+              borderRadius="22" 
+              fontSize="16" 
+              @click="prevTrack" 
+            />
+
+            <!-- Hero Play / Pause Button with Liquid Glowing Aura -->
+            <button 
+              :label={musicStore.state.isPlaying ? '⏸' : '▶'} 
+              :backgroundColor="currentTrack.value.themeColor" 
+              hoverBackgroundColor="#1ed760" 
+              activeBackgroundColor="#1aa34a" 
+              color="#ffffff" 
+              :width={isMobile.value ? 60 : 64} 
+              :height={isMobile.value ? 60 : 64} 
+              :borderRadius={isMobile.value ? 30 : 32} 
+              :fontSize={isMobile.value ? 22 : 24} 
+              fontWeight="bold" 
+              :boxShadow={{ offsetX: 0, offsetY: 8, blur: 24, color: currentTrack.value.themeColor }}
+              @click="togglePlay" 
+            />
+
+            <!-- Next -->
+            <button 
+              label="⏭️" 
+              :backgroundColor={isDark.value ? 'rgba(255, 255, 255, 0.06)' : 'rgba(0, 0, 0, 0.05)'} 
+              :hoverBackgroundColor={isDark.value ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.1)'} 
+              borderWidth="1" 
+              :borderColor={isDark.value ? 'rgba(255, 255, 255, 0.08)' : 'transparent'} 
+              width="44" 
+              height="44" 
+              borderRadius="22" 
+              fontSize="16" 
+              @click="nextTrack" 
+            />
+
+            <!-- Repeat Mode -->
+            <button 
+              :label={musicStore.state.repeatMode === 'one' ? '🔂' : '🔁'} 
+              :backgroundColor={musicStore.state.repeatMode !== 'off' ? (isDark.value ? 'rgba(30, 215, 96, 0.2)' : '#dcfce7') : 'transparent'} 
+              :color={musicStore.state.repeatMode !== 'off' ? '#1ed760' : (isDark.value ? '#888899' : '#64748b')} 
+              width="38" 
+              height="38" 
+              borderRadius="19" 
+              fontSize="14" 
+              @click="toggleRepeat" 
+            />
+
+          </view>
+
+          <!-- Integrated Slim Volume Bar -->
+          <view 
+            width="100%" 
+            flexDirection="row" 
+            alignItems="center" 
+            :gap={isMobile.value ? 8 : 12} 
+            :padding={isMobile.value ? [6, 10] : [8, 14]} 
+            :backgroundColor={isDark.value ? 'rgba(255, 255, 255, 0.04)' : 'rgba(0, 0, 0, 0.03)'} 
+            borderRadius="16" 
+            borderWidth="1" 
+            :borderColor={isDark.value ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.05)'} 
+            flexShrink="0"
+          >
+            <button 
+              :label={musicStore.state.isMuted || musicStore.state.volume === 0 ? '🔇' : (musicStore.state.volume < 0.5 ? '🔉' : '🔊')} 
+              backgroundColor="transparent" 
+              fontSize="13" 
+              width="26" 
+              height="26" 
+              @click="toggleMute" 
+            />
+            <slider 
+              width="100%" 
+              height="18" 
+              :value="musicStore.state.isMuted ? 0 : musicStore.state.volume * 100" 
+              :min="0" 
+              :max="100" 
+              :progressColor="currentTrack.value.accentColor" 
+              :trackColor={isDark.value ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.12)'} 
+              thumbColor="#ffffff" 
+              :thumbRadius="5" 
+              :thumbHoverRadius="7" 
+              @input="onVolumeInput" 
+            />
+          </view>
+
+        </view>
+      }
+
+      <!-- ======================================================== -->
+      <!-- TAB 1 / 2 / 3: Queue, Lyrics, or Equalizer Views         -->
+      <!-- ======================================================== -->
+      @if (!isMobile.value || musicStore.state.activeTab !== 'player') {
+        <view 
+          :width={isMobile.value ? '100%' : '50%'} 
+          flexDirection="column" 
+          :backgroundColor={isDark.value ? 'rgba(20, 20, 28, 0.72)' : 'rgba(255, 255, 255, 0.88)'} 
+          borderRadius="28" 
+          borderWidth="1" 
+          :borderColor={isDark.value ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.08)'} 
+          :padding={isMobile.value ? [14, 14] : [20, 20]} 
+          :gap={isMobile.value ? 12 : 14} 
+          :boxShadow={isDark.value ? { offsetX: 0, offsetY: 18, blur: 45, color: 'rgba(0,0,0,0.5)' } : { offsetX: 0, offsetY: 8, blur: 24, color: 'rgba(0,0,0,0.08)' }}
+          flexShrink="0"
+        >
+          
+          <!-- TAB 1: Playlist & Queue -->
+          @if (!isMobile.value || musicStore.state.activeTab === 'queue') {
+            @if (musicStore.state.activeTab === 'queue' || !isMobile.value) {
+              <view width="100%" flexDirection="column" gap="10" flexShrink="0">
+                
+                <!-- Queue Header & Search Bar -->
+                <view width="100%" flexDirection="row" alignItems="center" justifyContent="space-between" gap="8" flexShrink="0">
+                  <text fontSize="15" fontWeight="bold" :color={isDark.value ? '#ffffff' : '#0f172a'}>📋 Lista de Pistas</text>
+                  
+                  <view :width={isMobile.value ? '150' : '200'} height="32" :backgroundColor={isDark.value ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)'} borderRadius="16" padding="[0, 10]" flexDirection="row" alignItems="center" gap="6" borderWidth="1" :borderColor={isDark.value ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)'}>
+                    <text fontSize="11" :color={isDark.value ? '#888899' : '#94a3b8'}>🔍</text>
+                    <input 
+                      width="100%" 
+                      height="26" 
+                      backgroundColor="transparent" 
+                      borderWidth="0" 
+                      borderColor="transparent" 
+                      focusBorderColor="transparent" 
+                      :color={isDark.value ? '#f5f5f5' : '#0f172a'} 
+                      :placeholderColor={isDark.value ? '#888899' : '#94a3b8'} 
+                      fontSize="11" 
+                      placeholder="Buscar..." 
+                      :value="musicStore.state.searchQuery" 
+                      @input="handleSearchInput" 
+                    />
+                  </view>
+                </view>
+
+                <!-- Genre Filter Pills -->
+                <view width="100%" flexDirection="row" gap="6" overflow="auto" padding="[2, 0]" flexShrink="0">
+                  @each musicGenres as genre {
+                    <button 
+                      :label="genre" 
+                      :backgroundColor={musicStore.state.activeGenre === genre ? currentTrack.value.themeColor : (isDark.value ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)')} 
+                      :color={musicStore.state.activeGenre === genre ? '#ffffff' : (isDark.value ? '#9999aa' : '#475569')} 
+                      borderRadius="12" 
+                      padding="[4, 10]" 
+                      fontSize="11" 
+                      :fontWeight={musicStore.state.activeGenre === genre ? 'bold' : 'normal'} 
+                      flexShrink="0"
+                      @click="() => setActiveGenre(genre)" 
+                    />
+                  }
+                </view>
+
+                <!-- Tracks List Rows -->
+                <view width="100%" flexDirection="column" gap="6" flexShrink="0">
+                  @each filteredTracks.value as item, idx {
+                    <view 
+                      width="100%" 
+                      flexDirection="row" 
+                      alignItems="center" 
+                      justifyContent="space-between" 
+                      :padding={isMobile.value ? [6, 8] : [8, 10]} 
+                      borderRadius="14" 
+                      :backgroundColor={musicStore.state.tracks[musicStore.state.currentTrackIndex]?.id === item.id ? (isDark.value ? 'rgba(30, 215, 96, 0.15)' : '#f0fdf4') : (isDark.value ? 'rgba(255, 255, 255, 0.04)' : 'rgba(0, 0, 0, 0.02)')} 
+                      borderWidth="1" 
+                      :borderColor={musicStore.state.tracks[musicStore.state.currentTrackIndex]?.id === item.id ? '#1ed760' : (isDark.value ? 'rgba(255, 255, 255, 0.06)' : 'rgba(0, 0, 0, 0.05)')} 
+                      flexShrink="0"
+                      @click="() => playTrack(musicStore.state.tracks.findIndex((t) => t.id === item.id))" 
+                    >
+                      <!-- Track Number & Thumbnail & Info -->
+                      <view flexDirection="row" alignItems="center" gap="10" flexGrow="1">
+                        <text fontSize="11" fontWeight="bold" :color={musicStore.state.tracks[musicStore.state.currentTrackIndex]?.id === item.id ? '#1ed760' : (isDark.value ? '#666677' : '#94a3b8')}>
+                          {{ idx + 1 }}
+                        </text>
+                        <view width="36" height="36" borderRadius="8" overflow="hidden" flexShrink="0">
+                          <image :src="item.cover" width="100%" height="100%" fit="cover" />
+                        </view>
+                        <view flexDirection="column" gap="1" flexGrow="1">
+                          <text fontSize="13" fontWeight="bold" :color={musicStore.state.tracks[musicStore.state.currentTrackIndex]?.id === item.id ? '#1ed760' : (isDark.value ? '#f0f0f0' : '#0f172a')} textOverflow="ellipsis">
+                            {{ item.title }}
+                          </text>
+                          <text fontSize="10" :color={isDark.value ? '#888899' : '#64748b'}>
+                            {{ item.artist }} • {{ item.genre }}
+                          </text>
+                        </view>
+                      </view>
+
+                      <!-- Duration & Play Button -->
+                      <view flexDirection="row" alignItems="center" gap="6">
+                        <text fontSize="10" :color={isDark.value ? '#888899' : '#64748b'}>
+                          {{ formatDuration(item.duration) }}
+                        </text>
+                        <button 
+                          :label={musicStore.state.tracks[musicStore.state.currentTrackIndex]?.id === item.id && musicStore.state.isPlaying ? '⏸' : '▶'} 
+                          :backgroundColor={musicStore.state.tracks[musicStore.state.currentTrackIndex]?.id === item.id ? '#1ed760' : (isDark.value ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.08)')} 
+                          :color={musicStore.state.tracks[musicStore.state.currentTrackIndex]?.id === item.id ? '#ffffff' : (isDark.value ? '#ffffff' : '#334155')} 
+                          width="26" 
+                          height="26" 
+                          borderRadius="13" 
+                          fontSize="10" 
+                          @click="() => playTrack(musicStore.state.tracks.findIndex((t) => t.id === item.id))" 
+                        />
+                      </view>
+                    </view>
+                  }
+                </view>
+
+              </view>
+            }
+          }
+
+          <!-- TAB 2: Live Synchronized Lyrics -->
+          @if (musicStore.state.activeTab === 'lyrics') {
+            <view width="100%" flexDirection="column" gap="12" flexShrink="0">
+              <view width="100%" flexDirection="row" alignItems="center" justifyContent="space-between">
+                <text fontSize="15" fontWeight="bold" :color={isDark.value ? '#ffffff' : '#0f172a'}>🎤 Letras en Vivo</text>
+                <text fontSize="11" :color="currentTrack.value.accentColor">Sincronizado</text>
+              </view>
+
+              <view width="100%" flexDirection="column" gap="8" :padding={isMobile.value ? [6, 2] : [10, 6]} flexShrink="0">
+                @each currentTrack.value.lyrics as line, lIdx {
+                  <view 
+                    width="100%" 
+                    padding="[8, 12]" 
+                    borderRadius="12" 
+                    :backgroundColor={activeLyricIndex.value === lIdx ? (isDark.value ? 'rgba(30, 215, 96, 0.18)' : '#ecfdf5') : 'transparent'} 
+                    borderWidth={activeLyricIndex.value === lIdx ? 1 : 0} 
+                    :borderColor={activeLyricIndex.value === lIdx ? currentTrack.value.accentColor : 'transparent'} 
+                    flexShrink="0"
+                    @click="() => seekTrack(line.time)" 
+                  >
+                    <text 
+                      :fontSize={activeLyricIndex.value === lIdx ? 15 : 13} 
+                      :fontWeight={activeLyricIndex.value === lIdx ? 'bold' : 'normal'} 
+                      :color={activeLyricIndex.value === lIdx ? (isDark.value ? '#22c55e' : '#15803d') : (isDark.value ? '#777788' : '#94a3b8')} 
+                      :wordWrap="true"
+                    >
+                      {{ line.text }}
+                    </text>
+                  </view>
+                }
+              </view>
+            </view>
+          }
+
+          <!-- TAB 3: Audio Equalizer & Sound Presets -->
+          @if (musicStore.state.activeTab === 'fx') {
+            <view width="100%" flexDirection="column" gap="14" flexShrink="0">
+              <view width="100%" flexDirection="row" alignItems="center" justifyContent="space-between">
+                <text fontSize="15" fontWeight="bold" :color={isDark.value ? '#ffffff' : '#0f172a'}>🎛️ Presets Sonoros & Ecualizador</text>
+                <text fontSize="11" :color="currentTrack.value.accentColor">Web Audio DSP</text>
+              </view>
+
+              <!-- Presets -->
+              <view width="100%" flexDirection="row" :gap={isMobile.value ? 6 : 8} flexWrap="wrap" flexShrink="0">
+                <button 
+                  label="✨ Normal" 
+                  :backgroundColor={musicStore.state.audioEffectPreset === 'normal' ? currentTrack.value.themeColor : (isDark.value ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)')} 
+                  :color={musicStore.state.audioEffectPreset === 'normal' ? '#ffffff' : (isDark.value ? '#a0a0b0' : '#475569')} 
+                  borderRadius="14" 
+                  :padding={isMobile.value ? [6, 10] : [8, 14]} 
+                  :fontSize={isMobile.value ? 11 : 12} 
+                  fontWeight="bold" 
+                  :flexGrow={isMobile.value ? 1 : 0}
+                  @click="() => setAudioPreset('normal')" 
+                />
+                <button 
+                  label="🔊 Bass Boost" 
+                  :backgroundColor={musicStore.state.audioEffectPreset === 'bass_boost' ? currentTrack.value.themeColor : (isDark.value ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)')} 
+                  :color={musicStore.state.audioEffectPreset === 'bass_boost' ? '#ffffff' : (isDark.value ? '#a0a0b0' : '#475569')} 
+                  borderRadius="14" 
+                  :padding={isMobile.value ? [6, 10] : [8, 14]} 
+                  :fontSize={isMobile.value ? 11 : 12} 
+                  fontWeight="bold" 
+                  :flexGrow={isMobile.value ? 1 : 0}
+                  @click="() => setAudioPreset('bass_boost')" 
+                />
+                <button 
+                  label="📻 Lo-Fi Mellow" 
+                  :backgroundColor={musicStore.state.audioEffectPreset === 'lofi' ? currentTrack.value.themeColor : (isDark.value ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)')} 
+                  :color={musicStore.state.audioEffectPreset === 'lofi' ? '#ffffff' : (isDark.value ? '#a0a0b0' : '#475569')} 
+                  borderRadius="14" 
+                  :padding={isMobile.value ? [6, 10] : [8, 14]} 
+                  :fontSize={isMobile.value ? 11 : 12} 
+                  fontWeight="bold" 
+                  :flexGrow={isMobile.value ? 1 : 0}
+                  @click="() => setAudioPreset('lofi')" 
+                />
+              </view>
+
+              <!-- Frequency Visualizer -->
+              <view width="100%" :backgroundColor={isDark.value ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)'} borderRadius="18" borderWidth="1" :borderColor={isDark.value ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)'} padding="[16, 16]" flexDirection="column" gap="12" alignItems="center">
+                <text fontSize="12" fontWeight="bold" :color={isDark.value ? '#ffffff' : '#0f172a'}>Espectro de Frecuencia Activo</text>
+                
+                <!-- Dynamic 16-Band Real-Time Frequency Bars -->
+                <view width="100%" height="70" flexDirection="row" alignItems="flex-end" justifyContent="space-between" gap="3" padding="[0, 6]">
+                  @each audioFrequencies.value as freq {
+                    <view 
+                      width="10" 
+                      :height="freq" 
+                      borderRadius="5" 
+                      :backgroundColor="currentTrack.value.accentColor" 
+                      :boxShadow="{ offsetX: 0, offsetY: 0, blur: 8, color: currentTrack.value.accentColor }" 
+                    />
+                  }
+                </view>
+
+                <text fontSize="10" :color={musicStore.state.isPlaying ? '#22c55e' : (isDark.value ? '#888899' : '#64748b')}>
+                  {{ musicStore.state.isPlaying ? '● Sintetizador Web Audio DSP procesando frecuencias a 60 FPS' : '○ Pulsa Play en el reproductor para activar la síntesis en vivo' }}
+                </text>
+              </view>
+            </view>
+          }
+
+        </view>
+      }
+
+    </view>
+
+  </view>
+</motion>

@@ -610,7 +610,7 @@ export class CVSParser {
           const [tagName, ...attrChunks] = this.splitTagTokens(cleanRaw);
           const attributes = this.parseAttributes(attrChunks.join(' '));
 
-          const isVoidElement = /^(?:input|img|image|hr|br)$/i.test(tagName || '');
+          const isVoidElement = /^(?:input|img|image|hr|br|slider)$/i.test(tagName || '');
           const finalSelfClosing = isSelfClosing || isVoidElement;
 
           tokens.push({

@@ -488,13 +488,50 @@ export abstract class UIElement {
           if (i > 0) intrinsicH += mainGap;
         }
       } else {
-        for (let i = 0; i < flowChildren.length; i++) {
-          const child = flowChildren[i];
-          const childMargin = child.getComputedMargin();
-          const childSize = child.measure(innerAvailableW, innerAvailableH);
-          intrinsicW += childSize.width + childMargin.left + childMargin.right;
-          intrinsicH = Math.max(intrinsicH, childSize.height + childMargin.top + childMargin.bottom);
-          if (i > 0) intrinsicW += mainGap;
+        const isWrap = this.styles.flexWrap === 'wrap' || this.styles.flexWrap === 'wrap-reverse';
+        if (isWrap && innerAvailableW > 0) {
+          let currentLineMain = 0;
+          let currentLineCrossMax = 0;
+          let maxMainWidth = 0;
+          let totalCrossHeight = 0;
+          let lineIndex = 0;
+          const crossGap = this.styles.rowGap ?? gap;
+
+          for (let i = 0; i < flowChildren.length; i++) {
+            const child = flowChildren[i];
+            const childMargin = child.getComputedMargin();
+            const childSize = child.measure(innerAvailableW, innerAvailableH);
+            const itemOuterW = childSize.width + childMargin.left + childMargin.right;
+            const itemOuterH = childSize.height + childMargin.top + childMargin.bottom;
+
+            if (currentLineMain > 0 && currentLineMain + mainGap + itemOuterW > innerAvailableW) {
+              maxMainWidth = Math.max(maxMainWidth, currentLineMain);
+              totalCrossHeight += currentLineCrossMax + (lineIndex > 0 ? crossGap : 0);
+              lineIndex++;
+              currentLineMain = itemOuterW;
+              currentLineCrossMax = itemOuterH;
+            } else {
+              currentLineMain = currentLineMain > 0 ? currentLineMain + mainGap + itemOuterW : itemOuterW;
+              currentLineCrossMax = Math.max(currentLineCrossMax, itemOuterH);
+            }
+          }
+
+          if (currentLineMain > 0) {
+            maxMainWidth = Math.max(maxMainWidth, currentLineMain);
+            totalCrossHeight += currentLineCrossMax + (lineIndex > 0 ? crossGap : 0);
+          }
+
+          intrinsicW = maxMainWidth;
+          intrinsicH = totalCrossHeight;
+        } else {
+          for (let i = 0; i < flowChildren.length; i++) {
+            const child = flowChildren[i];
+            const childMargin = child.getComputedMargin();
+            const childSize = child.measure(innerAvailableW, innerAvailableH);
+            intrinsicW += childSize.width + childMargin.left + childMargin.right;
+            intrinsicH = Math.max(intrinsicH, childSize.height + childMargin.top + childMargin.bottom);
+            if (i > 0) intrinsicW += mainGap;
+          }
         }
       }
     } else {

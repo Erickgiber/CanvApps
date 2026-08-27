@@ -16,6 +16,74 @@
   const compSliderVal = signal(60);
   const isDocModalOpen = signal(false);
 
+  const compSelectVal = signal('120fps');
+  const selectOptions = [
+    { label: '⚡ 120 FPS Ultra Retina', value: '120fps' },
+    { label: '🚀 60 FPS Estándar', value: '60fps' },
+    { label: '🔋 30 FPS Ahorro de Energía', value: '30fps' },
+  ];
+
+  function onCompSelectChange(e: any) {
+    const val = e?.value ?? e?.target?.value ?? '120fps';
+    compSelectVal.value = val;
+    soundManager.playClick(650);
+  }
+
+  const eventLogText = signal('Interactúa con los botones o controles para inspeccionar eventos en tiempo real');
+  const lastEventName = signal('@click');
+  const eventClickCount = signal(0);
+  const lastEventCoord = signal('x: 0, y: 0');
+  const lastModifierKeys = signal('ninguna');
+
+  function handleDemoClick(e: any) {
+    soundManager.playPop(560);
+    eventClickCount.update((n) => n + 1);
+    lastEventName.value = '@click';
+    const x = Math.round(e?.x ?? e?.clientX ?? 0);
+    const y = Math.round(e?.y ?? e?.clientY ?? 0);
+    lastEventCoord.value = `x: ${x}, y: ${y}`;
+    const mods = [];
+    if (e?.ctrlKey) mods.push('Ctrl');
+    if (e?.shiftKey) mods.push('Shift');
+    if (e?.altKey) mods.push('Alt');
+    if (e?.metaKey) mods.push('Cmd/Meta');
+    lastModifierKeys.value = mods.length > 0 ? mods.join('+') : 'ninguna';
+    eventLogText.value = `@click disparado | Canvas (${x}, ${y}) | Botón: ${e?.button ?? 0} | Total: ${eventClickCount.value}`;
+  }
+
+  function handleDemoPointerDown(e: any) {
+    soundManager.playClick(700);
+    lastEventName.value = '@pointerdown';
+    const x = Math.round(e?.x ?? e?.clientX ?? 0);
+    const y = Math.round(e?.y ?? e?.clientY ?? 0);
+    lastEventCoord.value = `x: ${x}, y: ${y}`;
+    eventLogText.value = `@pointerdown presionado en (${x}, ${y}) con pointerType: ${e?.pointerType || 'mouse'}`;
+  }
+
+  function handleDemoHover(isEntering: boolean) {
+    if (isEntering) {
+      soundManager.playClick(900);
+      lastEventName.value = '@pointerenter';
+      eventLogText.value = '@pointerenter detectado: el cursor ingresó al área del elemento';
+    } else {
+      lastEventName.value = '@pointerleave';
+      eventLogText.value = '@pointerleave detectado: el cursor salió del área del elemento';
+    }
+  }
+
+  function handleDemoInput(e: any) {
+    const val = e?.value ?? e?.target?.value ?? '';
+    lastEventName.value = '@input';
+    eventLogText.value = `@input emitido con valor reactivo: "${val}" (longitud: ${val.length})`;
+  }
+
+  function handleDemoSubmit(e: any) {
+    soundManager.playSwoosh();
+    const val = e?.value ?? e?.target?.value ?? '';
+    lastEventName.value = '@submit';
+    eventLogText.value = `@submit disparado al presionar Enter con valor: "${val}"`;
+  }
+
   function setDocTab(tab: 'quickstart' | 'components' | 'attributes' | 'layout' | 'signals' | 'cli') {
     soundManager.playClick(750);
     activeTab.value = tab;
@@ -806,7 +874,7 @@
                 {{ t.value.docs.components.imageDesc }}
               </text>
               <text fontSize="11" color="#64748b">
-                &lt;image src="/logo.svg" width="32" height="32" /&gt;
+                &lt;image src="./logo.svg" width="32" height="32" /&gt;
               </text>
             </view>
 
@@ -824,7 +892,7 @@
               justifyContent="center"
             >
               <image
-                src="/logo.svg"
+                src="./logo.svg"
                 width="36"
                 height="36"
               />
@@ -838,13 +906,166 @@
             </view>
           </view>
 
+          <view
+            width="100%"
+            flexDirection={isMobile.value ? 'column' : 'row'}
+            padding="[16, 18]"
+            :backgroundColor={isDark.value ? '#162032' : '#f8fafc'}
+            borderRadius="14"
+            borderWidth="1"
+            :borderColor={isDark.value ? '#1e293b' : '#cbd5e1'}
+            gap="14"
+            alignItems="center"
+          >
+            <view
+              :width={isMobile.value ? '100%' : '58%'}
+              flexDirection="column"
+              gap="6"
+            >
+              <view
+                flexDirection="row"
+                alignItems="center"
+                gap="8"
+              >
+                <view
+                  padding="[3, 8]"
+                  backgroundColor="rgba(2, 132, 199, 0.15)"
+                  borderRadius="6"
+                >
+                  <text
+                    fontSize="12"
+                    fontWeight="bold"
+                    :color={isDark.value ? '#38bdf8' : '#0284c7'}
+                  >
+                    &lt;select /&gt;
+                  </text>
+                </view>
+                <text
+                  fontSize="15"
+                  fontWeight="bold"
+                  :color={isDark.value ? '#f1f5f9' : '#0f172a'}
+                >
+                  Selector Desplegable (select)
+                </text>
+              </view>
+              <text
+                fontSize="12"
+                :color={isDark.value ? '#94a3b8' : '#64748b'}
+                lineHeight="1.4"
+              >
+                {{ t.value.docs.components.selectDesc }}
+              </text>
+              <text fontSize="11" color="#64748b">
+                &lt;select :options="options" :value="speed.value" @change="onSpeedChange" /&gt;
+              </text>
+            </view>
+
+            <view
+              :width={isMobile.value ? '100%' : '42%'}
+              padding="[10, 12]"
+              :backgroundColor={isDark.value ? '#080c14' : '#ffffff'}
+              borderRadius="10"
+              borderWidth="1"
+              :borderColor={isDark.value ? '#1e293b' : '#e2e8f0'}
+              flexDirection="column"
+              gap="8"
+              alignItems="center"
+              justifyContent="center"
+            >
+              <select
+                width="160"
+                :options="selectOptions"
+                :value="compSelectVal.value"
+                @change="onCompSelectChange"
+              />
+              <text fontSize="11" :color={isDark.value ? '#94a3b8' : '#64748b'}>
+                Valor: {{ compSelectVal.value }}
+              </text>
+            </view>
+          </view>
+
+          <view
+            width="100%"
+            flexDirection={isMobile.value ? 'column' : 'row'}
+            padding="[16, 18]"
+            :backgroundColor={isDark.value ? '#162032' : '#f8fafc'}
+            borderRadius="14"
+            borderWidth="1"
+            :borderColor={isDark.value ? '#1e293b' : '#cbd5e1'}
+            gap="14"
+            alignItems="center"
+          >
+            <view
+              :width={isMobile.value ? '100%' : '58%'}
+              flexDirection="column"
+              gap="6"
+            >
+              <view
+                flexDirection="row"
+                alignItems="center"
+                gap="8"
+              >
+                <view
+                  padding="[3, 8]"
+                  backgroundColor="rgba(16, 185, 129, 0.15)"
+                  borderRadius="6"
+                >
+                  <text
+                    fontSize="12"
+                    fontWeight="bold"
+                    color="#10b981"
+                  >
+                    &lt;input /&gt;
+                  </text>
+                </view>
+                <text
+                  fontSize="15"
+                  fontWeight="bold"
+                  :color={isDark.value ? '#f1f5f9' : '#0f172a'}
+                >
+                  Campo de Entrada de Texto (input)
+                </text>
+              </view>
+              <text
+                fontSize="12"
+                :color={isDark.value ? '#94a3b8' : '#64748b'}
+                lineHeight="1.4"
+              >
+                {{ t.value.docs.components.inputDesc }}
+              </text>
+              <text fontSize="11" color="#64748b">
+                &lt;input placeholder="Escribe aquí..." @input="onInput" @submit="onSubmit" /&gt;
+              </text>
+            </view>
+
+            <view
+              :width={isMobile.value ? '100%' : '42%'}
+              padding="[10, 12]"
+              :backgroundColor={isDark.value ? '#080c14' : '#ffffff'}
+              borderRadius="10"
+              borderWidth="1"
+              :borderColor={isDark.value ? '#1e293b' : '#e2e8f0'}
+              flexDirection="column"
+              gap="6"
+            >
+              <input
+                placeholder="Prueba tipear aquí..."
+                :backgroundColor={isDark.value ? '#162032' : '#ffffff'}
+                :borderColor={isDark.value ? '#334155' : '#cbd5e1'}
+                focusBorderColor="#0284c7"
+                padding="[8, 12]"
+                borderRadius="8"
+                fontSize="12"
+                @input="handleDemoInput"
+                @submit="handleDemoSubmit"
+              />
+            </view>
+          </view>
+
         </view>
       </view>
     }
 
-    <!-- ========================================================================= -->
-    <!-- TAB 3: ATRIBUTOS & PROPS (Directivas, Modificadores y Capacidades Únicas)   -->
-    <!-- ========================================================================= -->
     @if (activeTab.value === 'attributes') {
       <view
         width="100%"
@@ -855,7 +1076,7 @@
         borderRadius="18"
         borderWidth="1"
         :borderColor={isDark.value ? '#1e293b' : '#e2e8f0'}
-        gap="18"
+        gap="24"
         flexShrink="0"
       >
         <view flexDirection="column" gap="4">
@@ -875,193 +1096,467 @@
           </text>
         </view>
 
-        <!-- Prop 1: selectable="true" (Ghost DOM Text Selection) -->
-        <view
-          width="100%"
-          flexDirection="column"
-          padding="[16, 16]"
-          :backgroundColor={isDark.value ? '#162032' : '#f8fafc'}
-          borderRadius="12"
-          borderWidth="1"
-          :borderColor={isDark.value ? '#1e293b' : '#cbd5e1'}
-          gap="10"
-        >
+        <view flexDirection="column" gap="14">
+          <view flexDirection="row" alignItems="center" gap="8">
+            <view
+              padding="[4, 10]"
+              backgroundColor="rgba(2, 132, 199, 0.15)"
+              borderRadius="8"
+            >
+              <text fontSize="13" fontWeight="bold" :color={isDark.value ? '#38bdf8' : '#0284c7'}>
+                📐 1. Atributos de Layout &amp; Flexbox
+              </text>
+            </view>
+          </view>
+
           <view
-            flexDirection="row"
-            alignItems="center"
+            width="100%"
+            flexDirection="column"
+            padding="[14, 16]"
+            :backgroundColor={isDark.value ? '#162032' : '#f8fafc'}
+            borderRadius="12"
+            borderWidth="1"
+            :borderColor={isDark.value ? '#1e293b' : '#cbd5e1'}
+            gap="10"
+          >
+            <view flexDirection="column" gap="6">
+              <text fontSize="13" fontWeight="bold" :color={isDark.value ? '#f1f5f9' : '#0f172a'}>
+                • width / height / minWidth / minHeight / maxWidth / maxHeight
+              </text>
+              <text fontSize="12" :color={isDark.value ? '#94a3b8' : '#64748b'} lineHeight="1.4">
+                Dimensiones explícitas en píxeles numéricos (ej. width="320") o porcentajes relativos ("100%", "50%"). CanvApps resuelve todas las restricciones matemáticamente sin causar reflujos del DOM.
+              </text>
+            </view>
+
+            <view flexDirection="column" gap="6">
+              <text fontSize="13" fontWeight="bold" :color={isDark.value ? '#f1f5f9' : '#0f172a'}>
+                • flexDirection: "row" | "column" | "row-reverse" | "column-reverse"
+              </text>
+              <text fontSize="12" :color={isDark.value ? '#94a3b8' : '#64748b'} lineHeight="1.4">
+                Define el eje principal de disposición de los elementos hijos dentro del contenedor en el árbol de escena.
+              </text>
+            </view>
+
+            <view flexDirection="column" gap="6">
+              <text fontSize="13" fontWeight="bold" :color={isDark.value ? '#f1f5f9' : '#0f172a'}>
+                • justifyContent / alignItems
+              </text>
+              <text fontSize="12" :color={isDark.value ? '#94a3b8' : '#64748b'} lineHeight="1.4">
+                justifyContent ("flex-start", "center", "space-between", "space-around", "flex-end") alinea en el eje principal. alignItems ("flex-start", "center", "flex-end", "stretch") alinea en el eje transversal.
+              </text>
+            </view>
+
+            <view flexDirection="column" gap="6">
+              <text fontSize="13" fontWeight="bold" :color={isDark.value ? '#f1f5f9' : '#0f172a'}>
+                • gap / padding / margin
+              </text>
+              <text fontSize="12" :color={isDark.value ? '#94a3b8' : '#64748b'} lineHeight="1.4">
+                gap: espaciado uniforme entre nodos hijos. padding / margin: acepta un número único (ej. padding="16"), arreglo vertical/horizontal [V, H] (ej. padding="[10, 20]") o cuatro lados [T, R, B, L].
+              </text>
+            </view>
+
+            <view flexDirection="column" gap="6">
+              <text fontSize="13" fontWeight="bold" :color={isDark.value ? '#f1f5f9' : '#0f172a'}>
+                • flexGrow / flexShrink / flexWrap
+              </text>
+              <text fontSize="12" :color={isDark.value ? '#94a3b8' : '#64748b'} lineHeight="1.4">
+                flexGrow="1" expande el elemento para ocupar el espacio restante. flexWrap="wrap" permite que los elementos salten a la siguiente línea al superar el ancho disponible.
+              </text>
+            </view>
+          </view>
+
+          <view flexDirection="row" alignItems="center" gap="8">
+            <view
+              padding="[4, 10]"
+              backgroundColor="rgba(168, 85, 247, 0.15)"
+              borderRadius="8"
+            >
+              <text fontSize="13" fontWeight="bold" :color={isDark.value ? '#c084fc' : '#9333ea'}>
+                🎨 2. Atributos Visuales &amp; de Estilo
+              </text>
+            </view>
+          </view>
+
+          <view
+            width="100%"
+            flexDirection="column"
+            padding="[14, 16]"
+            :backgroundColor={isDark.value ? '#162032' : '#f8fafc'}
+            borderRadius="12"
+            borderWidth="1"
+            :borderColor={isDark.value ? '#1e293b' : '#cbd5e1'}
+            gap="10"
+          >
+            <view flexDirection="column" gap="6">
+              <text fontSize="13" fontWeight="bold" :color={isDark.value ? '#f1f5f9' : '#0f172a'}>
+                • backgroundColor / color
+              </text>
+              <text fontSize="12" :color={isDark.value ? '#94a3b8' : '#64748b'} lineHeight="1.4">
+                Color de fondo y color tipográfico en formato Hex (#0284c7), RGB/RGBA (rgba(2, 132, 199, 0.5)), HSL o degradados directos en Canvas.
+              </text>
+            </view>
+
+            <view flexDirection="column" gap="6">
+              <text fontSize="13" fontWeight="bold" :color={isDark.value ? '#f1f5f9' : '#0f172a'}>
+                • borderRadius / borderWidth / borderColor
+              </text>
+              <text fontSize="12" :color={isDark.value ? '#94a3b8' : '#64748b'} lineHeight="1.4">
+                borderRadius: número único o arreglo de esquinas individuales [TL, TR, BR, BL] rasterizadas con antialiasing nativo de sub-píxel. borderWidth y borderColor gestionan el trazo perimetral del canvas.
+              </text>
+            </view>
+
+            <view flexDirection="column" gap="6">
+              <text fontSize="13" fontWeight="bold" :color={isDark.value ? '#f1f5f9' : '#0f172a'}>
+                • boxShadow: &#123; offsetX, offsetY, blur, color &#125;
+              </text>
+              <text fontSize="12" :color={isDark.value ? '#94a3b8' : '#64748b'} lineHeight="1.4">
+                Sombra proyectada acelerada por hardware calculada en el buffer gráfico sin penalización de rendimiento.
+              </text>
+            </view>
+
+            <view flexDirection="column" gap="6">
+              <text fontSize="13" fontWeight="bold" :color={isDark.value ? '#f1f5f9' : '#0f172a'}>
+                • opacity / cursor / visible / disabled
+              </text>
+              <text fontSize="12" :color={isDark.value ? '#94a3b8' : '#64748b'} lineHeight="1.4">
+                opacity: opacidad alfa (0.0 a 1.0). cursor: "pointer" | "default" | "text" | "grab". disabled="true": atenúa visualmente e inhabilita interacciones.
+              </text>
+            </view>
+          </view>
+
+          <view flexDirection="row" alignItems="center" gap="8">
+            <view
+              padding="[4, 10]"
+              backgroundColor="rgba(34, 197, 94, 0.15)"
+              borderRadius="8"
+            >
+              <text fontSize="13" fontWeight="bold" color="#22c55e">
+                ✨ 3. Directivas &amp; Modificadores Especiales
+              </text>
+            </view>
+          </view>
+
+          <view
+            width="100%"
+            flexDirection="column"
+            padding="[14, 16]"
+            :backgroundColor={isDark.value ? '#162032' : '#f8fafc'}
+            borderRadius="12"
+            borderWidth="1"
+            :borderColor={isDark.value ? '#1e293b' : '#cbd5e1'}
             gap="8"
           >
+            <view flexDirection="row" alignItems="center" gap="8">
+              <view padding="[3, 8]" backgroundColor="rgba(34, 197, 94, 0.15)" borderRadius="6">
+                <text fontSize="12" fontWeight="bold" color="#22c55e">:prop="expresión"</text>
+              </view>
+              <text fontSize="14" fontWeight="bold" :color={isDark.value ? '#f1f5f9' : '#0f172a'}>
+                Directiva de Reactividad Atómica (Signals)
+              </text>
+            </view>
+            <text fontSize="12" :color={isDark.value ? '#94a3b8' : '#64748b'} lineHeight="1.4">
+              El prefijo dos puntos (:) indica al compilador que la propiedad depende de un Signal y genera un efecto reactivo de memoria directa. Cuando el Signal muta, solo se repinta la propiedad correspondiente en microsegundos sin Virtual DOM.
+            </text>
+            <view flexDirection="row" alignItems="center" gap="10">
+              <button
+                label="+1 Incrementar Signal"
+                backgroundColor="#16a34a"
+                hoverBackgroundColor="#15803d"
+                labelColor="#ffffff"
+                borderRadius="8"
+                padding="[8, 16]"
+                fontSize="12"
+                fontWeight="bold"
+                @click="incrementDemo"
+              />
+              <text fontSize="13" fontWeight="bold" :color={isDark.value ? '#f1f5f9' : '#0f172a'}>
+                Valor reactivo: {{ demoCounter.value }}
+              </text>
+            </view>
+          </view>
+
+          <view
+            width="100%"
+            flexDirection="column"
+            padding="[14, 16]"
+            :backgroundColor={isDark.value ? '#162032' : '#f8fafc'}
+            borderRadius="12"
+            borderWidth="1"
+            :borderColor={isDark.value ? '#1e293b' : '#cbd5e1'}
+            gap="8"
+          >
+            <view flexDirection="row" alignItems="center" gap="8">
+              <view padding="[3, 8]" backgroundColor="rgba(56, 189, 248, 0.15)" borderRadius="6">
+                <text fontSize="12" fontWeight="bold" :color={isDark.value ? '#38bdf8' : '#0284c7'}>
+                  selectable="true"
+                </text>
+              </view>
+              <text fontSize="14" fontWeight="bold" :color={isDark.value ? '#f1f5f9' : '#0f172a'}>
+                Capa de Selección y Accesibilidad Ghost DOM
+              </text>
+            </view>
+            <text fontSize="12" :color={isDark.value ? '#94a3b8' : '#64748b'} lineHeight="1.4">
+              Proyecta un elemento semántico transparente en el Ghost DOM sincronizado con las coordenadas del Canvas, habilitando selección con ratón, atajos del sistema (Cmd+C / Ctrl+C) y compatibilidad total con lectores de pantalla (VoiceOver/TalkBack).
+            </text>
             <view
-              padding="[3, 8]"
-              backgroundColor="rgba(56, 189, 248, 0.15)"
-              borderRadius="6"
+              padding="[10, 12]"
+              :backgroundColor={isDark.value ? '#080c14' : '#ffffff'}
+              borderRadius="8"
+              borderWidth="1"
+              :borderColor={isDark.value ? '#1e293b' : '#e2e8f0'}
             >
               <text
-                fontSize="12"
+                :selectable="true"
+                fontSize="13"
                 fontWeight="bold"
                 :color={isDark.value ? '#38bdf8' : '#0284c7'}
               >
-                selectable="true"
+                Prueba seleccionarme: Este texto cuenta con selectable="true" y es totalmente copiable.
               </text>
             </view>
-            <text
-              fontSize="14"
-              fontWeight="bold"
-              :color={isDark.value ? '#f1f5f9' : '#0f172a'}
-            >
-              Capa de Selección y Accesibilidad Ghost DOM
-            </text>
           </view>
-          <text
-            fontSize="12"
-            :color={isDark.value ? '#94a3b8' : '#64748b'}
-            lineHeight="1.4"
-          >
-            Al aplicar este atributo a cualquier elemento de texto, CanvApps genera automáticamente un nodo accesible invisible en Ghost DOM que sincroniza las coordenadas del canvas, permitiendo resaltar con ratón y copiar al portapapeles (Cmd+C / Ctrl+C).
-          </text>
+
           <view
-            padding="[10, 12]"
-            :backgroundColor={isDark.value ? '#080c14' : '#ffffff'}
-            borderRadius="8"
+            width="100%"
+            flexDirection="column"
+            padding="[14, 16]"
+            :backgroundColor={isDark.value ? '#162032' : '#f8fafc'}
+            borderRadius="12"
             borderWidth="1"
-            :borderColor={isDark.value ? '#1e293b' : '#e2e8f0'}
-          >
-            <text
-              :selectable="true"
-              fontSize="13"
-              fontWeight="bold"
-              :color={isDark.value ? '#38bdf8' : '#0284c7'}
-            >
-              Prueba seleccionarme: Este texto cuenta con selectable="true" y es totalmente copiable.
-            </text>
-          </view>
-        </view>
-
-        <!-- Prop 2: :blur="true" en Modales y Capas -->
-        <view
-          width="100%"
-          flexDirection="column"
-          padding="[16, 16]"
-          :backgroundColor={isDark.value ? '#162032' : '#f8fafc'}
-          borderRadius="12"
-          borderWidth="1"
-          :borderColor={isDark.value ? '#1e293b' : '#cbd5e1'}
-          gap="10"
-        >
-          <view
-            flexDirection="row"
-            alignItems="center"
+            :borderColor={isDark.value ? '#1e293b' : '#cbd5e1'}
             gap="8"
           >
-            <view
-              padding="[3, 8]"
-              backgroundColor="rgba(168, 85, 247, 0.15)"
-              borderRadius="6"
-            >
-              <text
-                fontSize="12"
-                fontWeight="bold"
-                :color={isDark.value ? '#c084fc' : '#9333ea'}
-              >
-                :blur="true"
+            <view flexDirection="row" alignItems="center" gap="8">
+              <view padding="[3, 8]" backgroundColor="rgba(168, 85, 247, 0.15)" borderRadius="6">
+                <text fontSize="12" fontWeight="bold" :color={isDark.value ? '#c084fc' : '#9333ea'}>
+                  :blur="true"
+                </text>
+              </view>
+              <text fontSize="14" fontWeight="bold" :color={isDark.value ? '#f1f5f9' : '#0f172a'}>
+                Desenfoque Gaussiano Directo en Canvas (Glassmorphism)
               </text>
             </view>
-            <text
-              fontSize="14"
-              fontWeight="bold"
-              :color={isDark.value ? '#f1f5f9' : '#0f172a'}
-            >
-              Desenfoque Gaussiano Directo en Canvas (Glassmorphism)
+            <text fontSize="12" :color={isDark.value ? '#94a3b8' : '#64748b'} lineHeight="1.4">
+              Aplica un shader de desenfoque en el buffer gráfico del canvas para producir un efecto de cristal translúcido detrás de capas modales sin ralentizar los 120 FPS.
             </text>
-          </view>
-          <text
-            fontSize="12"
-            :color={isDark.value ? '#94a3b8' : '#64748b'}
-            lineHeight="1.4"
-          >
-            Activa el paso de filtrado shader en el buffer de dibujo del canvas para producir un efecto de cristal translúcido detrás de capas modales sin ralentizar los 120 FPS.
-          </text>
-          <button
-            label="🪟 Probar Efecto :blur=true en Vivo"
-            backgroundColor="#0284c7"
-            hoverBackgroundColor="#0369a1"
-            labelColor="#ffffff"
-            borderRadius="8"
-            padding="[10, 16]"
-            fontSize="13"
-            fontWeight="bold"
-            @click="openDocModal"
-          />
-        </view>
-
-        <!-- Prop 3: :binding={signal} Enlace Reactivo -->
-        <view
-          width="100%"
-          flexDirection="column"
-          padding="[16, 16]"
-          :backgroundColor={isDark.value ? '#162032' : '#f8fafc'}
-          borderRadius="12"
-          borderWidth="1"
-          :borderColor={isDark.value ? '#1e293b' : '#cbd5e1'}
-          gap="10"
-        >
-          <view
-            flexDirection="row"
-            alignItems="center"
-            gap="8"
-          >
-            <view
-              padding="[3, 8]"
-              backgroundColor="rgba(34, 197, 94, 0.15)"
-              borderRadius="6"
-            >
-              <text
-                fontSize="12"
-                fontWeight="bold"
-                color="#22c55e"
-              >
-                :prop="expresión"
-              </text>
-            </view>
-            <text
-              fontSize="14"
-              fontWeight="bold"
-              :color={isDark.value ? '#f1f5f9' : '#0f172a'}
-            >
-              Directiva de Reactividad Unidireccional
-            </text>
-          </view>
-          <text
-            fontSize="12"
-            :color={isDark.value ? '#94a3b8' : '#64748b'}
-            lineHeight="1.4"
-          >
-            El prefijo dos puntos (:) indica al compilador que la propiedad depende de un Signal y debe registrar un efecto reactivo de memoria directa para actualizar únicamente esa propiedad en microsegundos.
-          </text>
-          <view
-            flexDirection="row"
-            alignItems="center"
-            gap="10"
-          >
             <button
-              label="+1 Incrementar Signal"
-              backgroundColor="#16a34a"
-              hoverBackgroundColor="#15803d"
+              label="🪟 Probar Efecto :blur=true en Vivo"
+              backgroundColor="#0284c7"
+              hoverBackgroundColor="#0369a1"
               labelColor="#ffffff"
               borderRadius="8"
-              padding="[8, 16]"
-              fontSize="12"
-              fontWeight="bold"
-              @click="incrementDemo"
-            />
-            <text
+              padding="[10, 16]"
               fontSize="13"
               fontWeight="bold"
-              :color={isDark.value ? '#f1f5f9' : '#0f172a'}
+              @click="openDocModal"
+            />
+          </view>
+        </view>
+
+        <view flexDirection="column" gap="14">
+          <view flexDirection="row" alignItems="center" gap="8">
+            <view
+              padding="[4, 10]"
+              backgroundColor="rgba(249, 115, 22, 0.15)"
+              borderRadius="8"
             >
-              Valor del Signal: {{ demoCounter.value }}
+              <text fontSize="13" fontWeight="bold" color="#f97316">
+                ⚡ 4. Sistema de Eventos (@evento) y Cómo Funcionan
+              </text>
+            </view>
+          </view>
+
+          <view
+            width="100%"
+            flexDirection="column"
+            padding="[16, 18]"
+            :backgroundColor={isDark.value ? '#162032' : '#f8fafc'}
+            borderRadius="12"
+            borderWidth="1"
+            :borderColor={isDark.value ? '#1e293b' : '#cbd5e1'}
+            gap="10"
+          >
+            <text fontSize="14" fontWeight="bold" :color={isDark.value ? '#f1f5f9' : '#0f172a'}>
+              ¿Cómo gestiona CanvApps los eventos sin el DOM?
+            </text>
+            <text fontSize="12" :color={isDark.value ? '#94a3b8' : '#64748b'} lineHeight="1.5">
+              En CanvApps, los eventos se declaran en las plantillas .cvs utilizando el prefijo <text fontWeight="bold" :color={isDark.value ? '#38bdf8' : '#0284c7'}>@</text> (por ejemplo, <text fontWeight="bold">@click</text>, <text fontWeight="bold">@input</text>, <text fontWeight="bold">@change</text>, <text fontWeight="bold">@pointerdown</text>, <text fontWeight="bold">@submit</text>). El compilador transforma estas directivas en escuchadores nativos directos sobre el árbol de escena (<text color="#22c55e">element.on(tipo, callback)</text>).
+            </text>
+            <text fontSize="12" :color={isDark.value ? '#94a3b8' : '#64748b'} lineHeight="1.5">
+              El motor Canvas realiza un <text fontWeight="bold">Hit Testing espacial matemático</text> en cada interacción para identificar con precisión de sub-píxel el nodo objetivo, despachando un objeto unificado <text fontWeight="bold" color="#38bdf8">CanvasPointerEvent</text> a 120 FPS.
             </text>
           </view>
+
+          <view
+            width="100%"
+            flexDirection="column"
+            padding="[16, 18]"
+            :backgroundColor={isDark.value ? '#080c14' : '#0f172a'}
+            borderRadius="12"
+            borderWidth="1"
+            borderColor="#1e293b"
+            gap="8"
+          >
+            <text fontSize="13" fontWeight="bold" color="#38bdf8">
+              Sintaxis de Declaración de Eventos Soportadas:
+            </text>
+            <text fontSize="12" color="#94a3b8">
+              1. Referencia directa a función (recibe CanvasPointerEvent automáticamente):
+            </text>
+            <text fontSize="12" color="#ffffff">
+              &lt;button label="Guardar" @click="handleSave" /&gt;
+            </text>
+            <text fontSize="12" color="#94a3b8">
+              2. Función flecha inline o mutación directa de Signal:
+            </text>
+            <text fontSize="12" color="#ffffff">
+              &lt;button label="+1" @click="() =&gt; count.update(n =&gt; n + 1)" /&gt;
+            </text>
+            <text fontSize="12" color="#94a3b8">
+              3. Llamada explícita pasando el objeto de evento $event:
+            </text>
+            <text fontSize="12" color="#ffffff">
+              &lt;button label="Ver Posición" @click="handleClick($event)" /&gt;
+            </text>
+            <text fontSize="12" color="#94a3b8">
+              4. Eventos de formulario e inputs reactivos:
+            </text>
+            <text fontSize="12" color="#22c55e">
+              &lt;select :options="opts" @change="onOptionSelect" /&gt;
+            </text>
+            <text fontSize="12" color="#22c55e">
+              &lt;input placeholder="..." @input="onTextChange" @submit="onEnterPress" /&gt;
+            </text>
+          </view>
+
+          <view
+            width="100%"
+            flexDirection="column"
+            padding="[16, 18]"
+            :backgroundColor={isDark.value ? '#162032' : '#f8fafc'}
+            borderRadius="12"
+            borderWidth="1"
+            :borderColor={isDark.value ? '#1e293b' : '#cbd5e1'}
+            gap="10"
+          >
+            <text fontSize="14" fontWeight="bold" :color={isDark.value ? '#f1f5f9' : '#0f172a'}>
+              Propiedades del Objeto de Evento (CanvasPointerEvent)
+            </text>
+            <view flexDirection="column" gap="6">
+              <text fontSize="12" :color={isDark.value ? '#94a3b8' : '#64748b'}>
+                • <text fontWeight="bold" :color={isDark.value ? '#f1f5f9' : '#0f172a'}>e.x / e.y:</text> Coordenadas en píxeles lógicos del Canvas (independientes del DPI/Retina).
+              </text>
+              <text fontSize="12" :color={isDark.value ? '#94a3b8' : '#64748b'}>
+                • <text fontWeight="bold" :color={isDark.value ? '#f1f5f9' : '#0f172a'}>e.clientX / e.clientY:</text> Coordenadas absolutas en la ventana del navegador.
+              </text>
+              <text fontSize="12" :color={isDark.value ? '#94a3b8' : '#64748b'}>
+                • <text fontWeight="bold" :color={isDark.value ? '#f1f5f9' : '#0f172a'}>e.target / e.currentTarget:</text> Elemento UIElement del árbol de escena Canvas.
+              </text>
+              <text fontSize="12" :color={isDark.value ? '#94a3b8' : '#64748b'}>
+                • <text fontWeight="bold" :color={isDark.value ? '#f1f5f9' : '#0f172a'}>e.button:</text> Botón presionado (0: izquierdo/principal, 1: central, 2: secundario).
+              </text>
+              <text fontSize="12" :color={isDark.value ? '#94a3b8' : '#64748b'}>
+                • <text fontWeight="bold" :color={isDark.value ? '#f1f5f9' : '#0f172a'}>e.ctrlKey / e.shiftKey / e.altKey / e.metaKey:</text> Estado de teclas modificadoras.
+              </text>
+              <text fontSize="12" :color={isDark.value ? '#94a3b8' : '#64748b'}>
+                • <text fontWeight="bold" :color={isDark.value ? '#f1f5f9' : '#0f172a'}>e.stopPropagation():</text> Detiene la propagación del evento hacia contenedores padres.
+              </text>
+              <text fontSize="12" :color={isDark.value ? '#94a3b8' : '#64748b'}>
+                • <text fontWeight="bold" :color={isDark.value ? '#f1f5f9' : '#0f172a'}>e.value:</text> Valor directo emitido por &lt;select&gt;, &lt;slider&gt; o &lt;input&gt;.
+              </text>
+            </view>
+          </view>
+
+          <view
+            width="100%"
+            flexDirection="column"
+            padding="[16, 18]"
+            :backgroundColor={isDark.value ? '#080c14' : '#f1f5f9'}
+            borderRadius="14"
+            borderWidth="1"
+            :borderColor={isDark.value ? '#1e293b' : '#cbd5e1'}
+            gap="14"
+          >
+            <view flexDirection="row" alignItems="center" justifyContent="space-between">
+              <text fontSize="14" fontWeight="bold" :color={isDark.value ? '#38bdf8' : '#0284c7'}>
+                🧪 Laboratorio Interactivo de Eventos en Tiempo Real
+              </text>
+              <view padding="[3, 8]" backgroundColor="rgba(34, 197, 94, 0.15)" borderRadius="6">
+                <text fontSize="11" fontWeight="bold" color="#22c55e">● Live Telemetry</text>
+              </view>
+            </view>
+
+            <view
+              width="100%"
+              flexDirection="row"
+              flexWrap="wrap"
+              gap="10"
+              alignItems="center"
+            >
+              <button
+                label="⚡ Probar @click"
+                backgroundColor="#0284c7"
+                hoverBackgroundColor="#0369a1"
+                labelColor="#ffffff"
+                borderRadius="8"
+                padding="[8, 14]"
+                fontSize="12"
+                fontWeight="bold"
+                @click="handleDemoClick"
+              />
+
+              <button
+                label="🖱️ Probar @pointerdown"
+                backgroundColor="#7c3aed"
+                hoverBackgroundColor="#6d28d9"
+                labelColor="#ffffff"
+                borderRadius="8"
+                padding="[8, 14]"
+                fontSize="12"
+                fontWeight="bold"
+                @pointerdown="handleDemoPointerDown"
+              />
+
+              <view
+                padding="[8, 14]"
+                backgroundColor="rgba(249, 115, 22, 0.15)"
+                borderRadius="8"
+                borderWidth="1"
+                borderColor="#f97316"
+                cursor="pointer"
+                @pointerenter="() => handleDemoHover(true)"
+                @pointerleave="() => handleDemoHover(false)"
+              >
+                <text fontSize="12" fontWeight="bold" color="#f97316">
+                  🔍 Pasa el ratón (@pointerenter / @pointerleave)
+                </text>
+              </view>
+            </view>
+
+            <view
+              width="100%"
+              flexDirection="column"
+              padding="[12, 14]"
+              :backgroundColor={isDark.value ? '#111827' : '#ffffff'}
+              borderRadius="10"
+              borderWidth="1"
+              :borderColor={isDark.value ? '#1f2937' : '#e2e8f0'}
+              gap="6"
+            >
+              <view flexDirection="row" justifyContent="space-between" alignItems="center">
+                <text fontSize="12" fontWeight="bold" :color={isDark.value ? '#38bdf8' : '#0284c7'}>
+                  Último Evento: {{ lastEventName.value }}
+                </text>
+                <text fontSize="11" :color={isDark.value ? '#94a3b8' : '#64748b'}>
+                  Coordenadas: {{ lastEventCoord.value }} | Modificadores: {{ lastModifierKeys.value }}
+                </text>
+              </view>
+              <text fontSize="12" :color={isDark.value ? '#f1f5f9' : '#0f172a'} fontWeight="500">
+                {{ eventLogText.value }}
+              </text>
+            </view>
+          </view>
+
         </view>
 
       </view>

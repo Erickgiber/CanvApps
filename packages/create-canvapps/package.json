@@ -1,6 +1,6 @@
 {
   "name": "create-canvapps",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Scaffold a new CanvApps Canvas-native reactive application in seconds",
   "type": "module",
   "bin": {

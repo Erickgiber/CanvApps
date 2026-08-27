@@ -15,6 +15,10 @@
     "type": "git",
     "url": "https://github.com/Erickgiber/CanvApps"
   },
+  "bugs": {
+    "url": "https://github.com/Erickgiber/CanvApps/issues"
+  },
+  "homepage": "https://erickgiber.github.io/CanvApps",
   "engines": {
     "vscode": "^1.75.0"
   },

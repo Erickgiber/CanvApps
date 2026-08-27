@@ -33,6 +33,10 @@
     "url": "git+https://github.com/Erickgiber/CanvApps.git",
     "directory": "packages/create-canvapps"
   },
+  "bugs": {
+    "url": "https://github.com/Erickgiber/CanvApps/issues"
+  },
+  "homepage": "https://erickgiber.github.io/CanvApps",
   "publishConfig": {
     "access": "public"
   },

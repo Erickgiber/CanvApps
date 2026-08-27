@@ -71,7 +71,7 @@
   "bugs": {
     "url": "https://github.com/Erickgiber/CanvApps/issues"
   },
-  "homepage": "https://github.com/Erickgiber/CanvApps#readme",
+  "homepage": "https://erickgiber.github.io/CanvApps",
   "publishConfig": {
     "access": "public"
   },

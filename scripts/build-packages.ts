@@ -5,8 +5,8 @@ import { execSync } from 'child_process';
 
 const rootDir = process.cwd();
 const distDir = path.join(rootDir, 'dist');
-const pluginPkgDir = path.join(rootDir, 'packages', 'vite-plugin-canvapps');
-const pluginDistDir = path.join(pluginPkgDir, 'dist');
+const createPkgDir = path.join(rootDir, 'packages', 'create-canvapps');
+const createDistDir = path.join(createPkgDir, 'dist');
 
 async function cleanDirs() {
   console.log('🧹 Cleaning dist directories...');
@@ -18,10 +18,10 @@ async function cleanDirs() {
   fs.mkdirSync(path.join(distDir, 'compiler'), { recursive: true });
   fs.mkdirSync(path.join(distDir, 'cli'), { recursive: true });
 
-  if (fs.existsSync(pluginDistDir)) {
-    fs.rmSync(pluginDistDir, { recursive: true, force: true });
+  if (fs.existsSync(createDistDir)) {
+    fs.rmSync(createDistDir, { recursive: true, force: true });
   }
-  fs.mkdirSync(pluginDistDir, { recursive: true });
+  fs.mkdirSync(createDistDir, { recursive: true });
 }
 
 async function buildCore() {
@@ -116,30 +116,7 @@ async function buildVitePluginAndCompiler() {
     target: 'node18',
   });
 
-  // Also build dedicated standalone package vite-plugin-canvapps
-  await esbuild.build({
-    entryPoints: [path.join(rootDir, 'CanvApps/vite.ts')],
-    bundle: true,
-    format: 'esm',
-    outfile: path.join(pluginDistDir, 'index.js'),
-    sourcemap: true,
-    external: ['vite', 'esbuild'],
-    platform: 'node',
-    target: 'node18',
-  });
-
-  await esbuild.build({
-    entryPoints: [path.join(rootDir, 'CanvApps/vite.ts')],
-    bundle: true,
-    format: 'cjs',
-    outfile: path.join(pluginDistDir, 'index.cjs'),
-    sourcemap: true,
-    external: ['vite', 'esbuild'],
-    platform: 'node',
-    target: 'node18',
-  });
-
-  console.log('  ✓ Vite Plugin & Compiler subpath and standalone packages built');
+  console.log('  ✓ Vite Plugin & Compiler subpaths built in dist/');
 }
 
 async function buildCLI() {
@@ -165,6 +142,30 @@ async function buildCLI() {
   console.log('  ✓ CLI binary built with executable permissions');
 }
 
+async function buildCreatePkg() {
+  console.log('📦 Building create-canvapps package...');
+  await esbuild.build({
+    entryPoints: [path.join(createPkgDir, 'src/index.ts')],
+    bundle: true,
+    format: 'esm',
+    outfile: path.join(createDistDir, 'index.js'),
+    banner: {
+      js: '#!/usr/bin/env node',
+    },
+    platform: 'node',
+    target: 'node18',
+    minify: true,
+  });
+
+  try {
+    fs.chmodSync(path.join(createDistDir, 'index.js'), 0o755);
+  } catch (e) {
+    // Ignore on Windows
+  }
+
+  console.log('  ✓ create-canvapps binary built with executable permissions');
+}
+
 async function generateDeclarations() {
   console.log('📝 Generating TypeScript declaration files (.d.ts)...');
 
@@ -172,26 +173,6 @@ async function generateDeclarations() {
     'npx tsc --project tsconfig.build.json --emitDeclarationOnly --declaration --declarationDir dist/types',
     { stdio: 'inherit' }
   );
-
-  // Standalone vite plugin declarations
-  const pluginDts = `import type { Plugin } from 'vite';
-
-export interface CanvAppsPluginOptions {
-  /**
-   * Whether to inject the official CanvApps open-source build watermark comments into output JS bundles and HTML.
-   * Defaults to true.
-   */
-  banner?: boolean;
-}
-
-export declare const CANVAPPS_BANNER: string;
-export declare const CANVAPPS_HTML_BANNER: string;
-export declare function canvappsPlugin(options?: CanvAppsPluginOptions): Plugin;
-export default canvappsPlugin;
-export type * from '@canvapps/core/compiler';
-`;
-  fs.writeFileSync(path.join(pluginDistDir, 'index.d.ts'), pluginDts, 'utf-8');
-
 
   console.log('  ✓ Type declarations created');
 }
@@ -202,7 +183,7 @@ async function copyAssets() {
     fs.copyFileSync(path.join(rootDir, 'logo.svg'), path.join(distDir, 'logo.svg'));
   }
   if (fs.existsSync(path.join(rootDir, 'LICENSE'))) {
-    fs.copyFileSync(path.join(rootDir, 'LICENSE'), path.join(pluginPkgDir, 'LICENSE'));
+    fs.copyFileSync(path.join(rootDir, 'LICENSE'), path.join(createPkgDir, 'LICENSE'));
   }
   console.log('  ✓ Assets copied');
 }
@@ -216,6 +197,7 @@ async function main() {
   await buildCore();
   await buildVitePluginAndCompiler();
   await buildCLI();
+  await buildCreatePkg();
   await generateDeclarations();
   await copyAssets();
 

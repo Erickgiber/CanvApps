@@ -1,0 +1,1388 @@
+<script lang="ts">
+  import { sessionStore, navigateRoute } from '../stores/session.store';
+  import { soundManager } from '../utils/sound';
+  import { t } from '../i18n';
+
+  // Responsive signals
+  const { isMobile, isTablet, isDesktop } = useBreakpoints();
+  const isDark = computed(() => sessionStore.state.theme === 'dark');
+
+  // Active Documentation Section Tab
+  const activeTab = signal<'quickstart' | 'components' | 'attributes' | 'layout' | 'signals' | 'cli'>('quickstart');
+
+  // Interactive Live Playground state
+  const demoCounter = signal(0);
+  const compButtonCount = signal(0);
+  const compSliderVal = signal(60);
+  const isDocModalOpen = signal(false);
+
+  function setDocTab(tab: 'quickstart' | 'components' | 'attributes' | 'layout' | 'signals' | 'cli') {
+    soundManager.playClick(750);
+    activeTab.value = tab;
+  }
+
+  function incrementDemo() {
+    soundManager.playPop(520);
+    demoCounter.update((n) => n + 1);
+  }
+
+  function resetDemo() {
+    soundManager.playClick(400);
+    demoCounter.value = 0;
+  }
+
+  function incrementCompBtn() {
+    soundManager.playPop(600);
+    compButtonCount.update((n) => n + 1);
+  }
+
+  function onCompSlider(e: any) {
+    const val = Math.round(Number(e?.value ?? e?.target?.value ?? 0));
+    compSliderVal.value = val;
+    soundManager.playSliderTick(val);
+  }
+
+  function openDocModal() {
+    soundManager.playSwoosh();
+    isDocModalOpen.value = true;
+  }
+
+  function closeDocModal() {
+    soundManager.playClick(500);
+    isDocModalOpen.value = false;
+  }
+</script>
+
+<motion
+  display="flex"
+  flexDirection="column"
+  width="100%"
+  alignItems="center"
+  gap="30"
+  animation="hero"
+  duration="500"
+>
+  <view
+    width="100%"
+    flexDirection="column"
+    :padding={isMobile.value ? [6, 4] : [8, 16]}
+    :gap={isMobile.value ? 14 : 18}
+    alignItems="center"
+    flexShrink="0"
+  >
+
+    <!-- Tab Navigation Pills -->
+    <view
+      width="100%"
+      maxWidth="1120"
+      flexDirection="row"
+      alignItems="center"
+      flexWrap="wrap"
+      :gap={isMobile.value ? 6 : 8}
+      flexShrink="0"
+    >
+      <button
+        :label="t.value.docs.tabs.quickstart"
+        :backgroundColor={activeTab.value === 'quickstart' ? '#0284c7' : (isDark.value ? '#162032' : '#f1f5f9')}
+        :hoverBackgroundColor={activeTab.value === 'quickstart' ? '#0369a1' : (isDark.value ? '#1e293b' : '#e2e8f0')}
+        :labelColor={activeTab.value === 'quickstart' ? '#ffffff' : (isDark.value ? '#cbd5e1' : '#475569')}
+        borderRadius="8"
+        :padding={isMobile.value ? [6, 10] : [8, 16]}
+        :fontSize={isMobile.value ? 11 : 12}
+        fontWeight="bold"
+        disableActive="true"
+        @click="() => setDocTab('quickstart')"
+      />
+
+      <button
+        :label="t.value.docs.tabs.components"
+        :backgroundColor={activeTab.value === 'components' ? '#0284c7' : (isDark.value ? '#162032' : '#f1f5f9')}
+        :hoverBackgroundColor={activeTab.value === 'components' ? '#0369a1' : (isDark.value ? '#1e293b' : '#e2e8f0')}
+        :labelColor={activeTab.value === 'components' ? '#ffffff' : (isDark.value ? '#cbd5e1' : '#475569')}
+        borderRadius="8"
+        :padding={isMobile.value ? [6, 10] : [8, 16]}
+        :fontSize={isMobile.value ? 11 : 12}
+        fontWeight="bold"
+        disableActive="true"
+        @click="() => setDocTab('components')"
+      />
+
+      <button
+        :label="t.value.docs.tabs.attributes"
+        :backgroundColor={activeTab.value === 'attributes' ? '#0284c7' : (isDark.value ? '#162032' : '#f1f5f9')}
+        :hoverBackgroundColor={activeTab.value === 'attributes' ? '#0369a1' : (isDark.value ? '#1e293b' : '#f1f5f9')}
+        :labelColor={activeTab.value === 'attributes' ? '#ffffff' : (isDark.value ? '#cbd5e1' : '#475569')}
+        borderRadius="8"
+        :padding={isMobile.value ? [6, 10] : [8, 16]}
+        :fontSize={isMobile.value ? 11 : 12}
+        fontWeight="bold"
+        disableActive="true"
+        @click="() => setDocTab('attributes')"
+      />
+
+      <button
+        :label="t.value.docs.tabs.layout"
+        :backgroundColor={activeTab.value === 'layout' ? '#0284c7' : (isDark.value ? '#162032' : '#f1f5f9')}
+        :hoverBackgroundColor={activeTab.value === 'layout' ? '#0369a1' : (isDark.value ? '#1e293b' : '#f1f5f9')}
+        :labelColor={activeTab.value === 'layout' ? '#ffffff' : (isDark.value ? '#cbd5e1' : '#475569')}
+        borderRadius="8"
+        :padding={isMobile.value ? [6, 10] : [8, 16]}
+        :fontSize={isMobile.value ? 11 : 12}
+        fontWeight="bold"
+        disableActive="true"
+        @click="() => setDocTab('layout')"
+      />
+
+      <button
+        :label="t.value.docs.tabs.signals"
+        :backgroundColor={activeTab.value === 'signals' ? '#0284c7' : (isDark.value ? '#162032' : '#f1f5f9')}
+        :hoverBackgroundColor={activeTab.value === 'signals' ? '#0369a1' : (isDark.value ? '#1e293b' : '#f1f5f9')}
+        :labelColor={activeTab.value === 'signals' ? '#ffffff' : (isDark.value ? '#cbd5e1' : '#475569')}
+        borderRadius="8"
+        :padding={isMobile.value ? [6, 10] : [8, 16]}
+        :fontSize={isMobile.value ? 11 : 12}
+        fontWeight="bold"
+        disableActive="true"
+        @click="() => setDocTab('signals')"
+      />
+
+      <button
+        :label="t.value.docs.tabs.cli"
+        :backgroundColor={activeTab.value === 'cli' ? '#0284c7' : (isDark.value ? '#162032' : '#f1f5f9')}
+        :hoverBackgroundColor={activeTab.value === 'cli' ? '#0369a1' : (isDark.value ? '#1e293b' : '#f1f5f9')}
+        :labelColor={activeTab.value === 'cli' ? '#ffffff' : (isDark.value ? '#cbd5e1' : '#475569')}
+        borderRadius="8"
+        :padding={isMobile.value ? [6, 10] : [8, 16]}
+        :fontSize={isMobile.value ? 11 : 12}
+        fontWeight="bold"
+        disableActive="true"
+        @click="() => setDocTab('cli')"
+      />
+    </view>
+
+    <!-- ========================================================================= -->
+    <!-- TAB 1: QUICK START                                                        -->
+    <!-- ========================================================================= -->
+    @if (activeTab.value === 'quickstart') {
+      <view
+        width="100%"
+        maxWidth="1120"
+        flexDirection="column"
+        :padding={isMobile.value ? [16, 14] : [24, 28]}
+        :backgroundColor={isDark.value ? '#0d131f' : '#ffffff'}
+        borderRadius="18"
+        borderWidth="1"
+        :borderColor={isDark.value ? '#1e293b' : '#e2e8f0'}
+        gap="18"
+        flexShrink="0"
+      >
+        <view flexDirection="column" gap="4">
+          <text
+            fontSize="18"
+            fontWeight="bold"
+            :color={isDark.value ? '#38bdf8' : '#0284c7'}
+          >
+            {{ t.value.docs.quickstart.title }}
+          </text>
+          <text
+            fontSize="13"
+            :color={isDark.value ? '#94a3b8' : '#475569'}
+            lineHeight="1.5"
+          >
+            {{ t.value.docs.quickstart.subtitle }}
+          </text>
+        </view>
+
+        <!-- Command Box -->
+        <view
+          flexDirection="column"
+          padding="[16, 18]"
+          :backgroundColor={isDark.value ? '#080c14' : '#0f172a'}
+          borderRadius="12"
+          borderWidth="1"
+          borderColor="#1e293b"
+          gap="10"
+        >
+          <text
+            fontSize="12"
+            fontWeight="bold"
+            color="#38bdf8"
+          >
+            {{ t.value.docs.codeComments.createApp }}
+          </text>
+          <text
+            fontSize="13"
+            fontWeight="bold"
+            color="#f8fafc"
+          >
+            npm create canvapps@latest my-app
+          </text>
+          <text
+            fontSize="12"
+            fontWeight="bold"
+            color="#38bdf8"
+          >
+            {{ t.value.docs.codeComments.enterDir }} &amp;&amp; {{ t.value.docs.codeComments.installDeps }}
+          </text>
+          <text fontSize="13" color="#f8fafc">cd my-app && npm install</text>
+          <text
+            fontSize="12"
+            fontWeight="bold"
+            color="#38bdf8"
+          >
+            {{ t.value.docs.codeComments.startDev }}
+          </text>
+          <text
+            fontSize="13"
+            fontWeight="bold"
+            color="#22c55e"
+          >
+            npm run dev
+          </text>
+        </view>
+
+        <!-- Example Component Snippet -->
+        <view flexDirection="column" gap="8">
+          <text
+            fontSize="15"
+            fontWeight="bold"
+            :color={isDark.value ? '#f1f5f9' : '#0f172a'}
+          >
+            {{ t.value.docs.quickstart.step2Title }}
+          </text>
+          <view
+            flexDirection="column"
+            padding="[14, 16]"
+            :backgroundColor={isDark.value ? '#080c14' : '#0f172a'}
+            borderRadius="12"
+            borderWidth="1"
+            borderColor="#1e293b"
+            gap="6"
+          >
+            <text fontSize="12" color="#94a3b8">&lt;script lang="ts"&gt;</text>
+            <text fontSize="12" color="#38bdf8">const count = signal(0);</text>
+            <text fontSize="12" color="#38bdf8">
+              function increment() { count.update(n => n + 1); }
+            </text>
+            <text fontSize="12" color="#94a3b8">&lt;/script&gt;</text>
+            <text fontSize="12" color="#ffffff">
+              &lt;view width="100%" flexDirection="column" gap="12" alignItems="center"&gt;
+            </text>
+            <text fontSize="12" color="#ffffff">
+              &lt;text fontSize="20" fontWeight="bold"&gt;Contador: {'{{'} count.value {'}}'}&lt;/text&gt;
+            </text>
+            <text fontSize="12" color="#ffffff">
+              &lt;button label="+1 Incrementar" backgroundColor="#0284c7" @click="increment" /&gt;
+            </text>
+            <text fontSize="12" color="#ffffff">&lt;/view&gt;</text>
+          </view>
+        </view>
+      </view>
+    }
+
+    <!-- ========================================================================= -->
+    <!-- TAB 2: NODOS & COMPONENTES (Arquitectura y Nodos del Árbol de Escena)      -->
+    <!-- ========================================================================= -->
+    @if (activeTab.value === 'components') {
+      <view
+        width="100%"
+        maxWidth="1120"
+        flexDirection="column"
+        :padding={isMobile.value ? [16, 14] : [24, 28]}
+        :backgroundColor={isDark.value ? '#0d131f' : '#ffffff'}
+        borderRadius="18"
+        borderWidth="1"
+        :borderColor={isDark.value ? '#1e293b' : '#e2e8f0'}
+        gap="20"
+        flexShrink="0"
+      >
+        <view flexDirection="column" gap="4">
+          <text
+            fontSize="18"
+            fontWeight="bold"
+            :color={isDark.value ? '#38bdf8' : '#0284c7'}
+          >
+            {{ t.value.docs.components.title }}
+          </text>
+          <text
+            fontSize="13"
+            :color={isDark.value ? '#94a3b8' : '#475569'}
+            lineHeight="1.5"
+          >
+            {{ t.value.docs.components.subtitle }}
+          </text>
+        </view>
+
+        <!-- Components Grid -->
+        <view
+          width="100%"
+          flexDirection="column"
+          gap="14"
+        >
+
+          <!-- Node 1: <view> -->
+          <view
+            width="100%"
+            flexDirection={isMobile.value ? 'column' : 'row'}
+            padding="[16, 18]"
+            :backgroundColor={isDark.value ? '#162032' : '#f8fafc'}
+            borderRadius="14"
+            borderWidth="1"
+            :borderColor={isDark.value ? '#1e293b' : '#cbd5e1'}
+            gap="14"
+            alignItems="center"
+          >
+            <view
+              :width={isMobile.value ? '100%' : '58%'}
+              flexDirection="column"
+              gap="6"
+            >
+              <view
+                flexDirection="row"
+                alignItems="center"
+                gap="8"
+              >
+                <view
+                  padding="[3, 8]"
+                  backgroundColor="rgba(56, 189, 248, 0.15)"
+                  borderRadius="6"
+                >
+                  <text
+                    fontSize="12"
+                    fontWeight="bold"
+                    :color={isDark.value ? '#38bdf8' : '#0284c7'}
+                  >
+                    &lt;view /&gt;
+                  </text>
+                </view>
+                <text
+                  fontSize="15"
+                  fontWeight="bold"
+                  :color={isDark.value ? '#f1f5f9' : '#0f172a'}
+                >
+                  Contenedor Estructural (view)
+                </text>
+              </view>
+              <text
+                fontSize="12"
+                :color={isDark.value ? '#94a3b8' : '#64748b'}
+                lineHeight="1.4"
+              >
+                {{ t.value.docs.components.viewDesc }}
+              </text>
+              <text fontSize="11" color="#64748b">
+                &lt;view width="100%" flexDirection="row" gap="10"&gt; ... &lt;/view&gt;
+              </text>
+            </view>
+
+            <!-- Visual Node Demo -->
+            <view
+              :width={isMobile.value ? '100%' : '42%'}
+              padding="[10, 12]"
+              :backgroundColor={isDark.value ? '#080c14' : '#ffffff'}
+              borderRadius="10"
+              borderWidth="1"
+              :borderColor={isDark.value ? '#1e293b' : '#e2e8f0'}
+              flexDirection="row"
+              gap="8"
+              justifyContent="center"
+            >
+              <view
+                width="40"
+                height="40"
+                borderRadius="8"
+                backgroundColor="#0284c7"
+                alignItems="center"
+                justifyContent="center"
+              >
+                <text fontSize="11" fontWeight="bold" color="#ffffff">N1</text>
+              </view>
+              <view
+                width="40"
+                height="40"
+                borderRadius="8"
+                backgroundColor="#16a34a"
+                alignItems="center"
+                justifyContent="center"
+              >
+                <text fontSize="11" fontWeight="bold" color="#ffffff">N2</text>
+              </view>
+              <view
+                width="40"
+                height="40"
+                borderRadius="8"
+                backgroundColor="#ea580c"
+                alignItems="center"
+                justifyContent="center"
+              >
+                <text fontSize="11" fontWeight="bold" color="#ffffff">N3</text>
+              </view>
+            </view>
+          </view>
+
+          <!-- Node 2: <text> -->
+          <view
+            width="100%"
+            flexDirection={isMobile.value ? 'column' : 'row'}
+            padding="[16, 18]"
+            :backgroundColor={isDark.value ? '#162032' : '#f8fafc'}
+            borderRadius="14"
+            borderWidth="1"
+            :borderColor={isDark.value ? '#1e293b' : '#cbd5e1'}
+            gap="14"
+            alignItems="center"
+          >
+            <view
+              :width={isMobile.value ? '100%' : '58%'}
+              flexDirection="column"
+              gap="6"
+            >
+              <view
+                flexDirection="row"
+                alignItems="center"
+                gap="8"
+              >
+                <view
+                  padding="[3, 8]"
+                  backgroundColor="rgba(168, 85, 247, 0.15)"
+                  borderRadius="6"
+                >
+                  <text
+                    fontSize="12"
+                    fontWeight="bold"
+                    :color={isDark.value ? '#c084fc' : '#9333ea'}
+                  >
+                    &lt;text /&gt;
+                  </text>
+                </view>
+                <text
+                  fontSize="15"
+                  fontWeight="bold"
+                  :color={isDark.value ? '#f1f5f9' : '#0f172a'}
+                >
+                  Tipografía &amp; Texto (text)
+                </text>
+              </view>
+              <text
+                fontSize="12"
+                :color={isDark.value ? '#94a3b8' : '#64748b'}
+                lineHeight="1.4"
+              >
+                {{ t.value.docs.components.textDesc }}
+              </text>
+              <text fontSize="11" color="#64748b">
+                &lt;text fontSize="16" fontWeight="bold" color="#0284c7"&gt;Text&lt;/text&gt;
+              </text>
+            </view>
+
+            <!-- Visual Node Demo -->
+            <view
+              :width={isMobile.value ? '100%' : '42%'}
+              padding="[10, 12]"
+              :backgroundColor={isDark.value ? '#080c14' : '#ffffff'}
+              borderRadius="10"
+              borderWidth="1"
+              :borderColor={isDark.value ? '#1e293b' : '#e2e8f0'}
+              flexDirection="column"
+              gap="2"
+            >
+              <text
+                fontSize="12"
+                fontWeight="bold"
+                :color={isDark.value ? '#38bdf8' : '#0284c7'}
+              >
+                Canvas 2D Typography
+              </text>
+              <text fontSize="11" :color={isDark.value ? '#94a3b8' : '#64748b'}>
+                Auto DPI &amp; Screen Density
+              </text>
+            </view>
+          </view>
+
+          <!-- Node 3: <a> -->
+          <view
+            width="100%"
+            flexDirection={isMobile.value ? 'column' : 'row'}
+            padding="[16, 18]"
+            :backgroundColor={isDark.value ? '#162032' : '#f8fafc'}
+            borderRadius="14"
+            borderWidth="1"
+            :borderColor={isDark.value ? '#1e293b' : '#cbd5e1'}
+            gap="14"
+            alignItems="center"
+          >
+            <view
+              :width={isMobile.value ? '100%' : '58%'}
+              flexDirection="column"
+              gap="6"
+            >
+              <view
+                flexDirection="row"
+                alignItems="center"
+                gap="8"
+              >
+                <view
+                  padding="[3, 8]"
+                  backgroundColor="rgba(34, 197, 94, 0.15)"
+                  borderRadius="6"
+                >
+                  <text
+                    fontSize="12"
+                    fontWeight="bold"
+                    color="#22c55e"
+                  >
+                    &lt;a /&gt;
+                  </text>
+                </view>
+                <text
+                  fontSize="15"
+                  fontWeight="bold"
+                  :color={isDark.value ? '#f1f5f9' : '#0f172a'}
+                >
+                  Enrutamiento &amp; Links (a)
+                </text>
+              </view>
+              <text
+                fontSize="12"
+                :color={isDark.value ? '#94a3b8' : '#64748b'}
+                lineHeight="1.4"
+              >
+                {{ t.value.docs.components.buttonDesc }}
+              </text>
+              <text fontSize="11" color="#64748b">
+                &lt;a href="/showcases" label="Showcases" /&gt;
+              </text>
+            </view>
+
+            <!-- Visual Node Demo -->
+            <view
+              :width={isMobile.value ? '100%' : '42%'}
+              padding="[10, 12]"
+              :backgroundColor={isDark.value ? '#080c14' : '#ffffff'}
+              borderRadius="10"
+              borderWidth="1"
+              :borderColor={isDark.value ? '#1e293b' : '#e2e8f0'}
+              flexDirection="row"
+              gap="10"
+              alignItems="center"
+              justifyContent="center"
+            >
+              <a
+                href="/showcases"
+                :label="'🚀 ' + t.value.header.navShowcases"
+                :color={isDark.value ? '#38bdf8' : '#0284c7'}
+                fontSize="12"
+                fontWeight="bold"
+                underline="never"
+              />
+            </view>
+          </view>
+
+          <!-- Node 4: <button> -->
+          <view
+            width="100%"
+            flexDirection={isMobile.value ? 'column' : 'row'}
+            padding="[16, 18]"
+            :backgroundColor={isDark.value ? '#162032' : '#f8fafc'}
+            borderRadius="14"
+            borderWidth="1"
+            :borderColor={isDark.value ? '#1e293b' : '#cbd5e1'}
+            gap="14"
+            alignItems="center"
+          >
+            <view
+              :width={isMobile.value ? '100%' : '58%'}
+              flexDirection="column"
+              gap="6"
+            >
+              <view
+                flexDirection="row"
+                alignItems="center"
+                gap="8"
+              >
+                <view
+                  padding="[3, 8]"
+                  backgroundColor="rgba(249, 115, 22, 0.15)"
+                  borderRadius="6"
+                >
+                  <text
+                    fontSize="12"
+                    fontWeight="bold"
+                    color="#f97316"
+                  >
+                    &lt;button /&gt;
+                  </text>
+                </view>
+                <text
+                  fontSize="15"
+                  fontWeight="bold"
+                  :color={isDark.value ? '#f1f5f9' : '#0f172a'}
+                >
+                  Botón Interactivo (button)
+                </text>
+              </view>
+              <text
+                fontSize="12"
+                :color={isDark.value ? '#94a3b8' : '#64748b'}
+                lineHeight="1.4"
+              >
+                {{ t.value.docs.components.buttonDesc }}
+              </text>
+              <text fontSize="11" color="#64748b">
+                &lt;button label="Click" backgroundColor="#0284c7" /&gt;
+              </text>
+            </view>
+
+            <!-- Visual Node Demo -->
+            <view
+              :width={isMobile.value ? '100%' : '42%'}
+              padding="[10, 12]"
+              :backgroundColor={isDark.value ? '#080c14' : '#ffffff'}
+              borderRadius="10"
+              borderWidth="1"
+              :borderColor={isDark.value ? '#1e293b' : '#e2e8f0'}
+              flexDirection="row"
+              gap="10"
+              alignItems="center"
+              justifyContent="center"
+            >
+              <button
+                :label="compButtonCount.value > 0 ? '+1 (' + compButtonCount.value + ')' : t.value.docs.components.demoButtonLabel"
+                backgroundColor="#0284c7"
+                hoverBackgroundColor="#0369a1"
+                labelColor="#ffffff"
+                borderRadius="8"
+                padding="[8, 14]"
+                fontSize="12"
+                fontWeight="bold"
+                @click="incrementCompBtn"
+              />
+            </view>
+          </view>
+
+          <!-- Node 5: <slider> -->
+          <view
+            width="100%"
+            flexDirection={isMobile.value ? 'column' : 'row'}
+            padding="[16, 18]"
+            :backgroundColor={isDark.value ? '#162032' : '#f8fafc'}
+            borderRadius="14"
+            borderWidth="1"
+            :borderColor={isDark.value ? '#1e293b' : '#cbd5e1'}
+            gap="14"
+            alignItems="center"
+          >
+            <view
+              :width={isMobile.value ? '100%' : '58%'}
+              flexDirection="column"
+              gap="6"
+            >
+              <view
+                flexDirection="row"
+                alignItems="center"
+                gap="8"
+              >
+                <view
+                  padding="[3, 8]"
+                  backgroundColor="rgba(56, 189, 248, 0.15)"
+                  borderRadius="6"
+                >
+                  <text
+                    fontSize="12"
+                    fontWeight="bold"
+                    :color={isDark.value ? '#38bdf8' : '#0284c7'}
+                  >
+                    &lt;slider /&gt;
+                  </text>
+                </view>
+                <text
+                  fontSize="15"
+                  fontWeight="bold"
+                  :color={isDark.value ? '#f1f5f9' : '#0f172a'}
+                >
+                  Control Deslizador (slider)
+                </text>
+              </view>
+              <text
+                fontSize="12"
+                :color={isDark.value ? '#94a3b8' : '#64748b'}
+                lineHeight="1.4"
+              >
+                {{ t.value.docs.components.sliderDesc }}
+              </text>
+              <text fontSize="11" color="#64748b">
+                &lt;slider :min="0" :max="100" :value="volumen" /&gt;
+              </text>
+            </view>
+
+            <!-- Visual Node Demo -->
+            <view
+              :width={isMobile.value ? '100%' : '42%'}
+              padding="[10, 12]"
+              :backgroundColor={isDark.value ? '#080c14' : '#ffffff'}
+              borderRadius="10"
+              borderWidth="1"
+              :borderColor={isDark.value ? '#1e293b' : '#e2e8f0'}
+              flexDirection="column"
+              gap="6"
+            >
+              <view
+                width="100%"
+                flexDirection="row"
+                justifyContent="space-between"
+              >
+                <text fontSize="11" color="#94a3b8">
+                  {{ t.value.docs.components.demoSliderLabel }}:
+                </text>
+                <text
+                  fontSize="11"
+                  fontWeight="bold"
+                  :color={isDark.value ? '#38bdf8' : '#0284c7'}
+                >
+                  {{ compSliderVal.value }}%
+                </text>
+              </view>
+              <slider
+                width="100%"
+                :min="0"
+                :max="100"
+                :value="compSliderVal.value"
+                activeTrackColor="#0284c7"
+                :inactiveTrackColor={isDark.value ? '#1e293b' : '#cbd5e1'}
+                thumbColor="#38bdf8"
+                @input="onCompSlider"
+              />
+            </view>
+          </view>
+
+          <!-- Node 6: <image> -->
+          <view
+            width="100%"
+            flexDirection={isMobile.value ? 'column' : 'row'}
+            padding="[16, 18]"
+            :backgroundColor={isDark.value ? '#162032' : '#f8fafc'}
+            borderRadius="14"
+            borderWidth="1"
+            :borderColor={isDark.value ? '#1e293b' : '#cbd5e1'}
+            gap="14"
+            alignItems="center"
+          >
+            <view
+              :width={isMobile.value ? '100%' : '58%'}
+              flexDirection="column"
+              gap="6"
+            >
+              <view
+                flexDirection="row"
+                alignItems="center"
+                gap="8"
+              >
+                <view
+                  padding="[3, 8]"
+                  backgroundColor="rgba(234, 88, 12, 0.15)"
+                  borderRadius="6"
+                >
+                  <text
+                    fontSize="12"
+                    fontWeight="bold"
+                    color="#ea580c"
+                  >
+                    &lt;image /&gt;
+                  </text>
+                </view>
+                <text
+                  fontSize="15"
+                  fontWeight="bold"
+                  :color={isDark.value ? '#f1f5f9' : '#0f172a'}
+                >
+                  Imagen Vectorial y Raster (image)
+                </text>
+              </view>
+              <text
+                fontSize="12"
+                :color={isDark.value ? '#94a3b8' : '#64748b'}
+                lineHeight="1.4"
+              >
+                {{ t.value.docs.components.imageDesc }}
+              </text>
+              <text fontSize="11" color="#64748b">
+                &lt;image src="/logo.svg" width="32" height="32" /&gt;
+              </text>
+            </view>
+
+            <!-- Visual Node Demo -->
+            <view
+              :width={isMobile.value ? '100%' : '42%'}
+              padding="[10, 12]"
+              :backgroundColor={isDark.value ? '#080c14' : '#ffffff'}
+              borderRadius="10"
+              borderWidth="1"
+              :borderColor={isDark.value ? '#1e293b' : '#e2e8f0'}
+              flexDirection="row"
+              gap="10"
+              alignItems="center"
+              justifyContent="center"
+            >
+              <image
+                src="/logo.svg"
+                width="36"
+                height="36"
+              />
+              <text
+                fontSize="12"
+                fontWeight="bold"
+                :color={isDark.value ? '#f1f5f9' : '#0f172a'}
+              >
+                Logo Vectorial SVG
+              </text>
+            </view>
+          </view>
+
+        </view>
+      </view>
+    }
+
+    <!-- ========================================================================= -->
+    <!-- TAB 3: ATRIBUTOS & PROPS (Directivas, Modificadores y Capacidades Únicas)   -->
+    <!-- ========================================================================= -->
+    @if (activeTab.value === 'attributes') {
+      <view
+        width="100%"
+        maxWidth="1120"
+        flexDirection="column"
+        :padding={isMobile.value ? [16, 14] : [24, 28]}
+        :backgroundColor={isDark.value ? '#0d131f' : '#ffffff'}
+        borderRadius="18"
+        borderWidth="1"
+        :borderColor={isDark.value ? '#1e293b' : '#e2e8f0'}
+        gap="18"
+        flexShrink="0"
+      >
+        <view flexDirection="column" gap="4">
+          <text
+            fontSize="18"
+            fontWeight="bold"
+            :color={isDark.value ? '#38bdf8' : '#0284c7'}
+          >
+            {{ t.value.docs.attributes.title }}
+          </text>
+          <text
+            fontSize="13"
+            :color={isDark.value ? '#94a3b8' : '#475569'}
+            lineHeight="1.5"
+          >
+            {{ t.value.docs.attributes.subtitle }}
+          </text>
+        </view>
+
+        <!-- Prop 1: selectable="true" (Ghost DOM Text Selection) -->
+        <view
+          width="100%"
+          flexDirection="column"
+          padding="[16, 16]"
+          :backgroundColor={isDark.value ? '#162032' : '#f8fafc'}
+          borderRadius="12"
+          borderWidth="1"
+          :borderColor={isDark.value ? '#1e293b' : '#cbd5e1'}
+          gap="10"
+        >
+          <view
+            flexDirection="row"
+            alignItems="center"
+            gap="8"
+          >
+            <view
+              padding="[3, 8]"
+              backgroundColor="rgba(56, 189, 248, 0.15)"
+              borderRadius="6"
+            >
+              <text
+                fontSize="12"
+                fontWeight="bold"
+                :color={isDark.value ? '#38bdf8' : '#0284c7'}
+              >
+                selectable="true"
+              </text>
+            </view>
+            <text
+              fontSize="14"
+              fontWeight="bold"
+              :color={isDark.value ? '#f1f5f9' : '#0f172a'}
+            >
+              Capa de Selección y Accesibilidad Ghost DOM
+            </text>
+          </view>
+          <text
+            fontSize="12"
+            :color={isDark.value ? '#94a3b8' : '#64748b'}
+            lineHeight="1.4"
+          >
+            Al aplicar este atributo a cualquier elemento de texto, CanvApps genera automáticamente un nodo accesible invisible en Ghost DOM que sincroniza las coordenadas del canvas, permitiendo resaltar con ratón y copiar al portapapeles (Cmd+C / Ctrl+C).
+          </text>
+          <view
+            padding="[10, 12]"
+            :backgroundColor={isDark.value ? '#080c14' : '#ffffff'}
+            borderRadius="8"
+            borderWidth="1"
+            :borderColor={isDark.value ? '#1e293b' : '#e2e8f0'}
+          >
+            <text
+              :selectable="true"
+              fontSize="13"
+              fontWeight="bold"
+              :color={isDark.value ? '#38bdf8' : '#0284c7'}
+            >
+              Prueba seleccionarme: Este texto cuenta con selectable="true" y es totalmente copiable.
+            </text>
+          </view>
+        </view>
+
+        <!-- Prop 2: :blur="true" en Modales y Capas -->
+        <view
+          width="100%"
+          flexDirection="column"
+          padding="[16, 16]"
+          :backgroundColor={isDark.value ? '#162032' : '#f8fafc'}
+          borderRadius="12"
+          borderWidth="1"
+          :borderColor={isDark.value ? '#1e293b' : '#cbd5e1'}
+          gap="10"
+        >
+          <view
+            flexDirection="row"
+            alignItems="center"
+            gap="8"
+          >
+            <view
+              padding="[3, 8]"
+              backgroundColor="rgba(168, 85, 247, 0.15)"
+              borderRadius="6"
+            >
+              <text
+                fontSize="12"
+                fontWeight="bold"
+                :color={isDark.value ? '#c084fc' : '#9333ea'}
+              >
+                :blur="true"
+              </text>
+            </view>
+            <text
+              fontSize="14"
+              fontWeight="bold"
+              :color={isDark.value ? '#f1f5f9' : '#0f172a'}
+            >
+              Desenfoque Gaussiano Directo en Canvas (Glassmorphism)
+            </text>
+          </view>
+          <text
+            fontSize="12"
+            :color={isDark.value ? '#94a3b8' : '#64748b'}
+            lineHeight="1.4"
+          >
+            Activa el paso de filtrado shader en el buffer de dibujo del canvas para producir un efecto de cristal translúcido detrás de capas modales sin ralentizar los 120 FPS.
+          </text>
+          <button
+            label="🪟 Probar Efecto :blur=true en Vivo"
+            backgroundColor="#0284c7"
+            hoverBackgroundColor="#0369a1"
+            labelColor="#ffffff"
+            borderRadius="8"
+            padding="[10, 16]"
+            fontSize="13"
+            fontWeight="bold"
+            @click="openDocModal"
+          />
+        </view>
+
+        <!-- Prop 3: :binding={signal} Enlace Reactivo -->
+        <view
+          width="100%"
+          flexDirection="column"
+          padding="[16, 16]"
+          :backgroundColor={isDark.value ? '#162032' : '#f8fafc'}
+          borderRadius="12"
+          borderWidth="1"
+          :borderColor={isDark.value ? '#1e293b' : '#cbd5e1'}
+          gap="10"
+        >
+          <view
+            flexDirection="row"
+            alignItems="center"
+            gap="8"
+          >
+            <view
+              padding="[3, 8]"
+              backgroundColor="rgba(34, 197, 94, 0.15)"
+              borderRadius="6"
+            >
+              <text
+                fontSize="12"
+                fontWeight="bold"
+                color="#22c55e"
+              >
+                :prop="expresión"
+              </text>
+            </view>
+            <text
+              fontSize="14"
+              fontWeight="bold"
+              :color={isDark.value ? '#f1f5f9' : '#0f172a'}
+            >
+              Directiva de Reactividad Unidireccional
+            </text>
+          </view>
+          <text
+            fontSize="12"
+            :color={isDark.value ? '#94a3b8' : '#64748b'}
+            lineHeight="1.4"
+          >
+            El prefijo dos puntos (:) indica al compilador que la propiedad depende de un Signal y debe registrar un efecto reactivo de memoria directa para actualizar únicamente esa propiedad en microsegundos.
+          </text>
+          <view
+            flexDirection="row"
+            alignItems="center"
+            gap="10"
+          >
+            <button
+              label="+1 Incrementar Signal"
+              backgroundColor="#16a34a"
+              hoverBackgroundColor="#15803d"
+              labelColor="#ffffff"
+              borderRadius="8"
+              padding="[8, 16]"
+              fontSize="12"
+              fontWeight="bold"
+              @click="incrementDemo"
+            />
+            <text
+              fontSize="13"
+              fontWeight="bold"
+              :color={isDark.value ? '#f1f5f9' : '#0f172a'}
+            >
+              Valor del Signal: {{ demoCounter.value }}
+            </text>
+          </view>
+        </view>
+
+      </view>
+    }
+
+    <!-- ========================================================================= -->
+    <!-- TAB 4: LAYOUT & BOX MODEL                                                 -->
+    <!-- ========================================================================= -->
+    @if (activeTab.value === 'layout') {
+      <view
+        width="100%"
+        maxWidth="1120"
+        flexDirection="column"
+        :padding={isMobile.value ? [16, 14] : [24, 28]}
+        :backgroundColor={isDark.value ? '#0d131f' : '#ffffff'}
+        borderRadius="18"
+        borderWidth="1"
+        :borderColor={isDark.value ? '#1e293b' : '#e2e8f0'}
+        gap="18"
+        flexShrink="0"
+      >
+        <view flexDirection="column" gap="4">
+          <text
+            fontSize="18"
+            fontWeight="bold"
+            :color={isDark.value ? '#38bdf8' : '#0284c7'}
+          >
+            {{ t.value.docs.layout.title }}
+          </text>
+          <text
+            fontSize="13"
+            :color={isDark.value ? '#94a3b8' : '#475569'}
+            lineHeight="1.5"
+          >
+            {{ t.value.docs.layout.subtitle }}
+          </text>
+        </view>
+
+        <view
+          width="100%"
+          flexDirection="column"
+          gap="12"
+        >
+
+          <view
+            padding="[12, 16]"
+            :backgroundColor={isDark.value ? '#162032' : '#f8fafc'}
+            borderRadius="10"
+            borderWidth="1"
+            :borderColor={isDark.value ? '#1e293b' : '#e2e8f0'}
+            flexDirection="column"
+            gap="4"
+          >
+            <text
+              fontSize="14"
+              fontWeight="bold"
+              :color={isDark.value ? '#38bdf8' : '#0284c7'}
+            >
+              {{ t.value.docs.layout.boxModelTitle }}
+            </text>
+            <text
+              fontSize="12"
+              :color={isDark.value ? '#94a3b8' : '#64748b'}
+              lineHeight="1.4"
+            >
+              {{ t.value.docs.layout.boxModelDesc }}
+            </text>
+          </view>
+
+          <view
+            padding="[12, 16]"
+            :backgroundColor={isDark.value ? '#162032' : '#f8fafc'}
+            borderRadius="10"
+            borderWidth="1"
+            :borderColor={isDark.value ? '#1e293b' : '#e2e8f0'}
+            flexDirection="column"
+            gap="4"
+          >
+            <text
+              fontSize="14"
+              fontWeight="bold"
+              :color={isDark.value ? '#38bdf8' : '#0284c7'}
+            >
+              {{ t.value.docs.layout.responsiveTitle }}
+            </text>
+            <text
+              fontSize="12"
+              :color={isDark.value ? '#94a3b8' : '#64748b'}
+              lineHeight="1.4"
+            >
+              {{ t.value.docs.layout.responsiveDesc }}
+            </text>
+          </view>
+
+          <view
+            padding="[12, 16]"
+            :backgroundColor={isDark.value ? '#162032' : '#f8fafc'}
+            borderRadius="10"
+            borderWidth="1"
+            :borderColor={isDark.value ? '#1e293b' : '#e2e8f0'}
+            flexDirection="column"
+            gap="4"
+          >
+            <text
+              fontSize="14"
+              fontWeight="bold"
+              :color={isDark.value ? '#38bdf8' : '#0284c7'}
+            >
+              {{ t.value.docs.layout.flexDirectionTitle }}
+            </text>
+            <text
+              fontSize="12"
+              :color={isDark.value ? '#94a3b8' : '#64748b'}
+              lineHeight="1.4"
+            >
+              {{ t.value.docs.layout.flexDirectionDesc }}
+            </text>
+          </view>
+
+        </view>
+      </view>
+    }
+
+    <!-- ========================================================================= -->
+    <!-- TAB 5: SIGNALS REACTIVITY                                                 -->
+    <!-- ========================================================================= -->
+    @if (activeTab.value === 'signals') {
+      <view
+        width="100%"
+        maxWidth="1120"
+        flexDirection="column"
+        :padding={isMobile.value ? [16, 14] : [24, 28]}
+        :backgroundColor={isDark.value ? '#0d131f' : '#ffffff'}
+        borderRadius="18"
+        borderWidth="1"
+        :borderColor={isDark.value ? '#1e293b' : '#e2e8f0'}
+        gap="18"
+        flexShrink="0"
+      >
+        <view flexDirection="column" gap="4">
+          <text
+            fontSize="18"
+            fontWeight="bold"
+            :color={isDark.value ? '#38bdf8' : '#0284c7'}
+          >
+            {{ t.value.docs.signals.title }}
+          </text>
+          <text
+            fontSize="13"
+            :color={isDark.value ? '#94a3b8' : '#475569'}
+            lineHeight="1.5"
+          >
+            {{ t.value.docs.signals.subtitle }}
+          </text>
+        </view>
+
+        <!-- Code Block -->
+        <view
+          flexDirection="column"
+          padding="[16, 18]"
+          :backgroundColor={isDark.value ? '#080c14' : '#0f172a'}
+          borderRadius="12"
+          borderWidth="1"
+          borderColor="#1e293b"
+          gap="8"
+        >
+          <text fontSize="12" color="#38bdf8">
+            import { signal, computed, effect, batch } from '@canvapps';
+          </text>
+          <text fontSize="12" color="#ffffff">const price = signal(100);</text>
+          <text fontSize="12" color="#ffffff">
+            const tax = computed(() => price.value * 0.21);
+          </text>
+          <text fontSize="12" color="#ffffff">
+            const total = computed(() => price.value + tax.value);
+          </text>
+          <text fontSize="12" color="#22c55e">
+            {{ t.value.docs.codeComments.updateSignal }}
+          </text>
+          <text fontSize="12" color="#f8fafc">price.value = 150;</text>
+        </view>
+      </view>
+    }
+
+    <!-- ========================================================================= -->
+    <!-- TAB 6: CLI & BUILDS                                                       -->
+    <!-- ========================================================================= -->
+    @if (activeTab.value === 'cli') {
+      <view
+        width="100%"
+        maxWidth="1120"
+        flexDirection="column"
+        :padding={isMobile.value ? [16, 14] : [24, 28]}
+        :backgroundColor={isDark.value ? '#0d131f' : '#ffffff'}
+        borderRadius="18"
+        borderWidth="1"
+        :borderColor={isDark.value ? '#1e293b' : '#e2e8f0'}
+        gap="18"
+        flexShrink="0"
+      >
+        <view flexDirection="column" gap="4">
+          <text
+            fontSize="18"
+            fontWeight="bold"
+            :color={isDark.value ? '#38bdf8' : '#0284c7'}
+          >
+            {{ t.value.docs.cli.title }}
+          </text>
+          <text
+            fontSize="13"
+            :color={isDark.value ? '#94a3b8' : '#475569'}
+            lineHeight="1.5"
+          >
+            {{ t.value.docs.cli.subtitle }}
+          </text>
+        </view>
+
+        <!-- Commands Box -->
+        <view
+          flexDirection="column"
+          padding="[16, 18]"
+          :backgroundColor={isDark.value ? '#080c14' : '#0f172a'}
+          borderRadius="12"
+          borderWidth="1"
+          borderColor="#1e293b"
+          gap="10"
+        >
+          <text
+            fontSize="12"
+            fontWeight="bold"
+            color="#38bdf8"
+          >
+            # {{ t.value.docs.cli.targetsTitle }} - SPA
+          </text>
+          <text
+            fontSize="13"
+            fontWeight="bold"
+            color="#f8fafc"
+          >
+            canvapps build --target=spa
+          </text>
+          <text
+            fontSize="12"
+            fontWeight="bold"
+            color="#38bdf8"
+          >
+            {{ t.value.docs.codeComments.buildPwa }}
+          </text>
+          <text
+            fontSize="13"
+            fontWeight="bold"
+            color="#f8fafc"
+          >
+            canvapps build --target=pwa
+          </text>
+          <text
+            fontSize="12"
+            fontWeight="bold"
+            color="#38bdf8"
+          >
+            # {{ t.value.docs.cli.targetsTitle }} - Capacitor (iOS / Android)
+          </text>
+          <text
+            fontSize="13"
+            fontWeight="bold"
+            color="#22c55e"
+          >
+            canvapps build --target=capacitor
+          </text>
+        </view>
+      </view>
+    }
+
+    <!-- Modal Blur Preview -->
+    @if (isDocModalOpen.value) {
+      <modal
+        animation="scale-in"
+        :blur="true"
+        :duration="300"
+        @close="closeDocModal"
+      >
+        <view
+          :width={isMobile.value ? 300 : 380}
+          :backgroundColor={isDark.value ? '#0d131f' : '#ffffff'}
+          borderRadius="20"
+          borderWidth="1"
+          :borderColor={isDark.value ? '#1e293b' : '#e2e8f0'}
+          :padding={isMobile.value ? [20, 18] : [26, 22]}
+          flexDirection="column"
+          alignItems="center"
+          gap="14"
+        >
+          <text
+            fontSize="18"
+            fontWeight="bold"
+            :color={isDark.value ? '#f1f5f9' : '#0f172a'}
+          >
+            {{ t.value.docs.components.demoModalTitle }}
+          </text>
+          <text
+            fontSize="12"
+            :color={isDark.value ? '#94a3b8' : '#64748b'}
+            textAlign="center"
+            lineHeight="1.4"
+          >
+            {{ t.value.docs.components.demoModalText }}
+          </text>
+          <button
+            :label="t.value.docs.components.demoModalCloseBtn"
+            backgroundColor="#0284c7"
+            hoverBackgroundColor="#0369a1"
+            labelColor="#ffffff"
+            borderRadius="8"
+            padding="[10, 20]"
+            fontSize="13"
+            fontWeight="bold"
+            @click="closeDocModal"
+          />
+        </view>
+      </modal>
+    }
+
+  </view>
+</motion>

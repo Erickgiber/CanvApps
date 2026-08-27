@@ -1,5 +1,5 @@
-import { createStore, computed, setThemeColor } from '@canvapps';
-
+import { createStore, signal, computed, setThemeColor, Engine, SmartAnimate } from '@canvapps';
+import { soundManager } from '../utils/sound';
 
 /**
  * User Profile & Session State Model
@@ -13,6 +13,7 @@ export interface UserSessionState {
   } | null;
   isAuthenticated: boolean;
   theme: 'dark' | 'light';
+  isSoundEnabled: boolean;
   streakCount: number;
   lastLogin: string | null;
   activeRoute: string;
@@ -107,6 +108,7 @@ const initialSessionState: UserSessionState = {
   },
   isAuthenticated: true,
   theme: getInitialTheme(),
+  isSoundEnabled: typeof window !== 'undefined' ? soundManager.isSoundEnabled() : true,
   streakCount: 10,
   lastLogin: new Date().toISOString(),
   activeRoute: getInitialRoute(),
@@ -121,10 +123,15 @@ export const sessionStore = createStore<UserSessionState>(initialSessionState, {
   persist: false,
 });
 
+/**
+ * Reactive signal representing current active route URL for instantaneous scene switching
+ */
+export const currentRoute = signal<string>(getInitialRoute());
+
 // Automatically persist theme changes to localStorage and update status bar meta tags
 if (typeof window !== 'undefined') {
   // Sync initial status bar theme color
-  setThemeColor({ light: '#f8fafc', dark: '#101010' }, sessionStore.state.theme);
+  setThemeColor({ light: '#f8fafc', dark: '#080c14' }, sessionStore.state.theme);
 
   sessionStore.select('theme').subscribe((theme) => {
     if (typeof localStorage !== 'undefined') {
@@ -135,19 +142,32 @@ if (typeof window !== 'undefined') {
       }
     }
     // Dynamically update browser/OS status bar theme color
-    setThemeColor({ light: '#f8fafc', dark: '#101010' }, theme);
+    setThemeColor({ light: '#f8fafc', dark: '#080c14' }, theme);
   });
 
   // Synchronize browser history and hash navigation dynamically
   const syncRouteFromLocation = () => {
     const current = getInitialRoute();
-    if (sessionStore.state.activeRoute !== current) {
-      sessionStore.update((prev) => ({ ...prev, activeRoute: current }));
+    if (currentRoute.value !== current) {
+      SmartAnimate.snapshot(Engine.getActiveRoot());
+      currentRoute.value = current;
+      if (sessionStore.state.activeRoute !== current) {
+        sessionStore.update((prev) => ({ ...prev, activeRoute: current }));
+      }
+      Engine.invalidateActive();
+      requestAnimationFrame(() => {
+        SmartAnimate.prepare(Engine.getActiveRoot(), 350);
+      });
     }
   };
 
   window.addEventListener('popstate', syncRouteFromLocation);
   window.addEventListener('hashchange', syncRouteFromLocation);
+  window.addEventListener('canvapps:navigate', (e: any) => {
+    if (e && e.detail && e.detail.href) {
+      navigateRoute(e.detail.href, true, Boolean(e.detail.replace));
+    }
+  });
 }
 
 
@@ -159,18 +179,41 @@ export const isUserLoggedIn = computed(() => sessionStore.state.isAuthenticated)
 /**
  * Store Action: Navigates dynamically to ANY target route URL preserving repository base path
  */
-export function navigateRoute(route: string): void {
+export function navigateRoute(route: string, playSound = true, replace = false): void {
   const target = normalizeRoutePath(route);
+  if (playSound && target !== currentRoute.value) {
+    soundManager.playSwoosh();
+  }
+
+  // 1. Snapshot layoutId positions before switching
+  SmartAnimate.snapshot(Engine.getActiveRoot());
+
+  // 2. Perform route transition
+  currentRoute.value = target;
   sessionStore.update((prev) => ({
     ...prev,
     activeRoute: target,
   }));
 
+  Engine.invalidateActive();
+
+  // 3. Prepare SmartAnimate smooth morphing on next RAF
+  requestAnimationFrame(() => {
+    SmartAnimate.prepare(Engine.getActiveRoot(), 350);
+  });
+
   if (typeof window !== 'undefined' && window.history) {
     try {
       const base = getBasePath();
       const fullUrl = base ? (target === '/' ? `${base}/` : `${base}${target}`) : (target || '/');
-      window.history.pushState(null, '', fullUrl);
+      const currentFull = window.location.pathname + window.location.search + window.location.hash;
+      if (currentFull !== fullUrl) {
+        if (replace) {
+          window.history.replaceState(null, '', fullUrl);
+        } else {
+          window.history.pushState(null, '', fullUrl);
+        }
+      }
     } catch {
       // Fallback
     }
@@ -212,12 +255,22 @@ export function incrementSessionStreak(): void {
  * Store Action: Toggles the application global theme (light / dark)
  */
 export function toggleTheme(): void {
-  const nextTheme = sessionStore.state.theme === 'light' ? 'dark' : 'light';
+  const current = sessionStore.state.theme;
+  const nextTheme = current === 'dark' ? 'light' : 'dark';
+  soundManager.playClick(600);
   sessionStore.update((prev) => ({
     ...prev,
     theme: nextTheme,
   }));
-  setThemeColor({ light: '#f8fafc', dark: '#101010' }, nextTheme);
+  if (typeof localStorage !== 'undefined') {
+    try {
+      localStorage.setItem('canvapps_theme', nextTheme);
+    } catch {
+      // Ignore quota error
+    }
+  }
+  setThemeColor({ light: '#f8fafc', dark: '#080c14' }, nextTheme);
+  Engine.invalidateActive();
 }
 
 /**
@@ -228,6 +281,34 @@ export function setTheme(theme: 'dark' | 'light'): void {
     ...prev,
     theme,
   }));
-  setThemeColor({ light: '#f8fafc', dark: '#101010' }, theme);
+  if (typeof localStorage !== 'undefined') {
+    try {
+      localStorage.setItem('canvapps_theme', theme);
+    } catch {
+      // Ignore quota error
+    }
+  }
+  setThemeColor({ light: '#f8fafc', dark: '#080c14' }, theme);
+  Engine.invalidateActive();
+}
+
+/**
+ * Store Action: Toggles global sound effects
+ */
+export function toggleGlobalSound(): boolean {
+  const next = soundManager.toggleSound();
+  sessionStore.update((prev) => ({
+    ...prev,
+    isSoundEnabled: next,
+  }));
+  if (typeof localStorage !== 'undefined') {
+    try {
+      localStorage.setItem('canvapps_sound_enabled', String(next));
+    } catch {
+      // Ignore quota error
+    }
+  }
+  Engine.invalidateActive();
+  return next;
 }
 

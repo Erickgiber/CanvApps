@@ -4,17 +4,10 @@ import { CVSComponentAST, ASTElement, ASTNode, ASTProp, ASTDirectives, ASTIfBloc
  * High-performance Parser converting .cvs Single File Component markup into an AST.
  */
 export class CVSParser {
-  /**
-   * Parses the raw .cvs file string into a CVSComponentAST.
-   *
-   * @param source The raw string content of a .cvs file.
-   * @returns The generated component AST.
-   */
   public static parse(source: string): CVSComponentAST {
     let scriptContent = '';
     let templateSource = source;
 
-    // 1. Extract <script> block
     const scriptRegex = /<script\b[^>]*>([\s\S]*?)<\/script>/i;
     const scriptMatch = source.match(scriptRegex);
     if (scriptMatch) {
@@ -22,7 +15,6 @@ export class CVSParser {
       templateSource = source.replace(scriptRegex, '').trim();
     }
 
-    // 2. Parse Template Tree
     const template = this.parseTemplate(templateSource);
 
     return {
@@ -56,14 +48,23 @@ export class CVSParser {
       // Text token
       if (token.type === 'text') {
         index++;
-        const content = token.value.trim();
-        if (!content) {
+        const rawContent = token.value.trim();
+        if (!rawContent) {
           return null;
         }
 
-        const hasInterpolation = content.includes('{{') && content.includes('}}');
+        const decodedContent = rawContent
+          .replace(/&lt;/g, '<')
+          .replace(/&gt;/g, '>')
+          .replace(/&amp;/g, '&')
+          .replace(/&quot;/g, '"')
+          .replace(/&#39;/g, "'")
+          .replace(/&#123;/g, '{')
+          .replace(/&#125;/g, '}');
+
+        const hasInterpolation = decodedContent.includes('{{') && decodedContent.includes('}}');
         if (hasInterpolation) {
-          const expr = '`' + content.replace(/\{\{\s*([\s\S]*?)\s*\}\}/g, '${$1}') + '`';
+          const expr = '`' + decodedContent.replace(/\{\{\s*([\s\S]*?)\s*\}\}/g, '${$1}') + '`';
           return {
             type: 'text',
             content: expr,
@@ -73,7 +74,7 @@ export class CVSParser {
 
         return {
           type: 'text',
-          content,
+          content: decodedContent,
           isDynamic: false,
         };
       }
@@ -176,9 +177,10 @@ export class CVSParser {
               isDynamic: false,
               isEvent: true,
             });
-          } else if (attr.name.startsWith(':')) {
+          } else if (attr.name.startsWith(':') || (attr as any).isExpression) {
+            const cleanName = attr.name.startsWith(':') ? attr.name.slice(1) : attr.name;
             props.push({
-              name: attr.name.slice(1),
+              name: cleanName,
               value: attr.value,
               isDynamic: true,
               isEvent: false,
@@ -242,10 +244,8 @@ export class CVSParser {
    * - @each rows as row { ... }
    */
   private static preprocessControlBlocks(src: string): string {
-    // 1. Block-style @if ... { ... } else { ... }
     let result = this.transformIfBlocks(src);
 
-    // 2. Block-style @each ... as ... { ... }
     result = this.transformEachBlocks(result);
 
     return result;
@@ -524,7 +524,6 @@ export class CVSParser {
    * Helper to parse *for="item in items" or @each="items as item, index"
    */
   private static parseForDirective(value: string): { item: string; index?: string; iterable: string } {
-    // 1. Support "iterable as item" or "iterable as item, index" or "iterable as (item, index)"
     if (/\bas\b/.test(value)) {
       const parts = value.split(/\bas\b/);
       const iterable = parts[0].trim();
@@ -540,7 +539,6 @@ export class CVSParser {
       };
     }
 
-    // 2. Support standard "item in items" or "(item, index) in items" or "item, index in items"
     const parts = value.split(/\bin\b/);
     if (parts.length !== 2) {
       return { item: 'item', iterable: value.trim() };
@@ -610,7 +608,7 @@ export class CVSParser {
           const [tagName, ...attrChunks] = this.splitTagTokens(cleanRaw);
           const attributes = this.parseAttributes(attrChunks.join(' '));
 
-          const isVoidElement = /^(?:input|img|image|hr|br)$/i.test(tagName || '');
+          const isVoidElement = /^(?:input|img|image|hr|br|slider)$/i.test(tagName || '');
           const finalSelfClosing = isSelfClosing || isVoidElement;
 
           tokens.push({
@@ -716,7 +714,10 @@ export class CVSParser {
           while (i < len && attrString[i] !== q) i++;
           const value = attrString.slice(valStart, i);
           if (i < len) i++; // skip closing quote
-          attrs.push({ name, value });
+          const decodedAttr = (!name.startsWith(':') && !name.startsWith('@'))
+            ? value.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&amp;/g, '&')
+            : value;
+          attrs.push({ name, value: decodedAttr });
         } else if (i < len && attrString[i] === '{') {
           let depth = 0;
           let inQ = false;
@@ -738,7 +739,7 @@ export class CVSParser {
               depth--;
               if (depth === 0) {
                 const value = attrString.slice(valStart, i).trim();
-                attrs.push({ name, value });
+                attrs.push({ name, value, isExpression: true } as any);
                 i++;
                 break;
               }

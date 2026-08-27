@@ -7,5 +7,5 @@ export * from './UIMotion';
 export * from './UIImage';
 export * from './UIScrollView';
 export * from './UIAnchor';
-
-
+export * from './UISlider';
+export * from './UISelect';

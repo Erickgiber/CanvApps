@@ -83,10 +83,10 @@ export interface LayoutStyles {
 
   width?: DimensionValue;
   height?: DimensionValue;
-  minWidth?: number;
-  minHeight?: number;
-  maxWidth?: number;
-  maxHeight?: number;
+  minWidth?: DimensionValue;
+  minHeight?: DimensionValue;
+  maxWidth?: DimensionValue;
+  maxHeight?: DimensionValue;
 
   flexDirection?: FlexDirection;
   justifyContent?: JustifyContent;
@@ -100,13 +100,13 @@ export interface LayoutStyles {
   rowGap?: number;
   columnGap?: number;
 
-  padding?: number | [number, number] | [number, number, number, number];
+  padding?: number | [number, number] | [number, number, number, number] | string | any;
   paddingTop?: number;
   paddingRight?: number;
   paddingBottom?: number;
   paddingLeft?: number;
 
-  margin?: number | [number, number] | [number, number, number, number];
+  margin?: number | [number, number] | [number, number, number, number] | string | any;
   marginTop?: number;
   marginRight?: number;
   marginBottom?: number;
@@ -122,7 +122,6 @@ export interface LayoutStyles {
   aspectRatio?: number;
   zIndex?: number;
 }
-
 
 /**
  * Direction of scroll allowed on a scrollable container.
@@ -208,6 +207,22 @@ export interface VisualStyles extends LayoutStyles {
   underline?: 'always' | 'hover' | 'never' | boolean;
   underlineOffset?: number;
   underlineThickness?: number;
+  keepColor?: boolean | string;
+  disableHoverColor?: boolean | string;
+
+  // Smart Animate / Shared Element Transitions
+  layoutId?: string;
+
+  // Select & Dropdown Properties
+  optionHoverBg?: string;
+  optionGap?: number;
+  dropdownBg?: string;
+  dropdownHoverBg?: string;
+  dropdownBorderColor?: string;
+  dropdownTextColor?: string;
+  dropdownSelectedBg?: string;
+  dropdownShadowColor?: string;
+  dropdownShadowBlur?: number;
+  itemHeight?: number;
+  maxDropdownHeight?: number;
 }
-
-

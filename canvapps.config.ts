@@ -19,7 +19,7 @@ export default defineConfig({
   },
 
   // Global Text Selection Strategy (false = zero Ghost DOM overhead; developers opt-in per component)
-  selectable: false,
+  selectable: true,
 
 
 

@@ -1,0 +1,223 @@
+<script lang="ts">
+  import { sessionStore, navigateRoute } from '../stores/session.store';
+  import { soundManager } from '../utils/sound';
+  import { t } from '../i18n';
+
+  // Responsive signals
+  const { isMobile, isTablet, isDesktop } = useBreakpoints();
+  const isDark = computed(() => sessionStore.state.theme === 'dark');
+
+  function launchApp(route: string) {
+    soundManager.playChime();
+    navigateRoute(route);
+  }
+</script>
+
+<motion
+  display="flex"
+  flexDirection="column"
+  width="100%"
+  alignItems="center"
+  animation="fade-in"
+  :duration="300"
+>
+  <view
+    width="100%"
+    maxWidth="1120"
+    flexDirection="column"
+    :padding={isMobile.value ? [4, 4] : [10, 4]}
+    :gap={isMobile.value ? 16 : 24}
+    alignItems="center"
+    flexShrink="0"
+  >
+
+    <!-- Showcase Title Row -->
+    <view
+      width="100%"
+      flexDirection="column"
+      padding="[4, 0]"
+      gap="4"
+      flexShrink="0"
+    >
+      <text
+        fontSize="20"
+        fontWeight="bold"
+        :color={isDark.value ? '#f1f5f9' : '#0284c7'}
+      >
+        {{ t.value.showcase.title }}
+      </text>
+      <text fontSize="12" :color={isDark.value ? '#94a3b8' : '#64748b'}>
+        {{ t.value.showcase.subtitle }}
+      </text>
+    </view>
+
+    <!-- Showcase 1: Retina Photo Gallery -->
+    <view
+      width="100%"
+      maxWidth="1120"
+      flexDirection={isMobile.value ? 'column' : 'row'}
+      alignItems="center"
+      :padding={isMobile.value ? [16, 14] : [24, 28]}
+      :backgroundColor={isDark.value ? '#0d131f' : '#ffffff'}
+      borderRadius="20"
+      borderWidth="1"
+      :borderColor={isDark.value ? '#1e293b' : '#e2e8f0'}
+      :gap={isMobile.value ? 14 : 24}
+      flexShrink="0"
+    >
+      <view
+        :width={isMobile.value ? '100%' : '36%'}
+        height="170"
+        borderRadius="14"
+        backgroundColor="#0284c7"
+        alignItems="center"
+        justifyContent="center"
+      >
+        <view
+          flexDirection="column"
+          alignItems="center"
+          gap="6"
+        >
+          <text fontSize="50">🖼️</text>
+          <text
+            fontSize="13"
+            fontWeight="bold"
+            color="#ffffff"
+          >
+            Retina Density Masonry
+          </text>
+        </view>
+      </view>
+
+      <view
+        :width={isMobile.value ? '100%' : '64%'}
+        flexDirection="column"
+        gap="10"
+      >
+        <view
+          flexDirection="row"
+          alignItems="center"
+          gap="8"
+        >
+          <text
+            fontSize="18"
+            fontWeight="bold"
+            :color={isDark.value ? '#f1f5f9' : '#0f172a'}
+          >
+            {{ t.value.showcase.galleryTitle }}
+          </text>
+        </view>
+        <text
+          fontSize="13"
+          :color={isDark.value ? '#94a3b8' : '#475569'}
+          lineHeight="1.5"
+        >
+          {{ t.value.showcase.galleryDesc }}
+        </text>
+        <view
+          flexDirection="row"
+          alignItems="center"
+          gap="10"
+        >
+          <a
+            href="/showcases/gallery"
+            :label="t.value.showcase.galleryAction"
+            backgroundColor="#0284c7"
+            hoverBackgroundColor="#0369a1"
+            color="#ffffff"
+            borderRadius="10"
+            padding="[10, 20]"
+            fontSize="13"
+            fontWeight="bold"
+            underline="never"
+          />
+        </view>
+      </view>
+    </view>
+
+    <!-- Showcase 2: Web Audio Studio -->
+    <view
+      width="100%"
+      maxWidth="1120"
+      flexDirection={isMobile.value ? 'column' : 'row'}
+      alignItems="center"
+      :padding={isMobile.value ? [16, 14] : [24, 28]}
+      :backgroundColor={isDark.value ? '#0d131f' : '#ffffff'}
+      borderRadius="20"
+      borderWidth="1"
+      :borderColor={isDark.value ? '#1e293b' : '#e2e8f0'}
+      :gap={isMobile.value ? 14 : 24}
+      flexShrink="0"
+    >
+      <view
+        :width={isMobile.value ? '100%' : '36%'}
+        height="170"
+        borderRadius="14"
+        backgroundColor="#15803d"
+        alignItems="center"
+        justifyContent="center"
+      >
+        <view
+          flexDirection="column"
+          alignItems="center"
+          gap="6"
+        >
+          <text fontSize="50">🎵</text>
+          <text
+            fontSize="13"
+            fontWeight="bold"
+            color="#ffffff"
+          >
+            Procedural Web Audio
+          </text>
+        </view>
+      </view>
+
+      <view
+        :width={isMobile.value ? '100%' : '64%'}
+        flexDirection="column"
+        gap="10"
+      >
+        <view
+          flexDirection="row"
+          alignItems="center"
+          gap="8"
+        >
+          <text
+            fontSize="18"
+            fontWeight="bold"
+            :color={isDark.value ? '#f1f5f9' : '#0f172a'}
+          >
+            {{ t.value.showcase.musicTitle }}
+          </text>
+        </view>
+        <text
+          fontSize="13"
+          :color={isDark.value ? '#94a3b8' : '#475569'}
+          lineHeight="1.5"
+        >
+          {{ t.value.showcase.musicDesc }}
+        </text>
+        <view
+          flexDirection="row"
+          alignItems="center"
+          gap="10"
+        >
+          <a
+            href="/showcases/music"
+            :label="t.value.showcase.musicAction"
+            backgroundColor="#16a34a"
+            hoverBackgroundColor="#15803d"
+            color="#ffffff"
+            borderRadius="10"
+            padding="[10, 20]"
+            fontSize="13"
+            fontWeight="bold"
+            underline="never"
+          />
+        </view>
+      </view>
+    </view>
+
+  </view>
+</motion>

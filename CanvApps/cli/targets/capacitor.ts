@@ -17,7 +17,6 @@ export class CapacitorTargetBuilder {
     const appName = cap.appName || config.title || 'CanvApps';
     const webDir = cap.webDir || outputDir;
 
-    // 1. Generate capacitor.config.json in project root
     const capacitorConfig = {
       appId,
       appName,
@@ -34,7 +33,6 @@ export class CapacitorTargetBuilder {
     fs.writeFileSync(configPath, JSON.stringify(capacitorConfig, null, 2), 'utf-8');
     console.log(`  ✓ Generated Native Configuration: ${configPath}`);
 
-    // 2. Adjust HTML for native mobile safe area and viewport
     const indexPath = path.join(outputDir, 'index.html');
     if (fs.existsSync(indexPath)) {
       let html = fs.readFileSync(indexPath, 'utf-8');
@@ -75,7 +73,6 @@ export class CapacitorTargetBuilder {
       fs.writeFileSync(indexPath, html, 'utf-8');
       console.log(`  ✓ Injected Mobile Safe Area & Touch optimization into: ${indexPath}`);
     }
-
 
     console.log(`\n📲 [Next Steps for Native Mobile]:`);
     console.log(`  1. Add platforms: npx cap add ios / npx cap add android`);

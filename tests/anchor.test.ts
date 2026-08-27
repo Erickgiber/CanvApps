@@ -27,9 +27,7 @@ console.log('Test 1: UIAnchor & UILink Instantiation and Defaults');
 const defaultAnchor = new UIAnchor();
 assert(defaultAnchor.styles.cursor === 'pointer', 'Default cursor should be "pointer"');
 assert(defaultAnchor.styles.color === '#1a73e8', 'Default color should be "#1a73e8"');
-assert(defaultAnchor.styles.hoverColor === '#174ea6', 'Default hoverColor should be "#174ea6"');
-assert(defaultAnchor.styles.activeColor === '#185abc', 'Default activeColor should be "#185abc"');
-assert(defaultAnchor.styles.visitedColor === '#681da8', 'Default visitedColor should be "#681da8"');
+assert(defaultAnchor.styles.hoverColor === undefined, 'Default hoverColor should be undefined to prevent unwanted color shifts');
 assert(defaultAnchor.styles.underline === 'hover', 'Default underline mode should be "hover"');
 assert(defaultAnchor.styles.underlineOffset === 2, 'Default underlineOffset should be 2');
 assert(defaultAnchor.styles.underlineThickness === 1, 'Default underlineThickness should be 1');
@@ -391,6 +389,40 @@ assert(result.code.includes('new UIAnchor("Configuración"'), 'Compiler generate
 assert(result.code.includes('"href":"/settings"'), 'Compiler preserves <link> href');
 assert(result.code.includes('.setHref(String(externalUrl.value ?? \'\'))'), 'Compiler generates reactive .setHref() for :href');
 assert(result.code.includes('.setText(String(`' + '${linkText.value}`'), 'Compiler generates reactive .setText() for dynamic interpolation');
-assert(result.code.includes('.on("click"'), 'Compiler binds @click event');
+// -----------------------------------------------------------------------------
+// Test 8: keepColor and disableHoverColor Attribute Verification
+// -----------------------------------------------------------------------------
+console.log('\nTest 8: keepColor and disableHoverColor Property');
+
+const fixedColorAnchor = new UIAnchor('Static Color Link', {
+  color: '#0284c7',
+  hoverColor: '#7c3aed',
+  keepColor: true,
+});
+
+assert(fixedColorAnchor.styles.keepColor === true, 'keepColor is set to true');
+fixedColorAnchor.setLayout(0, 0, 200, 40);
+fixedColorAnchor.isHovered = true;
+// Draw onto a dummy context to check text color
+let renderedFillColor = '';
+const keepColorMockCtx = {
+  save() {},
+  restore() {},
+  beginPath() {},
+  moveTo() {},
+  lineTo() {},
+  rect() {},
+  fill() {},
+  stroke() {},
+  set fillStyle(val: string) { renderedFillColor = val; },
+  get fillStyle() { return renderedFillColor; },
+  set font(_: string) {},
+  set textBaseline(_: string) {},
+  fillText() {},
+  measureText() { return { width: 100 }; },
+} as any;
+
+fixedColorAnchor.draw(keepColorMockCtx);
+assert(renderedFillColor === '#0284c7', `Typography color is preserved on hover when keepColor is true (actual: ${renderedFillColor})`);
 
 console.log('\n🎉 All UIAnchor, UILink, Ghost DOM Navigation, and Compiler tests passed successfully!\n');

@@ -1,20 +1,23 @@
-# CanvApps 🎨
-
 <p align="center">
-  <img src="./logo.svg" width="96" height="96" alt="CanvApps Logo" />
+  <a href="https://github.com/Erickgiber/CanvApps">
+    <img src="https://raw.githubusercontent.com/Erickgiber/CanvApps/main/logo.svg" width="100" height="100" alt="CanvApps Logo" />
+  </a>
 </p>
+
+<h1 align="center">CanvApps 🎨</h1>
 
 <p align="center">
   <strong>The First Compiled UI Framework That Renders at 120 FPS by Eliminating the DOM.</strong><br>
-  <em>Svelte-like compiled syntax. Native 120 FPS hardware rasterization. Zero DOM layout thrashing.</em>
+  <em>Svelte-like compiled syntax • Native 120 FPS hardware rasterization • Zero DOM layout thrashing • Ghost DOM accessibility</em>
 </p>
 
 <p align="center">
-  <a href="https://www.npmjs.com/package/@canvapps/core"><img src="https://img.shields.io/npm/v/@canvapps/core.svg?style=flat-square&color=2563eb" alt="npm version" /></a>
+  <a href="https://www.npmjs.com/package/@canvapps/core"><img src="https://img.shields.io/npm/v/@canvapps/core.svg?style=flat-square&color=2563eb" alt="npm version core" /></a>
+  <a href="https://www.npmjs.com/package/@canvapps/vite-plugin"><img src="https://img.shields.io/npm/v/@canvapps/vite-plugin.svg?style=flat-square&color=646cff" alt="npm version vite-plugin" /></a>
   <a href="https://www.npmjs.com/package/@canvapps/core"><img src="https://img.shields.io/npm/dm/@canvapps/core.svg?style=flat-square&color=059669" alt="npm downloads" /></a>
-  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue.svg?style=flat-square" alt="License: MIT" /></a>
+  <a href="https://github.com/Erickgiber/CanvApps/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue.svg?style=flat-square" alt="License: MIT" /></a>
   <a href="https://www.typescriptlang.org/"><img src="https://img.shields.io/badge/TypeScript-5.7+-3178c6?style=flat-square&logo=typescript&logoColor=white" alt="TypeScript" /></a>
-  <a href="https://vitejs.dev/"><img src="https://img.shields.io/badge/Vite-6.x-646CFF?style=flat-square&logo=vite&logoColor=white" alt="Vite" /></a>
+  <a href="https://vitejs.dev/"><img src="https://img.shields.io/badge/Vite-5.x%20%7C%206.x-646CFF?style=flat-square&logo=vite&logoColor=white" alt="Vite" /></a>
   <a href="https://capacitorjs.com/"><img src="https://img.shields.io/badge/Capacitor-Ready-119EFF?style=flat-square&logo=capacitor&logoColor=white" alt="Capacitor" /></a>
   <img src="https://img.shields.io/badge/Performance-120%20FPS%20Retina-brightgreen?style=flat-square" alt="120 FPS" />
   <img src="https://img.shields.io/badge/Architecture-Ghost%20DOM-purple?style=flat-square" alt="Ghost DOM" />
@@ -57,7 +60,7 @@
 * 🎨 **Declarative `.cvs` Single-File Components:** Svelte-like developer experience with `<script lang="ts">`, `@each` list iteration, `@if` conditionals, `:prop` dynamic bindings, and instant Vite Hot Module Replacement (HMR).
 * 🎞️ **Hardware Motion & Kinetic Physics:** Declarative `<motion>` presets, Figma-grade Hero shared-element morph modals, and `KineticFX` parabolic flight tokens with particle bursts.
 * 📦 **Multi-Target Automation:** Build for **SPA**, **PWA** (with automated Service Worker & Web Manifest generation), or **Native Mobile (iOS & Android)** via Capacitor from a single `canvapps.config.ts`.
-* 🛠️ **Dedicated IDE Extension:** First-class syntax highlighting, code snippets, and `Cmd+Click` / `Ctrl+Click` definition navigation for VS Code, Cursor, and Antigravity IDE.
+* 🛠️ **Dedicated IDE Extension:** First-class syntax highlighting, code snippets, and `Cmd+Click` / `Ctrl+Click` definition navigation for VS Code, Cursor, Windsurf, and Antigravity IDE.
 
 ---
 
@@ -140,17 +143,25 @@ When dynamic components unmount or list items are filtered (`@each`), `GhostDOM.
 
 ## 📦 Installation
 
+Install `@canvapps/core` (which includes the runtime engine, compiler, signals, and Vite plugin):
+
+### Using npm
 ```bash
-# Using npm
 npm install @canvapps/core
+```
 
-# Using pnpm
+### Using pnpm
+```bash
 pnpm add @canvapps/core
+```
 
-# Using yarn
+### Using yarn
+```bash
 yarn add @canvapps/core
+```
 
-# Using bun
+### Using bun
+```bash
 bun add @canvapps/core
 ```
 
@@ -392,7 +403,7 @@ Import any `.cvs` component in `<script lang="ts">` and invoke it directly in te
 ```html
 <script lang="ts">
   import SplashView from './views/SplashView.cvs';
-  import DashboardView from './views/DashboardView.cvs';
+  import HomeView from './views/HomeView.cvs';
 
   const showSplash = signal(true);
 </script>
@@ -401,7 +412,7 @@ Import any `.cvs` component in `<script lang="ts">` and invoke it directly in te
   @if (showSplash.value) {
     <SplashView @finish="() => showSplash.value = false" />
   } else {
-    <DashboardView />
+    <HomeView />
   }
 </view>
 ```
@@ -477,7 +488,7 @@ CanvApps includes a first-class, hardware-timed 60/120 FPS declarative animation
 <!-- Smooth Scene Entrance & Directional Exit Transitions -->
 <motion enter="elastic" exit="slide-left" :duration="450" :exitDuration="320">
   <view width="100%" height="100%" flexDirection="column" backgroundColor="#f8fafc">
-    <DashboardContent />
+    <GalleryView />
   </view>
 </motion>
 ```
@@ -530,6 +541,55 @@ KineticFX.burst({
     </text>
   </view>
 </modal>
+```
+
+### 4. Shared Element Transitions & Smart Animate (`:layoutId`)
+
+CanvApps includes a built-in **Smart Animate** engine (similar to Framer Motion or Figma Smart Animate) that fluidly morphs and moves elements across scenes and routes on the 2D Canvas without DOM repaints or layout thrashing.
+
+#### How It Works Under the Hood
+1. **Shared Identity (`layoutId`)**: Assign a matching `:layoutId` prop to an element in the source view (e.g. a link in the right toolbar) and to the corresponding element in the destination view (e.g. the breadcrumb path on the left).
+2. **Pre-Navigation Spatial Snapshot (`SmartAnimate.snapshot(root)`)**: Immediately prior to changing routes, `SmartAnimate` traverses the Canvas element tree and records the exact absolute pixel coordinates (`worldRect: { x, y, width, height }`) of all nodes with a `layoutId`.
+3. **Layout Measurement & Spatial Delta (`SmartAnimate.prepare(root, duration)`)**: When the new route mounts, FlexLayout computes the new destination coordinates. `SmartAnimate` matches corresponding `layoutId` tags, computes the delta ($\text{dx} = \text{origin.x} - \text{dest.x}$, $\text{dy} = \text{origin.y} - \text{dest.y}$), and sets an initial displacement offset (`smartOffsetX`, `smartOffsetY`).
+4. **Hardware-Timed Canvas Interpolation**: During each frame of the 120 FPS render loop, `UIElement.render(ctx)` applies `ctx.translate(smartOffsetX, smartOffsetY)`. An easing curve (cubic deceleration over 350ms) interpolates `smartOffsetX` and `smartOffsetY` back to `0`, creating a smooth, hardware-accelerated gliding motion directly across the Canvas.
+
+```html
+<!-- Origin Link (Right Navigation Bar) -->
+<a
+  href="/docs"
+  label="📖 Documentation"
+  :layoutId="'nav-docs'"
+/>
+
+<!-- Destination Breadcrumb Leaf (Left Breadcrumb Stream) -->
+<text
+  :layoutId="'nav-docs'"
+  fontSize="13"
+  fontWeight="bold"
+>
+  📖 Documentation
+</text>
+```
+
+```ts
+// Triggering Smart Navigation
+import { SmartAnimate, engine } from '@canvapps/core';
+
+export function navigate(targetRoute: string) {
+  const root = engine.getRoot();
+  if (root) {
+    // 1. Snapshot current layout coordinates
+    SmartAnimate.snapshot(root);
+  }
+
+  // 2. Update reactive route
+  currentRoute.value = targetRoute;
+
+  // 3. Prepare smooth 350ms transition
+  if (root) {
+    SmartAnimate.prepare(root, 350);
+  }
+}
 ```
 
 ---
@@ -735,11 +795,10 @@ npm run build:packages
 
 ### Vite Plugin Setup (`vite.config.ts`)
 
-CanvApps provides an official plugin `@canvapps/vite-plugin` for compiling `.cvs` Single-File Components with instant Hot Module Replacement (HMR).
-
-> 💡 **Quickstart Template:** You can clone the ready-to-use template repository: [google-canvapps](https://github.com/Erickgiber/google-canvapps) (`git clone https://github.com/Erickgiber/google-canvapps.git`).
+CanvApps includes a built-in Vite plugin at `@canvapps/core/vite` for compiling `.cvs` Single-File Components with instant Hot Module Replacement (HMR).
 
 ```ts
+// vite.config.ts
 import { defineConfig } from 'vite';
 import { canvappsPlugin } from '@canvapps/vite-plugin';
 import path from 'node:path';
@@ -748,7 +807,7 @@ export default defineConfig({
   base: './',
   plugins: [
     canvappsPlugin({
-      banner: true, // Set to false to disable build watermark banner
+      banner: true, // Injects open-source watermark comments in production bundles
     }),
   ],
   resolve: {
@@ -765,38 +824,56 @@ export default defineConfig({
 });
 ```
 
-
-
 ---
 
 ## 💻 IDE Extension Installation & Tooling (`.vsix`)
 
-The official **CanvApps IDE Extension** provides first-class developer tooling for `.cvs` Single-File Components across **VS Code**, **Cursor**, **VSCodium**, **Windsurf**, and **Google Antigravity IDE**.
+The official **CanvApps IDE Extension** provides first-class developer tooling for `.cvs` Single-File Components across **VS Code**, **Cursor**, **Windsurf**, **VSCodium**, and **Google Antigravity IDE**.
 
-```text
-canvapps-vscode-0.1.0.vsix (Included in repository root)
-```
+### 📥 Direct VSIX Download
+The extension package is hosted in the official GitHub repository:  
+👉 **[canvapps-vscode-0.1.0.vsix (Download on GitHub)](https://github.com/Erickgiber/CanvApps/blob/main/canvapps-vscode-0.1.0.vsix)**
 
 ### ✨ Extension Features
 * 🌈 **Full Syntax Highlighting:** Embedded TypeScript syntax inside `<script lang="ts">`, Canvas template tags (`<view>`, `<text>`, `<button>`, `<input>`, `<motion>`, `<modal>`, `<slot>`), directives (`@if`, `@each`), dynamic attributes (`:value`, `:gap`), and reactive events (`@click`, `@input`, `@finish`).
-* 🔍 **Go to Definition (`Cmd+Click` / `Ctrl+Click`):** Jump directly from template handlers to their exact declaration inside `<script lang="ts">`.
-* 💡 **Intelligent Autocompletion:** Instant suggestions for Canvas layout props, reactive bindings, and events.
-* ⚡ **Productivity Snippets:** `cvs-component`, `cvs-view`, `cvs-text`, `cvs-button`, `cvs-input`, `cvs-motion`, `cvs-modal`, `cvs-signal`, `cvs-store`.
+* 🔍 **Go to Definition (`Cmd+Click` / `Ctrl+Click`):** Jump directly from template handlers and bindings to their declaration inside `<script lang="ts">`.
+* 💡 **Intelligent Autocompletion:** Instant suggestions for Canvas layout props, reactive bindings, colors, and events.
+* ⚡ **Productivity Snippets:**
+  * `cvs-component` → Full `.cvs` Single-File Component boilerplate.
+  * `cvs-view` → Mathematical Flexbox layout container.
+  * `cvs-text` → Typography node with reactive bindings.
+  * `cvs-button` → Interactive button with hover/active states.
+  * `cvs-input` → Ghost DOM-synchronized text input.
+  * `cvs-motion` → Hardware-timed motion animation wrapper.
+  * `cvs-modal` → Hero shared-element morph modal dialog.
+  * `cvs-signal` / `cvs-store` → Reactive state and store templates.
+* 🛠️ **Tag Auto-Closing & Bracket Matching:** Native editor ergonomics for `.cvs` files.
 
-### 📦 Installation via Command Line (CLI)
+### 🚀 How to Install
 
+#### Option 1: Visual Installation (GUI)
+1. Download the [**`canvapps-vscode-0.1.0.vsix`**](https://github.com/Erickgiber/CanvApps/blob/main/canvapps-vscode-0.1.0.vsix) file.
+2. In your IDE (**VS Code**, **Cursor**, **Windsurf**, **VSCodium**, or **Google Antigravity IDE**), open the **Extensions** panel (`Ctrl+Shift+X` / `Cmd+Shift+X`).
+3. Click the three dots menu (**`···`**) at the top right of the Extensions panel.
+4. Select **"Install from VSIX..."** (*Instalar desde VSIX...*).
+5. Choose the downloaded `canvapps-vscode-0.1.0.vsix` file and reload the editor if prompted.
+
+#### Option 2: Command Line (CLI)
 ```bash
+# Download the VSIX file directly
+curl -LO https://raw.githubusercontent.com/Erickgiber/CanvApps/main/canvapps-vscode-0.1.0.vsix
+
 # Visual Studio Code
 code --install-extension canvapps-vscode-0.1.0.vsix
 
 # Cursor IDE
 cursor --install-extension canvapps-vscode-0.1.0.vsix
 
-# VSCodium
-codium --install-extension canvapps-vscode-0.1.0.vsix
-
 # Windsurf IDE
 windsurf --install-extension canvapps-vscode-0.1.0.vsix
+
+# VSCodium
+codium --install-extension canvapps-vscode-0.1.0.vsix
 ```
 
 ---

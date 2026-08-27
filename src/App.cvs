@@ -1,53 +1,62 @@
 <script lang="ts">
-  import SplashView from './views/SplashView.cvs';
-  import DashboardView from './views/DashboardView.cvs';
+  import HomeView from './views/HomeView.cvs';
+  import DocsView from './views/DocsView.cvs';
+  import ShowcaseView from './views/ShowcaseView.cvs';
   import GalleryView from './views/GalleryView.cvs';
   import GalleryDetailView from './views/GalleryDetailView.cvs';
+  import MusicPlayerView from './views/MusicPlayerView.cvs';
   import NotFoundView from './views/NotFoundView.cvs';
   import AppLayout from './layouts/AppLayout.cvs';
-  import { signal } from '@canvapps';
-  import { sessionStore, navigateRoute } from './stores/session.store';
-
-  const isSplashActive = signal(true);
-
-  function onSplashFinish() {
-    isSplashActive.value = false;
-  }
+  import { sessionStore, currentRoute, navigateRoute } from './stores/session.store';
 
   function handleNavigate(target: string) {
     navigateRoute(target);
   }
 </script>
 
-<view width="100%" height="100%" backgroundColor="#101010" position="relative">
+<view
+  width="100%"
+  height="100%"
+  :backgroundColor={sessionStore.state.theme === 'dark' ? '#080c14' : '#f8fafc'}
+  position="relative"
+>
 
-  <!-- 1. Master Application Persistent Layout (Contains Header, Slot & Footer) -->
-  @if (!isSplashActive.value) {
-    <AppLayout @navigate="handleNavigate">
-      
-      <!-- Strict Canonical Scenes rendered inside AppLayout slot based on activeRoute -->
-      @if (sessionStore.state.activeRoute === '/') {
-        <DashboardView />
-      }
+  <!-- Master Application Persistent Layout (Direct Fluid Start) -->
+  <AppLayout @navigate="handleNavigate">
 
-      @if (sessionStore.state.activeRoute === '/gallery') {
-        <GalleryView />
-      }
+    <!-- Home / Framework Presentation Landing Page -->
+    @if (currentRoute.value === '/') {
+      <HomeView />
+    }
 
-      @if (sessionStore.state.activeRoute.startsWith('/gallery/')) {
-        <GalleryDetailView />
-      }
+    <!-- Interactive Documentation & Component Sandbox -->
+    @if (currentRoute.value === '/docs') {
+      <DocsView />
+    }
 
-      <!-- 404 Fallback Scene for unmapped routes -->
-      @if (sessionStore.state.activeRoute !== '/' && sessionStore.state.activeRoute !== '/gallery' && !sessionStore.state.activeRoute.startsWith('/gallery/')) {
-        <NotFoundView />
-      }
-    </AppLayout>
+    <!-- Showcases Catalog Hub -->
+    @if (currentRoute.value === '/showcases') {
+      <ShowcaseView />
+    }
 
-  } else {
-    <!-- 2. Cinematic Intro Splash Screen (Full-Screen Overlay) -->
-    <view width="100%" height="100%" position="absolute" left="0" top="0">
-      <SplashView @finish="onSplashFinish" />
-    </view>
-  }
+    <!-- Independent Showcase App: Retina Photo Gallery (/showcases/gallery) -->
+    @if (currentRoute.value === '/showcases/gallery' || currentRoute.value === '/gallery') {
+      <GalleryView />
+    }
+
+    @if (currentRoute.value.startsWith('/showcases/gallery/') || currentRoute.value.startsWith('/gallery/')) {
+      <GalleryDetailView />
+    }
+
+    <!-- Independent Showcase App: Web Audio Music Studio (/showcases/music) -->
+    @if (currentRoute.value === '/showcases/music' || currentRoute.value === '/music' || currentRoute.value.startsWith('/showcases/music') || currentRoute.value.startsWith('/music')) {
+      <MusicPlayerView />
+    }
+
+    <!-- 404 Fallback Scene for unmapped routes -->
+    @if (currentRoute.value !== '/' && currentRoute.value !== '/docs' && currentRoute.value !== '/showcases' && currentRoute.value !== '/showcases/gallery' && currentRoute.value !== '/gallery' && !currentRoute.value.startsWith('/showcases/gallery/') && !currentRoute.value.startsWith('/gallery/') && currentRoute.value !== '/showcases/music' && currentRoute.value !== '/music' && !currentRoute.value.startsWith('/showcases/music') && !currentRoute.value.startsWith('/music')) {
+      <NotFoundView />
+    }
+  </AppLayout>
+
 </view>

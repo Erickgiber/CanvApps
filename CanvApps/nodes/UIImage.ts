@@ -66,6 +66,12 @@ export class UIImage extends UIElement {
     return this;
   }
 
+  public setLoaderColor(color: string): this {
+    this.styles.loaderColor = color;
+    this.markRenderDirty();
+    return this;
+  }
+
   /**
    * Updates image source URL and initiates streaming.
    *
@@ -175,11 +181,6 @@ export class UIImage extends UIElement {
     img.src = src;
   }
 
-  /**
-   * Draws the image, background placeholder, loader spinner, or error badge onto Canvas 2D.
-   *
-   * @param ctx Active 2D Canvas rendering context translated to local element space.
-   */
   public draw(ctx: CanvasRenderingContext2D): void {
     const { width, height } = this.layoutRect;
     if (width <= 0 || height <= 0) {
@@ -197,13 +198,12 @@ export class UIImage extends UIElement {
       placeholderColor,
       showLoader = true,
       showErrorIcon = true,
-      loaderColor = '#e60023',
+      loaderColor = '#0284c7',
       errorColor = '#94a3b8',
     } = this.styles;
 
     ctx.save();
 
-    // 1. Box shadow pass
     if (boxShadow) {
       ctx.save();
       ctx.shadowColor = boxShadow.color;
@@ -218,18 +218,15 @@ export class UIImage extends UIElement {
       ctx.restore();
     }
 
-    // 2. Placeholder / Background fill pass
-    const bgFill = backgroundColor || placeholderColor || '#1c1c20';
-    if (bgFill !== 'transparent') {
+    const bgFill = backgroundColor || placeholderColor;
+    if (bgFill && bgFill !== 'transparent') {
       ctx.beginPath();
       this.applyPath(ctx, 0, 0, width, height, borderRadius);
       ctx.fillStyle = bgFill;
       ctx.fill();
     }
 
-    // 3. Image Rendering Pass or Loading / Error Fallbacks
     if (this.isLoaded && this.imageElement) {
-      // --- STATE: LOADED ---
       const img = this.imageElement;
       const imgW = img.naturalWidth || img.width;
       const imgH = img.naturalHeight || img.height;
@@ -286,7 +283,6 @@ export class UIImage extends UIElement {
         ctx.restore();
       }
     } else if (this.hasError) {
-      // --- STATE: ERROR ---
       if (showErrorIcon) {
         ctx.save();
         if (borderRadius) {
@@ -313,7 +309,6 @@ export class UIImage extends UIElement {
         ctx.restore();
       }
     } else if (showLoader && this.styles.src) {
-      // --- STATE: LOADING SPINNER ---
       ctx.save();
       const centerX = width / 2;
       const centerY = height / 2;
@@ -341,7 +336,6 @@ export class UIImage extends UIElement {
       this.markRenderDirty();
     }
 
-    // 4. Border stroke pass
     const effectiveBorderWidth = borderWidth ?? border?.width ?? 0;
     const effectiveBorderColor = borderColor ?? border?.color;
 

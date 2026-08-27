@@ -237,9 +237,6 @@ export class Router {
     }
   }
 
-  /**
-   * Retrieves the current active route match details.
-   */
   public getActiveRoute(): RouteMatch | null {
     return this.matchRoute(this.currentPath.value);
   }

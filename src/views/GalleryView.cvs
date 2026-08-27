@@ -1,19 +1,25 @@
 <script lang="ts">
   import { sessionStore, navigateRoute } from '../stores/session.store';
   import { galleryData, GalleryItem, toggleSaveGalleryItem, toggleLikeGalleryItem, saveGalleryScroll, restoreGalleryScroll, galleryScrollPosition, resetScrollToTop, activeCategory, searchQuery, categories } from '../stores/gallery.store';
+  import { soundManager } from '../utils/sound';
+  import { t } from '../i18n';
 
   const isDark = computed(() => sessionStore.state.theme === 'dark');
 
   // 1. Responsive Viewport Signals (First-Mobile Architecture)
   const { isMobile, isTablet, isDesktop, width } = useBreakpoints();
 
+  function goTo(route: string) {
+    soundManager.playClick();
+    navigateRoute(route);
+  }
+
   // Responsive Column Count
   const columnCount = computed(() => {
-    if (isMobile.value) return 2;
-    if (isTablet.value) return 3;
-    if (width.value >= 1400) return 5;
-    return 4;
-  });
+      if (isMobile.value) return 2;
+      if (isTablet.value) return 3;
+      return 4;
+    });
 
   // 2. State Signals
   const isModalOpen = signal(false);
@@ -21,39 +27,39 @@
 
   // 3. Reactive Filtered Data
   const filteredItems = computed(() => {
-    const cat = activeCategory.value;
-    const q = searchQuery.value.trim().toLowerCase();
+      const cat = activeCategory.value;
+      const q = searchQuery.value.trim().toLowerCase();
 
-    return galleryData.value.filter((item) => {
-      const matchCat = cat === 'All' || item.category === cat;
-      const matchSearch =
-        !q ||
-        item.title.toLowerCase().includes(q) ||
-        item.author.toLowerCase().includes(q) ||
-        item.tags.some((t) => t.toLowerCase().includes(q));
-      return matchCat && matchSearch;
+      return galleryData.value.filter((item) => {
+          const matchCat = cat === 'All' || item.category === cat;
+          const matchSearch =
+          !q ||
+          item.title.toLowerCase().includes(q) ||
+          item.author.toLowerCase().includes(q) ||
+          item.tags.some((t) => t.toLowerCase().includes(q));
+          return matchCat && matchSearch;
+        });
     });
-  });
 
   // 4. True Greedy Shortest-Column Masonry Algorithm
   const columns = computed(() => {
-    const count = columnCount.value;
-    const cols: GalleryItem[][] = Array.from({ length: count }, () => []);
-    const heights = Array.from({ length: count }, () => 0);
+      const count = columnCount.value;
+      const cols: GalleryItem[][] = Array.from({ length: count }, () => []);
+      const heights = Array.from({ length: count }, () => 0);
 
-    filteredItems.value.forEach((item) => {
-      let minCol = 0;
-      for (let i = 1; i < count; i++) {
-        if (heights[i] < heights[minCol]) {
-          minCol = i;
-        }
-      }
-      cols[minCol].push(item);
-      heights[minCol] += (item.height || 220) + 60;
+      filteredItems.value.forEach((item) => {
+          let minCol = 0;
+          for (let i = 1; i < count; i++) {
+            if (heights[i] < heights[minCol]) {
+              minCol = i;
+            }
+          }
+          cols[minCol].push(item);
+          heights[minCol] += (item.height || 220) + 60;
+        });
+
+      return cols;
     });
-
-    return cols;
-  });
 
   const col0 = computed(() => columns.value[0] || []);
   const col1 = computed(() => columns.value[1] || []);
@@ -61,10 +67,11 @@
   const col3 = computed(() => columns.value[3] || []);
   const col4 = computed(() => columns.value[4] || []);
 
-  const colWidth = computed(() => isMobile.value ? '48.5%' : columnCount.value === 3 ? '32%' : columnCount.value === 4 ? '23.8%' : '18.8%');
+  const colWidth = computed(() => isMobile.value ? '48.5%' : columnCount.value === 3 ? '32%' : '23.8%');
 
   // 5. User Interaction Handlers
   function selectCategory(cat: string) {
+    soundManager.playClick(650);
     activeCategory.value = cat;
   }
 
@@ -73,6 +80,7 @@
   }
 
   function toggleSaveItem(item: GalleryItem, e?: any) {
+    soundManager.playChime();
     toggleSaveGalleryItem(item, e);
     if (selectedItem.value && selectedItem.value.id === item.id) {
       selectedItem.value = { ...selectedItem.value, isSaved: item.isSaved };
@@ -80,6 +88,7 @@
   }
 
   function toggleLikeItem(item: GalleryItem, e?: any) {
+    soundManager.playPop(580);
     toggleLikeGalleryItem(item, e);
     if (selectedItem.value && selectedItem.value.id === item.id) {
       selectedItem.value = { ...selectedItem.value, likes: item.likes, isLiked: item.isLiked };
@@ -87,6 +96,7 @@
   }
 
   function handleItemClick(item: GalleryItem, e?: any) {
+    soundManager.playClick(800);
     if (isMobile.value) {
       saveGalleryScroll();
       resetScrollToTop();
@@ -99,10 +109,10 @@
   // Restore previous scroll position on mobile return
   if (typeof window !== 'undefined') {
     queueMicrotask(() => {
-      if (galleryScrollPosition.value > 0) {
-        restoreGalleryScroll();
-      }
-    });
+        if (galleryScrollPosition.value > 0) {
+          restoreGalleryScroll();
+        }
+      });
   }
 
   const modalOriginRect = signal<{ x: number; y: number; width: number; height: number } | null>(null);
@@ -113,10 +123,10 @@
     const target = e?.target;
     const currentTarget = e?.currentTarget;
     const el = (currentTarget && currentTarget.worldRect && currentTarget.worldRect.width > 0)
-      ? currentTarget
-      : (target && target.worldRect && target.worldRect.width > 0)
-      ? target
-      : null;
+    ? currentTarget
+    : (target && target.worldRect && target.worldRect.width > 0)
+    ? target
+    : null;
 
     if (el && el.worldRect && el.worldRect.width > 0) {
       rect = {
@@ -145,95 +155,239 @@
 </script>
 
 <!-- Visual Gallery Canvas View Container -->
-<motion animation="scale-in" :duration="450">
-  <view width="100%" flexDirection="column" :padding={isMobile.value ? [10, 6] : [16, 20]} :gap={isMobile.value ? 14 : 20} flexShrink="0">
+<motion
+  display="flex"
+  flexDirection="column"
+  width="100%"
+  alignItems="center"
+  animation="scale-in"
+  :duration="450"
+>
+  <view
+    width="100%"
+    maxWidth="1120"
+    flexDirection="column"
+    :padding={isMobile.value ? [4, 4] : [0, 4]}
+    :gap={isMobile.value ? 10 : 12}
+    flexShrink="0"
+  >
 
-    <!-- 1. Header Toolbar & Search Bar -->
-    <view width="100%" :flexDirection={isMobile.value ? 'column' : 'row'} :alignItems={isMobile.value ? 'stretch' : 'center'} justifyContent="space-between" :gap={isMobile.value ? 10 : 16} flexShrink="0">
-      
-      <!-- Title & Brand Badge -->
-      <view flexDirection="row" alignItems="center" gap="10" flexShrink="0">
-        <view width="36" height="36" backgroundColor="#0284c7" borderRadius="18" alignItems="center" justifyContent="center">
-          <text fontSize="20" fontWeight="bold" color="#ffffff">🎨</text>
-        </view>
-        <view flexDirection="column" gap="1">
-          <text fontSize="20" fontWeight="bold" :color={isDark.value ? '#ffffff' : '#0f172a'}>CanvApps Visual Gallery</text>
-          <text fontSize="11" :color={isDark.value ? '#888888' : '#64748b'}>Hardware-accelerated sub-pixel masonry grid</text>
+    <!-- 1. Top Header Row: Left Back Button + Brand, Right Search Bar (Aligned with Global Top Bar) -->
+    <view
+      width="100%"
+      :flexDirection={isMobile.value ? 'column' : 'row'}
+      :alignItems={isMobile.value ? 'stretch' : 'center'}
+      justifyContent="space-between"
+      :gap={isMobile.value ? 8 : 12}
+      padding="[2, 0]"
+      flexShrink="0"
+    >
+
+      <!-- Left Section: Title & Brand Badge -->
+      <view
+        flexDirection="row"
+        alignItems="center"
+        gap="10"
+        flexShrink="0"
+      >
+        <view
+          flexDirection="row"
+          alignItems="baseline"
+          gap="8"
+        >
+          <text
+            :fontSize={isMobile.value ? 16 : 18}
+            fontWeight="bold"
+            :color={isDark.value ? '#ffffff' : '#0f172a'}
+          >
+            🎨 {{ t.value.gallery.title }}
+          </text>
         </view>
       </view>
 
-      <!-- Search Input Bar -->
-      <view :width={isMobile.value ? '100%' : '380'} height="40" :backgroundColor={isDark.value ? '#1e1e24' : '#ffffff'} borderRadius="20" padding="[0, 14]" flexDirection="row" alignItems="center" gap="8" borderWidth="1" :borderColor={isDark.value ? '#2e2e38' : '#cbd5e1'} flexShrink="0">
-        <text fontSize="14" :color={isDark.value ? '#888888' : '#94a3b8'}>🔍</text>
-        <input 
-          width="100%" 
-          height="32" 
-          backgroundColor="transparent" 
-          borderWidth="0" 
-          borderColor="transparent" 
-          focusBorderColor="transparent" 
-          :color={isDark.value ? '#f5f5f5' : '#0f172a'} 
-          :placeholderColor={isDark.value ? '#888888' : '#94a3b8'} 
-          fontSize="13" 
-          placeholder="Search aesthetics, architecture, neon..." 
-          :value="searchQuery.value" 
-          @input="onSearchChange" 
-        />
+      <!-- Right Section: Search Input Bar -->
+      <view
+        flexDirection="row"
+        alignItems="center"
+        gap="8"
+        :width={isMobile.value ? '100%' : 'auto'}
+        flexShrink="0"
+      >
+        <view
+          :width={isMobile.value ? '100%' : '260'}
+          height="34"
+          :backgroundColor={isDark.value ? '#162032' : '#ffffff'}
+          borderRadius="17"
+          padding="[0, 12]"
+          flexDirection="row"
+          alignItems="center"
+          gap="6"
+          borderWidth="1"
+          :borderColor={isDark.value ? '#1e293b' : '#cbd5e1'}
+          flexShrink="0"
+        >
+          <text fontSize="13" :color={isDark.value ? '#94a3b8' : '#64748b'}>
+            🔍
+          </text>
+          <input
+            width="100%"
+            height="28"
+            backgroundColor="transparent"
+            borderWidth="0"
+            borderColor="transparent"
+            focusBorderColor="transparent"
+            :color={isDark.value ? '#f1f5f9' : '#0f172a'}
+            :placeholderColor={isDark.value ? '#64748b' : '#94a3b8'}
+            fontSize="12"
+            :placeholder="t.value.gallery.searchPlaceholder"
+            :value="searchQuery.value"
+            @input="onSearchChange"
+          />
+        </view>
       </view>
 
     </view>
 
     <!-- 2. Category Filter Pills Bar (Horizontal Chips Carousel) -->
-    <view width="100%" flexDirection="row" gap="8" overflow="auto" padding="[2, 0]" flexShrink="0">
+    <view
+      width="100%"
+      flexDirection="row"
+      gap="8"
+      overflow="auto"
+      padding="[2, 0]"
+      flexShrink="0"
+    >
       @each categories as cat {
-        <button 
-          :label="cat" 
-          :backgroundColor={activeCategory.value === cat ? '#0284c7' : (isDark.value ? '#202028' : '#f1f5f9')} 
-          :color={activeCategory.value === cat ? '#ffffff' : (isDark.value ? '#a0a0b0' : '#475569')} 
-          borderRadius="20" 
-          padding="[6, 14]" 
-          fontSize="13" 
+        <button
+          :label="cat === 'All' ? t.value.gallery.allCategory : cat"
+          :backgroundColor={activeCategory.value === cat ? '#0284c7' : (isDark.value ? '#162032' : '#f1f5f9')}
+          :color={activeCategory.value === cat ? '#ffffff' : (isDark.value ? '#94a3b8' : '#475569')}
+          borderRadius="20"
+          padding="[6, 14]"
+          fontSize="13"
           :fontWeight={activeCategory.value === cat ? 'bold' : 'normal'}
           :borderWidth={activeCategory.value === cat ? 0 : 1}
-          :borderColor={isDark.value ? '#2c2c36' : '#e2e8f0'}
+          :borderColor={isDark.value ? '#1e293b' : '#e2e8f0'}
           flexShrink="0"
-          @click="selectCategory(cat)" 
+          @click="selectCategory(cat)"
         />
       }
     </view>
 
     <!-- 3. Responsive Masonry Multi-Column Grid -->
-    <view width="100%" flexDirection="row" :gap={isMobile.value ? 10 : 16} alignItems="flex-start" flexShrink="0">
+    <view
+      width="100%"
+      flexDirection="row"
+      :gap={isMobile.value ? 10 : 16}
+      alignItems="flex-start"
+      flexShrink="0"
+    >
 
       <!-- Column 0 -->
-      <view :width="colWidth.value" flexDirection="column" :gap={isMobile.value ? 10 : 16} flexShrink="0">
+      <view
+        :width="colWidth.value"
+        flexDirection="column"
+        :gap={isMobile.value ? 10 : 16}
+        flexShrink="0"
+      >
         @each col0.value as item {
-          <view width="100%" flexDirection="column" :backgroundColor={isDark.value ? '#18181e' : '#ffffff'} borderRadius="16" overflow="hidden" borderWidth="1" :borderColor={isDark.value ? '#262630' : '#e2e8f0'} flexShrink="0" @click="handleItemClick(item, $event)">
-            <view width="100%" position="relative" flexShrink="0">
-              <image :src="item.src" width="100%" :height="item.height" fit="cover" borderRadius="[16, 16, 0, 0]" :backgroundColor={isDark.value ? '#1f1f26' : '#f1f5f9'} />
-              <view position="absolute" right="8" top="8">
-                <button 
-                  :label={item.isSaved ? 'Saved ✓' : 'Save'} 
-                  :backgroundColor={item.isSaved ? (isDark.value ? '#111111' : '#e2e8f0') : '#0284c7'} 
-                  :color={item.isSaved ? (isDark.value ? '#ffffff' : '#334155') : '#ffffff'} 
-                  borderRadius="14" 
-                  padding="[4, 10]" 
-                  fontSize="11" 
-                  fontWeight="bold" 
-                  @click="toggleSaveItem(item, $event)" 
+          <view
+            width="100%"
+            flexDirection="column"
+            :backgroundColor={isDark.value ? '#0d131f' : '#ffffff'}
+            borderRadius="16"
+            overflow="hidden"
+            borderWidth="1"
+            :borderColor={isDark.value ? '#1e293b' : '#e2e8f0'}
+            flexShrink="0"
+            @click="handleItemClick(item, $event)"
+          >
+            <view
+              width="100%"
+              position="relative"
+              flexShrink="0"
+            >
+              <image
+                :src="item.src"
+                width="100%"
+                :height="item.height"
+                fit="cover"
+                borderRadius="[16, 16, 0, 0]"
+                :backgroundColor={isDark.value ? '#162032' : '#f1f5f9'}
+              />
+              <view
+                position="absolute"
+                right="8"
+                top="8"
+              >
+                <button
+                  :label={item.isSaved ? 'Saved ✓' : 'Save'}
+                  :backgroundColor={item.isSaved ? (isDark.value ? '#1e293b' : '#e2e8f0') : '#0284c7'}
+                  :color={item.isSaved ? (isDark.value ? '#ffffff' : '#334155') : '#ffffff'}
+                  borderRadius="14"
+                  padding="[4, 10]"
+                  fontSize="11"
+                  fontWeight="bold"
+                  @click="toggleSaveItem(item, $event)"
                 />
               </view>
             </view>
-            <view width="100%" padding="[10, 12]" flexDirection="column" gap="6" flexShrink="0">
-              <text fontSize="14" fontWeight="bold" :color={isDark.value ? '#f0f0f0' : '#0f172a'} textOverflow="ellipsis">{{ item.title }}</text>
-              <view width="100%" flexDirection="row" alignItems="center" justifyContent="space-between">
-                <view flexDirection="row" alignItems="center" gap="6">
-                  <view width="20" height="20" :backgroundColor="item.avatarColor" borderRadius="10" alignItems="center" justifyContent="center">
-                    <text fontSize="10" fontWeight="bold" color="#ffffff">{{ item.author.charAt(0) }}</text>
+            <view
+              width="100%"
+              padding="[10, 12]"
+              flexDirection="column"
+              gap="6"
+              flexShrink="0"
+            >
+              <text
+                fontSize="14"
+                fontWeight="bold"
+                :color={isDark.value ? '#f1f5f9' : '#0f172a'}
+                textOverflow="ellipsis"
+              >
+                {{ item.title }}
+              </text>
+              <view
+                width="100%"
+                flexDirection="row"
+                alignItems="center"
+                justifyContent="space-between"
+              >
+                <view
+                  flexDirection="row"
+                  alignItems="center"
+                  gap="6"
+                >
+                  <view
+                    width="20"
+                    height="20"
+                    :backgroundColor="item.avatarColor"
+                    borderRadius="10"
+                    alignItems="center"
+                    justifyContent="center"
+                  >
+                    <text
+                      fontSize="10"
+                      fontWeight="bold"
+                      color="#ffffff"
+                    >
+                      {{ item.author.charAt(0) }}
+                    </text>
                   </view>
-                  <text fontSize="11" :color={isDark.value ? '#999999' : '#64748b'}>{{ item.author }}</text>
+                  <text
+                    fontSize="11"
+                    :color={isDark.value ? '#94a3b8' : '#64748b'}
+                  >
+                    {{ item.author }}
+                  </text>
                 </view>
-                <button :label={item.isLiked ? '♥ ' + item.likes : '♡ ' + item.likes} :color={item.isLiked ? '#ff4d6d' : (isDark.value ? '#888888' : '#64748b')} backgroundColor="transparent" fontSize="11" @click="toggleLikeItem(item, $event)" />
+                <button
+                  :label={item.isLiked ? '♥ ' + item.likes : '♡ ' + item.likes}
+                  :color={item.isLiked ? '#ff4d6d' : (isDark.value ? '#94a3b8' : '#64748b')}
+                  backgroundColor="transparent"
+                  fontSize="11"
+                  @click="toggleLikeItem(item, $event)"
+                />
               </view>
             </view>
           </view>
@@ -241,34 +395,110 @@
       </view>
 
       <!-- Column 1 -->
-      <view :width="colWidth.value" flexDirection="column" :gap={isMobile.value ? 10 : 16} flexShrink="0">
+      <view
+        :width="colWidth.value"
+        flexDirection="column"
+        :gap={isMobile.value ? 10 : 16}
+        flexShrink="0"
+      >
         @each col1.value as item {
-          <view width="100%" flexDirection="column" :backgroundColor={isDark.value ? '#18181e' : '#ffffff'} borderRadius="16" overflow="hidden" borderWidth="1" :borderColor={isDark.value ? '#262630' : '#e2e8f0'} flexShrink="0" @click="handleItemClick(item, $event)">
-            <view width="100%" position="relative" flexShrink="0">
-              <image :src="item.src" width="100%" :height="item.height" fit="cover" borderRadius="[16, 16, 0, 0]" :backgroundColor={isDark.value ? '#1f1f26' : '#f1f5f9'} />
-              <view position="absolute" right="8" top="8">
-                <button 
-                  :label={item.isSaved ? 'Saved ✓' : 'Save'} 
-                  :backgroundColor={item.isSaved ? (isDark.value ? '#111111' : '#e2e8f0') : '#0284c7'} 
-                  :color={item.isSaved ? (isDark.value ? '#ffffff' : '#334155') : '#ffffff'} 
-                  borderRadius="14" 
-                  padding="[4, 10]" 
-                  fontSize="11" 
-                  fontWeight="bold" 
-                  @click="toggleSaveItem(item, $event)" 
+          <view
+            width="100%"
+            flexDirection="column"
+            :backgroundColor={isDark.value ? '#0d131f' : '#ffffff'}
+            borderRadius="16"
+            overflow="hidden"
+            borderWidth="1"
+            :borderColor={isDark.value ? '#1e293b' : '#e2e8f0'}
+            flexShrink="0"
+            @click="handleItemClick(item, $event)"
+          >
+            <view
+              width="100%"
+              position="relative"
+              flexShrink="0"
+            >
+              <image
+                :src="item.src"
+                width="100%"
+                :height="item.height"
+                fit="cover"
+                borderRadius="[16, 16, 0, 0]"
+                :backgroundColor={isDark.value ? '#162032' : '#f1f5f9'}
+              />
+              <view
+                position="absolute"
+                right="8"
+                top="8"
+              >
+                <button
+                  :label={item.isSaved ? 'Saved ✓' : 'Save'}
+                  :backgroundColor={item.isSaved ? (isDark.value ? '#1e293b' : '#e2e8f0') : '#0284c7'}
+                  :color={item.isSaved ? (isDark.value ? '#ffffff' : '#334155') : '#ffffff'}
+                  borderRadius="14"
+                  padding="[4, 10]"
+                  fontSize="11"
+                  fontWeight="bold"
+                  @click="toggleSaveItem(item, $event)"
                 />
               </view>
             </view>
-            <view width="100%" padding="[10, 12]" flexDirection="column" gap="6" flexShrink="0">
-              <text fontSize="14" fontWeight="bold" :color={isDark.value ? '#f0f0f0' : '#0f172a'} textOverflow="ellipsis">{{ item.title }}</text>
-              <view width="100%" flexDirection="row" alignItems="center" justifyContent="space-between">
-                <view flexDirection="row" alignItems="center" gap="6">
-                  <view width="20" height="20" :backgroundColor="item.avatarColor" borderRadius="10" alignItems="center" justifyContent="center">
-                    <text fontSize="10" fontWeight="bold" color="#ffffff">{{ item.author.charAt(0) }}</text>
+            <view
+              width="100%"
+              padding="[10, 12]"
+              flexDirection="column"
+              gap="6"
+              flexShrink="0"
+            >
+              <text
+                fontSize="14"
+                fontWeight="bold"
+                :color={isDark.value ? '#f1f5f9' : '#0f172a'}
+                textOverflow="ellipsis"
+              >
+                {{ item.title }}
+              </text>
+              <view
+                width="100%"
+                flexDirection="row"
+                alignItems="center"
+                justifyContent="space-between"
+              >
+                <view
+                  flexDirection="row"
+                  alignItems="center"
+                  gap="6"
+                >
+                  <view
+                    width="20"
+                    height="20"
+                    :backgroundColor="item.avatarColor"
+                    borderRadius="10"
+                    alignItems="center"
+                    justifyContent="center"
+                  >
+                    <text
+                      fontSize="10"
+                      fontWeight="bold"
+                      color="#ffffff"
+                    >
+                      {{ item.author.charAt(0) }}
+                    </text>
                   </view>
-                  <text fontSize="11" :color={isDark.value ? '#999999' : '#64748b'}>{{ item.author }}</text>
+                  <text
+                    fontSize="11"
+                    :color={isDark.value ? '#94a3b8' : '#64748b'}
+                  >
+                    {{ item.author }}
+                  </text>
                 </view>
-                <button :label={item.isLiked ? '♥ ' + item.likes : '♡ ' + item.likes} :color={item.isLiked ? '#ff4d6d' : (isDark.value ? '#888888' : '#64748b')} backgroundColor="transparent" fontSize="11" @click="toggleLikeItem(item, $event)" />
+                <button
+                  :label={item.isLiked ? '♥ ' + item.likes : '♡ ' + item.likes}
+                  :color={item.isLiked ? '#ff4d6d' : (isDark.value ? '#94a3b8' : '#64748b')}
+                  backgroundColor="transparent"
+                  fontSize="11"
+                  @click="toggleLikeItem(item, $event)"
+                />
               </view>
             </view>
           </view>
@@ -277,34 +507,110 @@
 
       <!-- Column 2 (Tablet / Desktop) -->
       @if (columnCount.value >= 3) {
-        <view :width="colWidth.value" flexDirection="column" :gap={isMobile.value ? 10 : 16} flexShrink="0">
+        <view
+          :width="colWidth.value"
+          flexDirection="column"
+          :gap={isMobile.value ? 10 : 16}
+          flexShrink="0"
+        >
           @each col2.value as item {
-            <view width="100%" flexDirection="column" :backgroundColor={isDark.value ? '#18181e' : '#ffffff'} borderRadius="16" overflow="hidden" borderWidth="1" :borderColor={isDark.value ? '#262630' : '#e2e8f0'} flexShrink="0" @click="handleItemClick(item, $event)">
-              <view width="100%" position="relative" flexShrink="0">
-                <image :src="item.src" width="100%" :height="item.height" fit="cover" borderRadius="[16, 16, 0, 0]" :backgroundColor={isDark.value ? '#1f1f26' : '#f1f5f9'} />
-                <view position="absolute" right="8" top="8">
-                  <button 
-                    :label={item.isSaved ? 'Saved ✓' : 'Save'} 
-                    :backgroundColor={item.isSaved ? (isDark.value ? '#111111' : '#e2e8f0') : '#0284c7'} 
-                    :color={item.isSaved ? (isDark.value ? '#ffffff' : '#334155') : '#ffffff'} 
-                    borderRadius="14" 
-                    padding="[4, 10]" 
-                    fontSize="11" 
-                    fontWeight="bold" 
-                    @click="toggleSaveItem(item, $event)" 
+            <view
+              width="100%"
+              flexDirection="column"
+              :backgroundColor={isDark.value ? '#0d131f' : '#ffffff'}
+              borderRadius="16"
+              overflow="hidden"
+              borderWidth="1"
+              :borderColor={isDark.value ? '#1e293b' : '#e2e8f0'}
+              flexShrink="0"
+              @click="handleItemClick(item, $event)"
+            >
+              <view
+                width="100%"
+                position="relative"
+                flexShrink="0"
+              >
+                <image
+                  :src="item.src"
+                  width="100%"
+                  :height="item.height"
+                  fit="cover"
+                  borderRadius="[16, 16, 0, 0]"
+                  :backgroundColor={isDark.value ? '#162032' : '#f1f5f9'}
+                />
+                <view
+                  position="absolute"
+                  right="8"
+                  top="8"
+                >
+                  <button
+                    :label={item.isSaved ? 'Saved ✓' : 'Save'}
+                    :backgroundColor={item.isSaved ? (isDark.value ? '#1e293b' : '#e2e8f0') : '#0284c7'}
+                    :color={item.isSaved ? (isDark.value ? '#ffffff' : '#334155') : '#ffffff'}
+                    borderRadius="14"
+                    padding="[4, 10]"
+                    fontSize="11"
+                    fontWeight="bold"
+                    @click="toggleSaveItem(item, $event)"
                   />
                 </view>
               </view>
-              <view width="100%" padding="[10, 12]" flexDirection="column" gap="6" flexShrink="0">
-                <text fontSize="14" fontWeight="bold" :color={isDark.value ? '#f0f0f0' : '#0f172a'} textOverflow="ellipsis">{{ item.title }}</text>
-                <view width="100%" flexDirection="row" alignItems="center" justifyContent="space-between">
-                  <view flexDirection="row" alignItems="center" gap="6">
-                    <view width="20" height="20" :backgroundColor="item.avatarColor" borderRadius="10" alignItems="center" justifyContent="center">
-                      <text fontSize="10" fontWeight="bold" color="#ffffff">{{ item.author.charAt(0) }}</text>
+              <view
+                width="100%"
+                padding="[10, 12]"
+                flexDirection="column"
+                gap="6"
+                flexShrink="0"
+              >
+                <text
+                  fontSize="14"
+                  fontWeight="bold"
+                  :color={isDark.value ? '#f1f5f9' : '#0f172a'}
+                  textOverflow="ellipsis"
+                >
+                  {{ item.title }}
+                </text>
+                <view
+                  width="100%"
+                  flexDirection="row"
+                  alignItems="center"
+                  justifyContent="space-between"
+                >
+                  <view
+                    flexDirection="row"
+                    alignItems="center"
+                    gap="6"
+                  >
+                    <view
+                      width="20"
+                      height="20"
+                      :backgroundColor="item.avatarColor"
+                      borderRadius="10"
+                      alignItems="center"
+                      justifyContent="center"
+                    >
+                      <text
+                        fontSize="10"
+                        fontWeight="bold"
+                        color="#ffffff"
+                      >
+                        {{ item.author.charAt(0) }}
+                      </text>
                     </view>
-                    <text fontSize="11" :color={isDark.value ? '#999999' : '#64748b'}>{{ item.author }}</text>
+                    <text
+                      fontSize="11"
+                      :color={isDark.value ? '#94a3b8' : '#64748b'}
+                    >
+                      {{ item.author }}
+                    </text>
                   </view>
-                  <button :label={item.isLiked ? '♥ ' + item.likes : '♡ ' + item.likes} :color={item.isLiked ? '#ff4d6d' : (isDark.value ? '#888888' : '#64748b')} backgroundColor="transparent" fontSize="11" @click="toggleLikeItem(item, $event)" />
+                  <button
+                    :label={item.isLiked ? '♥ ' + item.likes : '♡ ' + item.likes}
+                    :color={item.isLiked ? '#ff4d6d' : (isDark.value ? '#94a3b8' : '#64748b')}
+                    backgroundColor="transparent"
+                    fontSize="11"
+                    @click="toggleLikeItem(item, $event)"
+                  />
                 </view>
               </view>
             </view>
@@ -314,34 +620,110 @@
 
       <!-- Column 3 (Desktop) -->
       @if (columnCount.value >= 4) {
-        <view :width="colWidth.value" flexDirection="column" :gap={isMobile.value ? 10 : 16} flexShrink="0">
+        <view
+          :width="colWidth.value"
+          flexDirection="column"
+          :gap={isMobile.value ? 10 : 16}
+          flexShrink="0"
+        >
           @each col3.value as item {
-            <view width="100%" flexDirection="column" :backgroundColor={isDark.value ? '#18181e' : '#ffffff'} borderRadius="16" overflow="hidden" borderWidth="1" :borderColor={isDark.value ? '#262630' : '#e2e8f0'} flexShrink="0" @click="handleItemClick(item, $event)">
-              <view width="100%" position="relative" flexShrink="0">
-                <image :src="item.src" width="100%" :height="item.height" fit="cover" borderRadius="[16, 16, 0, 0]" :backgroundColor={isDark.value ? '#1f1f26' : '#f1f5f9'} />
-                <view position="absolute" right="8" top="8">
-                  <button 
-                    :label={item.isSaved ? 'Saved ✓' : 'Save'} 
-                    :backgroundColor={item.isSaved ? (isDark.value ? '#111111' : '#e2e8f0') : '#0284c7'} 
-                    :color={item.isSaved ? (isDark.value ? '#ffffff' : '#334155') : '#ffffff'} 
-                    borderRadius="14" 
-                    padding="[4, 10]" 
-                    fontSize="11" 
-                    fontWeight="bold" 
-                    @click="toggleSaveItem(item, $event)" 
+            <view
+              width="100%"
+              flexDirection="column"
+              :backgroundColor={isDark.value ? '#0d131f' : '#ffffff'}
+              borderRadius="16"
+              overflow="hidden"
+              borderWidth="1"
+              :borderColor={isDark.value ? '#1e293b' : '#e2e8f0'}
+              flexShrink="0"
+              @click="handleItemClick(item, $event)"
+            >
+              <view
+                width="100%"
+                position="relative"
+                flexShrink="0"
+              >
+                <image
+                  :src="item.src"
+                  width="100%"
+                  :height="item.height"
+                  fit="cover"
+                  borderRadius="[16, 16, 0, 0]"
+                  :backgroundColor={isDark.value ? '#162032' : '#f1f5f9'}
+                />
+                <view
+                  position="absolute"
+                  right="8"
+                  top="8"
+                >
+                  <button
+                    :label={item.isSaved ? 'Saved ✓' : 'Save'}
+                    :backgroundColor={item.isSaved ? (isDark.value ? '#1e293b' : '#e2e8f0') : '#0284c7'}
+                    :color={item.isSaved ? (isDark.value ? '#ffffff' : '#334155') : '#ffffff'}
+                    borderRadius="14"
+                    padding="[4, 10]"
+                    fontSize="11"
+                    fontWeight="bold"
+                    @click="toggleSaveItem(item, $event)"
                   />
                 </view>
               </view>
-              <view width="100%" padding="[10, 12]" flexDirection="column" gap="6" flexShrink="0">
-                <text fontSize="14" fontWeight="bold" :color={isDark.value ? '#f0f0f0' : '#0f172a'} textOverflow="ellipsis">{{ item.title }}</text>
-                <view width="100%" flexDirection="row" alignItems="center" justifyContent="space-between">
-                  <view flexDirection="row" alignItems="center" gap="6">
-                    <view width="20" height="20" :backgroundColor="item.avatarColor" borderRadius="10" alignItems="center" justifyContent="center">
-                      <text fontSize="10" fontWeight="bold" color="#ffffff">{{ item.author.charAt(0) }}</text>
+              <view
+                width="100%"
+                padding="[10, 12]"
+                flexDirection="column"
+                gap="6"
+                flexShrink="0"
+              >
+                <text
+                  fontSize="14"
+                  fontWeight="bold"
+                  :color={isDark.value ? '#f1f5f9' : '#0f172a'}
+                  textOverflow="ellipsis"
+                >
+                  {{ item.title }}
+                </text>
+                <view
+                  width="100%"
+                  flexDirection="row"
+                  alignItems="center"
+                  justifyContent="space-between"
+                >
+                  <view
+                    flexDirection="row"
+                    alignItems="center"
+                    gap="6"
+                  >
+                    <view
+                      width="20"
+                      height="20"
+                      :backgroundColor="item.avatarColor"
+                      borderRadius="10"
+                      alignItems="center"
+                      justifyContent="center"
+                    >
+                      <text
+                        fontSize="10"
+                        fontWeight="bold"
+                        color="#ffffff"
+                      >
+                        {{ item.author.charAt(0) }}
+                      </text>
                     </view>
-                    <text fontSize="11" :color={isDark.value ? '#999999' : '#64748b'}>{{ item.author }}</text>
+                    <text
+                      fontSize="11"
+                      :color={isDark.value ? '#94a3b8' : '#64748b'}
+                    >
+                      {{ item.author }}
+                    </text>
                   </view>
-                  <button :label={item.isLiked ? '♥ ' + item.likes : '♡ ' + item.likes} :color={item.isLiked ? '#ff4d6d' : (isDark.value ? '#888888' : '#64748b')} backgroundColor="transparent" fontSize="11" @click="toggleLikeItem(item, $event)" />
+                  <button
+                    :label={item.isLiked ? '♥ ' + item.likes : '♡ ' + item.likes}
+                    :color={item.isLiked ? '#ff4d6d' : (isDark.value ? '#94a3b8' : '#64748b')}
+                    backgroundColor="transparent"
+                    fontSize="11"
+                    @click="toggleLikeItem(item, $event)"
+                  />
                 </view>
               </view>
             </view>
@@ -351,34 +733,110 @@
 
       <!-- Column 4 (Wide Screen) -->
       @if (columnCount.value >= 5) {
-        <view :width="colWidth.value" flexDirection="column" :gap={isMobile.value ? 10 : 16} flexShrink="0">
+        <view
+          :width="colWidth.value"
+          flexDirection="column"
+          :gap={isMobile.value ? 10 : 16}
+          flexShrink="0"
+        >
           @each col4.value as item {
-            <view width="100%" flexDirection="column" :backgroundColor={isDark.value ? '#18181e' : '#ffffff'} borderRadius="16" overflow="hidden" borderWidth="1" :borderColor={isDark.value ? '#262630' : '#e2e8f0'} flexShrink="0" @click="handleItemClick(item, $event)">
-              <view width="100%" position="relative" flexShrink="0">
-                <image :src="item.src" width="100%" :height="item.height" fit="cover" borderRadius="[16, 16, 0, 0]" :backgroundColor={isDark.value ? '#1f1f26' : '#f1f5f9'} />
-                <view position="absolute" right="8" top="8">
-                  <button 
-                    :label={item.isSaved ? 'Saved ✓' : 'Save'} 
-                    :backgroundColor={item.isSaved ? (isDark.value ? '#111111' : '#e2e8f0') : '#0284c7'} 
-                    :color={item.isSaved ? (isDark.value ? '#ffffff' : '#334155') : '#ffffff'} 
-                    borderRadius="14" 
-                    padding="[4, 10]" 
-                    fontSize="11" 
-                    fontWeight="bold" 
-                    @click="toggleSaveItem(item, $event)" 
+            <view
+              width="100%"
+              flexDirection="column"
+              :backgroundColor={isDark.value ? '#0d131f' : '#ffffff'}
+              borderRadius="16"
+              overflow="hidden"
+              borderWidth="1"
+              :borderColor={isDark.value ? '#1e293b' : '#e2e8f0'}
+              flexShrink="0"
+              @click="handleItemClick(item, $event)"
+            >
+              <view
+                width="100%"
+                position="relative"
+                flexShrink="0"
+              >
+                <image
+                  :src="item.src"
+                  width="100%"
+                  :height="item.height"
+                  fit="cover"
+                  borderRadius="[16, 16, 0, 0]"
+                  :backgroundColor={isDark.value ? '#162032' : '#f1f5f9'}
+                />
+                <view
+                  position="absolute"
+                  right="8"
+                  top="8"
+                >
+                  <button
+                    :label={item.isSaved ? 'Saved ✓' : 'Save'}
+                    :backgroundColor={item.isSaved ? (isDark.value ? '#1e293b' : '#e2e8f0') : '#0284c7'}
+                    :color={item.isSaved ? (isDark.value ? '#ffffff' : '#334155') : '#ffffff'}
+                    borderRadius="14"
+                    padding="[4, 10]"
+                    fontSize="11"
+                    fontWeight="bold"
+                    @click="toggleSaveItem(item, $event)"
                   />
                 </view>
               </view>
-              <view width="100%" padding="[10, 12]" flexDirection="column" gap="6" flexShrink="0">
-                <text fontSize="14" fontWeight="bold" :color={isDark.value ? '#f0f0f0' : '#0f172a'} textOverflow="ellipsis">{{ item.title }}</text>
-                <view width="100%" flexDirection="row" alignItems="center" justifyContent="space-between">
-                  <view flexDirection="row" alignItems="center" gap="6">
-                    <view width="20" height="20" :backgroundColor="item.avatarColor" borderRadius="10" alignItems="center" justifyContent="center">
-                      <text fontSize="10" fontWeight="bold" color="#ffffff">{{ item.author.charAt(0) }}</text>
+              <view
+                width="100%"
+                padding="[10, 12]"
+                flexDirection="column"
+                gap="6"
+                flexShrink="0"
+              >
+                <text
+                  fontSize="14"
+                  fontWeight="bold"
+                  :color={isDark.value ? '#f1f5f9' : '#0f172a'}
+                  textOverflow="ellipsis"
+                >
+                  {{ item.title }}
+                </text>
+                <view
+                  width="100%"
+                  flexDirection="row"
+                  alignItems="center"
+                  justifyContent="space-between"
+                >
+                  <view
+                    flexDirection="row"
+                    alignItems="center"
+                    gap="6"
+                  >
+                    <view
+                      width="20"
+                      height="20"
+                      :backgroundColor="item.avatarColor"
+                      borderRadius="10"
+                      alignItems="center"
+                      justifyContent="center"
+                    >
+                      <text
+                        fontSize="10"
+                        fontWeight="bold"
+                        color="#ffffff"
+                      >
+                        {{ item.author.charAt(0) }}
+                      </text>
                     </view>
-                    <text fontSize="11" :color={isDark.value ? '#999999' : '#64748b'}>{{ item.author }}</text>
+                    <text
+                      fontSize="11"
+                      :color={isDark.value ? '#94a3b8' : '#64748b'}
+                    >
+                      {{ item.author }}
+                    </text>
                   </view>
-                  <button :label={item.isLiked ? '♥ ' + item.likes : '♡ ' + item.likes} :color={item.isLiked ? '#ff4d6d' : (isDark.value ? '#888888' : '#64748b')} backgroundColor="transparent" fontSize="11" @click="toggleLikeItem(item, $event)" />
+                  <button
+                    :label={item.isLiked ? '♥ ' + item.likes : '♡ ' + item.likes}
+                    :color={item.isLiked ? '#ff4d6d' : (isDark.value ? '#94a3b8' : '#64748b')}
+                    backgroundColor="transparent"
+                    fontSize="11"
+                    @click="toggleLikeItem(item, $event)"
+                  />
                 </view>
               </view>
             </view>
@@ -389,57 +847,185 @@
     </view>
 
     <!-- 4. Interactive Fullscreen Lightbox Modal -->
-    <modal :open="isModalOpen.value" :originRect="modalOriginRect.value" animation="hero" :duration="340" @close="closeModal">
+    <modal
+      :open="isModalOpen.value"
+      :originRect="modalOriginRect.value"
+      animation="hero"
+      :duration="340"
+      @close="closeModal"
+    >
       @if (selectedItem.value) {
-        <view :width={isMobile.value ? '92%' : 780} :flexDirection={isMobile.value ? 'column' : 'row'} :backgroundColor={isDark.value ? '#1b1b22' : '#ffffff'} borderRadius="24" overflow="hidden" borderWidth="1" :borderColor={isDark.value ? '#333342' : '#e2e8f0'} :boxShadow={isDark.value ? { offsetX: 0, offsetY: 20, blur: 50, color: 'rgba(0,0,0,0.85)' } : { offsetX: 0, offsetY: 20, blur: 50, color: 'rgba(0,0,0,0.18)' }}>
-          
+        <view
+          :width={isMobile.value ? '92%' : 780}
+          :flexDirection={isMobile.value ? 'column' : 'row'}
+          :backgroundColor={isDark.value ? '#0d131f' : '#ffffff'}
+          borderRadius="24"
+          overflow="hidden"
+          borderWidth="1"
+          :borderColor={isDark.value ? '#1e293b' : '#e2e8f0'}
+          :boxShadow={isDark.value ? { offsetX: 0, offsetY: 20, blur: 50, color: 'rgba(0,0,0,0.85)' } : { offsetX: 0, offsetY: 20, blur: 50, color: 'rgba(0,0,0,0.18)' }}
+        >
+
           <!-- Left: Large Image View -->
-          <view :width={isMobile.value ? '100%' : 400} :height={isMobile.value ? 220 : 480} :backgroundColor={isDark.value ? '#111115' : '#f1f5f9'} flexShrink="0">
-            <image :src="selectedItem.value?.src" width="100%" height="100%" fit="cover" />
+          <view
+            :width={isMobile.value ? '100%' : 400}
+            :height={isMobile.value ? 220 : 480}
+            :backgroundColor={isDark.value ? '#080c14' : '#f1f5f9'}
+            flexShrink="0"
+          >
+            <image
+              :src="selectedItem.value?.src"
+              width="100%"
+              height="100%"
+              fit="cover"
+            />
           </view>
 
           <!-- Right: Details & Actions -->
-          <view :width={isMobile.value ? '100%' : 380} flexGrow="1" flexDirection="column" :padding={isMobile.value ? [12, 14] : [20, 24]} :gap={isMobile.value ? 10 : 16} flexShrink="0">
-            
+          <view
+            :width={isMobile.value ? '100%' : 380}
+            flexGrow="1"
+            flexDirection="column"
+            :padding={isMobile.value ? [12, 14] : [20, 24]}
+            :gap={isMobile.value ? 10 : 16}
+            flexShrink="0"
+          >
+
             <!-- Top Row: Close & Save Action -->
-            <view width="100%" flexDirection="row" justifyContent="space-between" alignItems="center" flexShrink="0">
-              <button label="✕ Close" :backgroundColor={isDark.value ? '#282834' : '#f1f5f9'} :color={isDark.value ? '#bbbbbb' : '#475569'} borderRadius="16" padding="[6, 12]" fontSize="12" @click="closeModal" />
-              <button 
-                :label={selectedItem.value?.isSaved ? 'Saved to Board ✓' : 'Save'} 
-                :backgroundColor={selectedItem.value?.isSaved ? (isDark.value ? '#22222a' : '#e2e8f0') : '#0284c7'} 
-                :color={selectedItem.value?.isSaved ? (isDark.value ? '#ffffff' : '#334155') : '#ffffff'} 
-                borderRadius="18" 
-                padding="[6, 16]" 
-                fontSize="12" 
-                fontWeight="bold" 
-                @click="toggleSaveItem(selectedItem.value!, $event)" 
+            <view
+              width="100%"
+              flexDirection="row"
+              justifyContent="space-between"
+              alignItems="center"
+              flexShrink="0"
+            >
+              <button
+                :label="t.value.gallery.closeButton"
+                :backgroundColor={isDark.value ? '#162032' : '#f1f5f9'}
+                :color={isDark.value ? '#94a3b8' : '#475569'}
+                borderRadius="16"
+                padding="[6, 12]"
+                fontSize="12"
+                @click="closeModal"
+              />
+              <button
+                :label="selectedItem.value?.isSaved ? t.value.gallery.savedButton : t.value.gallery.saveButton"
+                :backgroundColor={selectedItem.value?.isSaved ? (isDark.value ? '#1e293b' : '#e2e8f0') : '#0284c7'}
+                :color={selectedItem.value?.isSaved ? (isDark.value ? '#ffffff' : '#334155') : '#ffffff'}
+                borderRadius="18"
+                padding="[6, 16]"
+                fontSize="12"
+                fontWeight="bold"
+                @click="toggleSaveItem(selectedItem.value!, $event)"
               />
             </view>
 
             <!-- Item Content Info -->
-            <view width="100%" flexDirection="column" gap="6" flexShrink="0">
-              <text :fontSize={isMobile.value ? 16 : 22} fontWeight="bold" :color={isDark.value ? '#ffffff' : '#0f172a'} :wordWrap="true">{{ selectedItem.value?.title }}</text>
-              <text :fontSize={isMobile.value ? 12 : 13} :color={isDark.value ? '#aaaaaa' : '#475569'} :lineHeight="18" :wordWrap="true">{{ selectedItem.value?.description }}</text>
+            <view
+              width="100%"
+              flexDirection="column"
+              gap="6"
+              flexShrink="0"
+            >
+              <text
+                :fontSize={isMobile.value ? 16 : 22}
+                fontWeight="bold"
+                :color={isDark.value ? '#ffffff' : '#0f172a'}
+                :wordWrap="true"
+              >
+                {{ selectedItem.value?.title }}
+              </text>
+              <text
+                :fontSize={isMobile.value ? 12 : 13}
+                :color={isDark.value ? '#94a3b8' : '#475569'}
+                :lineHeight="18"
+                :wordWrap="true"
+              >
+                {{ selectedItem.value?.description }}
+              </text>
             </view>
 
             <!-- Author Info & Follow Action Card -->
-            <view width="100%" flexDirection="row" alignItems="center" justifyContent="space-between" :padding={isMobile.value ? [8, 10] : [10, 12]} borderRadius="16" :backgroundColor={isDark.value ? '#20202a' : '#f8fafc'} borderWidth="1" :borderColor={isDark.value ? '#2e2e3c' : '#e2e8f0'} flexShrink="0">
-              <view flexDirection="row" alignItems="center" gap="10">
-                <view width="36" height="36" :backgroundColor={selectedItem.value?.avatarColor || '#e11d48'} borderRadius="18" alignItems="center" justifyContent="center">
-                  <text fontSize="14" fontWeight="bold" color="#ffffff">{{ (selectedItem.value?.author || 'A').charAt(0) }}</text>
+            <view
+              width="100%"
+              flexDirection="row"
+              alignItems="center"
+              justifyContent="space-between"
+              :padding={isMobile.value ? [8, 10] : [10, 12]}
+              borderRadius="16"
+              :backgroundColor={isDark.value ? '#162032' : '#f8fafc'}
+              borderWidth="1"
+              :borderColor={isDark.value ? '#1e293b' : '#e2e8f0'}
+              flexShrink="0"
+            >
+              <view
+                flexDirection="row"
+                alignItems="center"
+                gap="10"
+              >
+                <view
+                  width="36"
+                  height="36"
+                  :backgroundColor={selectedItem.value?.avatarColor || '#e11d48'}
+                  borderRadius="18"
+                  alignItems="center"
+                  justifyContent="center"
+                >
+                  <text
+                    fontSize="14"
+                    fontWeight="bold"
+                    color="#ffffff"
+                  >
+                    {{ (selectedItem.value?.author || 'A').charAt(0) }}
+                  </text>
                 </view>
                 <view flexDirection="column" gap="1">
-                  <text fontSize="13" fontWeight="bold" :color={isDark.value ? '#ffffff' : '#0f172a'}>{{ selectedItem.value?.author }}</text>
-                  <text fontSize="10" :color={isDark.value ? '#888888' : '#64748b'}>{{ selectedItem.value?.authorHandle }}</text>
+                  <text
+                    fontSize="13"
+                    fontWeight="bold"
+                    :color={isDark.value ? '#ffffff' : '#0f172a'}
+                  >
+                    {{ selectedItem.value?.author }}
+                  </text>
+                  <text
+                    fontSize="10"
+                    :color={isDark.value ? '#94a3b8' : '#64748b'}
+                  >
+                    {{ selectedItem.value?.authorHandle }}
+                  </text>
                 </view>
               </view>
-              <button label="Follow" :backgroundColor={isDark.value ? '#323240' : '#e2e8f0'} :color={isDark.value ? '#f0f0f0' : '#1e293b'} borderRadius="14" padding="[6, 14]" fontSize="11" fontWeight="bold" />
+              <button
+                label="Follow"
+                :backgroundColor={isDark.value ? '#1e293b' : '#e2e8f0'}
+                :color={isDark.value ? '#f1f5f9' : '#1e293b'}
+                borderRadius="14"
+                padding="[6, 14]"
+                fontSize="11"
+                fontWeight="bold"
+              />
             </view>
 
             <!-- Footer Stats & Tags -->
-            <view width="100%" flexDirection="row" alignItems="center" justifyContent="space-between" flexShrink="0">
-              <button :label={selectedItem.value?.isLiked ? '♥ Liked (' + (selectedItem.value?.likes || 0) + ')' : '♡ Like (' + (selectedItem.value?.likes || 0) + ')'} :color={selectedItem.value?.isLiked ? '#ff4d6d' : (isDark.value ? '#ffffff' : '#1e293b')} :backgroundColor={isDark.value ? '#282834' : '#f1f5f9'} borderRadius="14" padding="[4, 12]" fontSize="11" @click="toggleLikeItem(selectedItem.value!, $event)" />
-              <text fontSize="11" :color={isDark.value ? '#666677' : '#94a3b8'}>Category: {{ selectedItem.value?.category }}</text>
+            <view
+              width="100%"
+              flexDirection="row"
+              alignItems="center"
+              justifyContent="space-between"
+              flexShrink="0"
+            >
+              <button
+                :label={selectedItem.value?.isLiked ? '♥ Liked (' + (selectedItem.value?.likes || 0) + ')' : '♡ Like (' + (selectedItem.value?.likes || 0) + ')'}
+                :color={selectedItem.value?.isLiked ? '#ff4d6d' : (isDark.value ? '#ffffff' : '#1e293b')}
+                :backgroundColor={isDark.value ? '#162032' : '#f1f5f9'}
+                borderRadius="14"
+                padding="[4, 12]"
+                fontSize="11"
+                @click="toggleLikeItem(selectedItem.value!, $event)"
+              />
+              <text fontSize="11" :color={isDark.value ? '#64748b' : '#94a3b8'}>
+                {{ t.value.gallery.categoryLabel }}: {{ selectedItem.value?.category }}
+              </text>
             </view>
 
           </view>

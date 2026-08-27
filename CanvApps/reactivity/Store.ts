@@ -122,10 +122,6 @@ export class Store<T extends Record<string, any>> {
     }
   }
 
-  /**
-   * Retrieves the reactive store state object.
-   * Accessing individual properties inside an effect() tracks fine-grained reactivity.
-   */
   public get state(): T {
     return new Proxy({} as T, {
       get: (_target, prop: string | symbol) => {
@@ -144,9 +140,6 @@ export class Store<T extends Record<string, any>> {
     });
   }
 
-  /**
-   * Retrieves the full reactive state snapshot.
-   */
   public get value(): T {
     return this.signal.value;
   }

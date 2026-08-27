@@ -36,15 +36,17 @@
   },
   "scripts": {
     "dev": "vite",
+    "test": "tsx tests/i18n.test.ts && tsx tests/createApp.test.ts",
     "build": "npm run build:packages && npm run build:app",
     "build:packages": "tsx scripts/build-packages.ts",
     "build:app": "tsx CanvApps/cli/bin.ts build",
     "preview": "vite preview --outDir dist-app",
+    "format": "tsx scripts/format.ts",
     "prepublishOnly": "npm run build:packages",
     "package:extension": "tsx CanvApps/extension/package-vsix.ts",
     "publish:core": "npm publish --access public",
-    "publish:plugin": "cd packages/vite-plugin-canvapps && npm publish --access public",
-    "publish:all": "npm run build:packages && npm run publish:core && npm run publish:plugin"
+    "publish:create": "cd packages/create-canvapps && npm publish --access public",
+    "publish:all": "npm run build:packages && npm run publish:core && npm run publish:create"
   },
   "keywords": [
     "canvas",

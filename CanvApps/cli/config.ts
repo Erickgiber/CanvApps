@@ -118,7 +118,6 @@ export interface CanvAppsConfig {
    */
   pwa?: PWAConfig;
 
-
   /**
    * Capacitor native container configuration.
    */

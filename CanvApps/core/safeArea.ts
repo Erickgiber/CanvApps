@@ -55,7 +55,6 @@ export function initSafeAreaProbe(): void {
       zIndex: '-99999',
     });
 
-
     if (document.body) {
       document.body.appendChild(probeElement);
     } else {

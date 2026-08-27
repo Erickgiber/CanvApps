@@ -28,6 +28,8 @@ export interface AnchorStyles extends VisualStyles {
   hoverColor?: string;
   activeColor?: string;
   visitedColor?: string;
+  hoverBackgroundColor?: string;
+  activeBackgroundColor?: string;
   underline?: AnchorUnderline;
   underlineOffset?: number;
   underlineThickness?: number;
@@ -40,6 +42,9 @@ export interface AnchorStyles extends VisualStyles {
   letterSpacing?: number;
   disabled?: boolean;
   replace?: boolean;
+  trackVisited?: boolean;
+  keepColor?: boolean | string;
+  disableHoverColor?: boolean | string;
 }
 
 /**
@@ -82,9 +87,6 @@ export class UIAnchor extends UIElement implements GhostTarget {
     super({
       cursor: 'pointer',
       color: '#1a73e8',
-      hoverColor: '#174ea6',
-      activeColor: '#185abc',
-      visitedColor: '#681da8',
       underline: 'hover',
       underlineOffset: 2,
       underlineThickness: 1,
@@ -130,9 +132,7 @@ export class UIAnchor extends UIElement implements GhostTarget {
     });
   }
 
-  // ---------------------------------------------------------------------------
   // Getters & Setters
-  // ---------------------------------------------------------------------------
 
   public getGhostType(): 'anchor' {
     return 'anchor';
@@ -220,9 +220,7 @@ export class UIAnchor extends UIElement implements GhostTarget {
     return false;
   }
 
-  // ---------------------------------------------------------------------------
   // Navigation Execution
-  // ---------------------------------------------------------------------------
 
   /**
    * Executes navigation according to href target, router configuration, or external URL.
@@ -268,30 +266,23 @@ export class UIAnchor extends UIElement implements GhostTarget {
       return;
     }
 
-    // Internal SPA Route with built-in Router
+    // Dispatch global SPA navigation event handled centrally by session router
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('canvapps:navigate', {
+        detail: { href, replace: Boolean(this.styles.replace) },
+      }));
+    }
+
+    // Also notify activeRouter if routes are registered
     try {
       const router = useRouter();
-      if (router && typeof router.navigate === 'function') {
+      if (router && (router as any).routes?.length > 0 && typeof router.navigate === 'function') {
         router.navigate(href, { replace: Boolean(this.styles.replace) });
-        return;
       }
-    } catch {
-      // Fallback if router not initialized
-    }
-
-    if (typeof window !== 'undefined') {
-      if (target && target !== '_self' && typeof window.open === 'function') {
-        window.open(href, target, rel || undefined);
-      } else if (window.location) {
-        window.location.href = href;
-      }
-    }
+    } catch {}
   }
 
-
-  // ---------------------------------------------------------------------------
   // Layout & Measurement
-  // ---------------------------------------------------------------------------
 
   private static getMeasureContext(): CanvasRenderingContext2D {
     if (!this.measureContext) {
@@ -308,7 +299,6 @@ export class UIAnchor extends UIElement implements GhostTarget {
     }
     return this.measureContext!;
   }
-
 
   private getFontString(): string {
     const style = this.styles.fontStyle ?? 'normal';
@@ -349,9 +339,7 @@ export class UIAnchor extends UIElement implements GhostTarget {
     return { width, height };
   }
 
-  // ---------------------------------------------------------------------------
   // Canvas 2D Rendering
-  // ---------------------------------------------------------------------------
 
   public draw(ctx: CanvasRenderingContext2D): void {
     const { width, height } = this.layoutRect;
@@ -361,15 +349,17 @@ export class UIAnchor extends UIElement implements GhostTarget {
 
     const {
       backgroundColor,
+      hoverBackgroundColor,
+      activeBackgroundColor,
       borderRadius,
       borderWidth,
       borderColor,
       boxShadow,
       disabled,
       color = '#1a73e8',
-      hoverColor = '#174ea6',
-      activeColor = '#185abc',
-      visitedColor = '#681da8',
+      hoverColor = this.styles.hoverColor,
+      activeColor = this.styles.activeColor,
+      visitedColor = this.styles.visitedColor,
       fontSize = 14,
       textAlign = 'left',
       underline = 'hover',
@@ -380,9 +370,17 @@ export class UIAnchor extends UIElement implements GhostTarget {
     const text = this.getText();
     const padding = this.getComputedPadding();
 
+    let activeBgColor = backgroundColor;
+    if (!disabled) {
+      if (this.isPressed && activeBackgroundColor) {
+        activeBgColor = activeBackgroundColor;
+      } else if (this.isHovered && hoverBackgroundColor) {
+        activeBgColor = hoverBackgroundColor;
+      }
+    }
+
     ctx.save();
 
-    // 1. Box shadow
     if (boxShadow && !this.isPressed && !disabled) {
       ctx.save();
       ctx.shadowColor = boxShadow.color;
@@ -392,20 +390,18 @@ export class UIAnchor extends UIElement implements GhostTarget {
 
       ctx.beginPath();
       this.applyPath(ctx, 0, 0, width, height, borderRadius);
-      ctx.fillStyle = backgroundColor || 'transparent';
+      ctx.fillStyle = activeBgColor || 'transparent';
       ctx.fill();
       ctx.restore();
     }
 
-    // 2. Background
-    if (backgroundColor && backgroundColor !== 'transparent') {
+    if (activeBgColor && activeBgColor !== 'transparent') {
       ctx.beginPath();
       this.applyPath(ctx, 0, 0, width, height, borderRadius);
-      ctx.fillStyle = backgroundColor;
+      ctx.fillStyle = activeBgColor;
       ctx.fill();
     }
 
-    // 3. Border
     if (borderWidth && borderWidth > 0 && borderColor) {
       ctx.beginPath();
       const half = borderWidth / 2;
@@ -422,19 +418,25 @@ export class UIAnchor extends UIElement implements GhostTarget {
       ctx.stroke();
     }
 
-    // 4. Determine Active Typography Color
+    const shouldKeepColor = 
+      this.styles.keepColor === true || 
+      this.styles.keepColor === 'true' || 
+      this.styles.disableHoverColor === true || 
+      this.styles.disableHoverColor === 'true';
+
     let activeTextColor = color;
     if (disabled) {
       activeTextColor = '#94a3b8';
+    } else if (shouldKeepColor) {
+      activeTextColor = color;
     } else if (this.isPressed && activeColor) {
       activeTextColor = activeColor;
     } else if (this.isHovered && hoverColor) {
       activeTextColor = hoverColor;
-    } else if (this.isVisited && visitedColor) {
+    } else if (this.isVisited && (this.styles.trackVisited !== false) && visitedColor) {
       activeTextColor = visitedColor;
     }
 
-    // 5. Draw Typography & Underline
     if (text) {
       ctx.font = this.getFontString();
       ctx.fillStyle = activeTextColor;

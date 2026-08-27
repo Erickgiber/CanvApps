@@ -65,6 +65,20 @@
     ],
     "description": "Create a UIInput element"
   },
+  "Select Element": {
+    "prefix": "cvs-select",
+    "body": [
+      "<select width=\"${1:160}\" height=\"${2:38}\" :options=\"${3:options}\" :value=\"${4:selectedVal.value}\" @change=\"${5:handleSelect}\" />"
+    ],
+    "description": "Create a UISelect dropdown component"
+  },
+  "Slider Element": {
+    "prefix": "cvs-slider",
+    "body": [
+      "<slider width=\"${1:200}\" height=\"${2:32}\" min=\"${3:0}\" max=\"${4:100}\" :value=\"${5:sliderVal.value}\" @input=\"${6:handleInput}\" />"
+    ],
+    "description": "Create a UISlider range input component"
+  },
   "Signal Declaration": {
     "prefix": "cvs-signal",
     "body": [

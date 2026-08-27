@@ -1,0 +1,42 @@
+{
+  "name": "create-canvapps",
+  "version": "0.2.0",
+  "description": "Scaffold a new CanvApps Canvas-native reactive application in seconds",
+  "type": "module",
+  "bin": {
+    "create-canvapps": "./dist/index.js",
+    "canvapps-create": "./dist/index.js"
+  },
+  "main": "./dist/index.js",
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "esbuild src/index.ts --bundle --platform=node --target=node18 --format=esm --outfile=dist/index.js --banner:js=\"#!/usr/bin/env node\"",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "create-canvapps",
+    "canvapps",
+    "canvas",
+    "ui-framework",
+    "scaffold",
+    "starter",
+    "vite-template"
+  ],
+  "author": "Erickgiber",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Erickgiber/CanvApps.git",
+    "directory": "packages/create-canvapps"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

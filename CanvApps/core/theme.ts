@@ -105,7 +105,6 @@ export function setThemeColor(
 
   const isDark = isColorDark(resolvedColor);
 
-  // 1. Force Blink/Chromium & WebKit to immediately recalculate the window titlebar by removing old tags and appending a fresh one
   try {
     const existingMetas = Array.from(document.querySelectorAll('meta[name="theme-color"]'));
     existingMetas.forEach((meta) => meta.remove());
@@ -118,7 +117,6 @@ export function setThemeColor(
     // Ignore DOM head errors
   }
 
-  // 2. Update <meta name="color-scheme"> for desktop OS window controls (macOS red/yellow/green buttons & window title text)
   try {
     let colorSchemeMeta = document.querySelector('meta[name="color-scheme"]') as HTMLMetaElement | null;
     if (!colorSchemeMeta) {
@@ -131,7 +129,6 @@ export function setThemeColor(
     // Ignore DOM head errors
   }
 
-  // 3. Update iOS Apple mobile web app status bar style
   try {
     let appleMeta = document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]') as HTMLMetaElement | null;
     if (!appleMeta) {
@@ -144,7 +141,6 @@ export function setThemeColor(
     // Ignore DOM head errors
   }
 
-  // 4. Update Microsoft / Windows mobile nav button color and tile color
   try {
     let msMeta = document.querySelector('meta[name="msapplication-navbutton-color"]') as HTMLMetaElement | null;
     if (!msMeta) {
@@ -165,7 +161,6 @@ export function setThemeColor(
     // Ignore DOM head errors
   }
 
-  // 5. Update root document background color and color-scheme so overscroll rubber-band bounce matches seamlessly
   try {
     document.documentElement.style.backgroundColor = resolvedColor;
     document.documentElement.style.colorScheme = isDark ? 'dark' : 'light';

@@ -46,12 +46,6 @@ export interface AnimationOptions {
   onComplete?: () => void;
 }
 
-/**
- * Executes a hardware-timed, sub-millisecond precision requestAnimationFrame tween.
- *
- * @param options Animation parameters and callbacks.
- * @returns A cancel function to abort the animation early and release resources.
- */
 export function animate(options: AnimationOptions): () => void {
   const {
     from,

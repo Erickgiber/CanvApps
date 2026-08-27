@@ -1,34 +1,73 @@
 # create-canvapps 🎨
 
-The official project scaffolding tool for **CanvApps** — High-Performance 100% Canvas 2D Declarative UI Framework.
+Scaffold a new **CanvApps** project — the 120 FPS Canvas UI Framework.
 
-## 🚀 Quickstart
+## 🚀 Create a Project
 
-With **NPM**:
 ```bash
 npm create canvapps@latest my-app
+cd my-app
+npm install
+npm run dev
 ```
 
-With **PNPM**:
+### Other package managers
+
 ```bash
+# pnpm
 pnpm create canvapps my-app
-```
 
-With **Yarn**:
-```bash
+# yarn
 yarn create canvapps my-app
-```
 
-With **Bun**:
-```bash
+# bun
 bun create canvapps my-app
 ```
 
-## 📦 What's included:
-- **Vite + CanvApps Plugin**: Instant HMR and compilation of `.cvs` files.
-- **TypeScript**: Built-in type definitions for Canvas nodes and signals.
-- **Multi-Target Config**: Pre-configured `canvapps.config.ts` for SPA, PWA, and Capacitor.
-- **Starter Template**: Working counter and theme switcher running at 120 FPS.
+### Or install globally
+
+```bash
+npm install -g create-canvapps
+create-canvapps my-app
+```
+
+## 📁 What you get
+
+```
+my-app/
+├── public/
+│   └── favicon.svg          # CanvApps logo
+├── src/
+│   ├── App.cvs               # Starter component (counter + theme toggle)
+│   ├── main.ts                # App entry point
+│   └── canvapps-env.d.ts      # TypeScript declarations for .cvs files
+├── index.html                 # Canvas-optimized HTML shell
+├── vite.config.ts             # Vite + CanvApps plugin pre-configured
+├── canvapps.config.ts         # Build target config (SPA/PWA/Capacitor)
+├── tsconfig.json
+└── package.json
+```
+
+## 📦 Included out of the box
+
+- **Vite + CanvApps Plugin** — Instant HMR for `.cvs` files
+- **TypeScript** — Type definitions for Canvas nodes and signals
+- **Multi-Target Config** — SPA, PWA, or Capacitor from `canvapps.config.ts`
+- **Starter Template** — Working counter + theme toggle at 120 FPS
+
+## 🛠️ Commands
+
+```bash
+npm run dev       # Start dev server (Vite + HMR)
+npm run build     # Production build
+npm run preview   # Preview production build
+npm run format    # Format .cvs files
+```
+
+## 📚 Documentation
+
+Full docs → [github.com/Erickgiber/CanvApps](https://github.com/Erickgiber/CanvApps)
 
 ## 📄 License
+
 MIT © [Erickgiber](https://github.com/Erickgiber)

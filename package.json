@@ -46,8 +46,7 @@
     "package:extension": "tsx CanvApps/extension/package-vsix.ts",
     "publish:core": "npm publish --access public",
     "publish:create": "cd packages/create-canvapps && npm publish --access public",
-    "publish:plugin": "cd packages/vite-plugin-canvapps && npm publish --access public",
-    "publish:all": "npm run build:packages && npm run publish:core && npm run publish:create && npm run publish:plugin"
+    "publish:all": "npm run build:packages && npm run publish:core && npm run publish:create"
   },
   "keywords": [
     "canvas",

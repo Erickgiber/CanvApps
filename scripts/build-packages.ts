@@ -7,8 +7,6 @@ const rootDir = process.cwd();
 const distDir = path.join(rootDir, 'dist');
 const createPkgDir = path.join(rootDir, 'packages', 'create-canvapps');
 const createDistDir = path.join(createPkgDir, 'dist');
-const pluginPkgDir = path.join(rootDir, 'packages', 'vite-plugin-canvapps');
-const pluginDistDir = path.join(pluginPkgDir, 'dist');
 
 async function cleanDirs() {
   console.log('🧹 Cleaning dist directories...');
@@ -24,13 +22,6 @@ async function cleanDirs() {
     fs.rmSync(createDistDir, { recursive: true, force: true });
   }
   fs.mkdirSync(createDistDir, { recursive: true });
-
-  if (fs.existsSync(pluginDistDir)) {
-    fs.rmSync(pluginDistDir, { recursive: true, force: true });
-  }
-  if (fs.existsSync(pluginPkgDir)) {
-    fs.mkdirSync(pluginDistDir, { recursive: true });
-  }
 }
 
 async function buildCore() {
@@ -125,31 +116,6 @@ async function buildVitePluginAndCompiler() {
     target: 'node18',
   });
 
-  // Standalone vite-plugin-canvapps package build
-  if (fs.existsSync(pluginPkgDir)) {
-    await esbuild.build({
-      entryPoints: [path.join(rootDir, 'CanvApps/vite.ts')],
-      bundle: true,
-      format: 'esm',
-      outfile: path.join(pluginDistDir, 'index.js'),
-      sourcemap: true,
-      external: ['vite', 'esbuild'],
-      platform: 'node',
-      target: 'node18',
-    });
-
-    await esbuild.build({
-      entryPoints: [path.join(rootDir, 'CanvApps/vite.ts')],
-      bundle: true,
-      format: 'cjs',
-      outfile: path.join(pluginDistDir, 'index.cjs'),
-      sourcemap: true,
-      external: ['vite', 'esbuild'],
-      platform: 'node',
-      target: 'node18',
-    });
-  }
-
   console.log('  ✓ Vite Plugin & Compiler subpaths built in dist/');
 }
 
@@ -208,26 +174,6 @@ async function generateDeclarations() {
     { stdio: 'inherit' }
   );
 
-  if (fs.existsSync(pluginPkgDir)) {
-    const pluginDts = `import type { Plugin } from 'vite';
-
-export interface CanvAppsPluginOptions {
-  /**
-   * Whether to inject the official CanvApps open-source build watermark comments into output JS bundles and HTML.
-   * Defaults to true.
-   */
-  banner?: boolean;
-}
-
-export declare const CANVAPPS_BANNER: string;
-export declare const CANVAPPS_HTML_BANNER: string;
-export declare function canvappsPlugin(options?: CanvAppsPluginOptions): Plugin;
-export default canvappsPlugin;
-export type * from '@canvapps/core/compiler';
-`;
-    fs.writeFileSync(path.join(pluginDistDir, 'index.d.ts'), pluginDts, 'utf-8');
-  }
-
   console.log('  ✓ Type declarations created');
 }
 
@@ -238,14 +184,6 @@ async function copyAssets() {
   }
   if (fs.existsSync(path.join(rootDir, 'LICENSE'))) {
     fs.copyFileSync(path.join(rootDir, 'LICENSE'), path.join(createPkgDir, 'LICENSE'));
-  }
-  if (fs.existsSync(pluginPkgDir)) {
-    if (fs.existsSync(path.join(rootDir, 'logo.svg'))) {
-      fs.copyFileSync(path.join(rootDir, 'logo.svg'), path.join(pluginPkgDir, 'logo.svg'));
-    }
-    if (fs.existsSync(path.join(rootDir, 'LICENSE'))) {
-      fs.copyFileSync(path.join(rootDir, 'LICENSE'), path.join(pluginPkgDir, 'LICENSE'));
-    }
   }
   console.log('  ✓ Assets copied');
 }

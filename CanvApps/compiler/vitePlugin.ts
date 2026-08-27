@@ -30,6 +30,17 @@ export function canvappsPlugin(options?: CanvAppsPluginOptions): Plugin {
     name: 'vite-plugin-canvapps',
     enforce: 'pre',
 
+    config() {
+      return {
+        resolve: {
+          alias: [
+            { find: /^@canvapps$/, replacement: '@canvapps/core' },
+            { find: /^canvapps$/, replacement: '@canvapps/core' },
+          ],
+        },
+      };
+    },
+
     transform(rawCode: string, id: string) {
       if (!id.endsWith('.cvs')) {
         return null;

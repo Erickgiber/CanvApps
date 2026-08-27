@@ -101,10 +101,68 @@ export class UIImage extends UIElement {
     return this;
   }
 
+  public static resolveUrl(rawSrc: string): string {
+    if (!rawSrc || typeof window === 'undefined') return rawSrc;
+    if (
+      rawSrc.startsWith('data:') ||
+      rawSrc.startsWith('blob:') ||
+      rawSrc.startsWith('http://') ||
+      rawSrc.startsWith('https://') ||
+      rawSrc.startsWith('//')
+    ) {
+      return rawSrc;
+    }
+
+    if (!rawSrc.startsWith('/')) {
+      if (typeof document !== 'undefined' && (document.baseURI || window.location.href)) {
+        try {
+          return new URL(rawSrc, document.baseURI || window.location.href).href;
+        } catch {
+          return rawSrc;
+        }
+      }
+      return rawSrc;
+    }
+
+    const baseEl = typeof document !== 'undefined' ? document.querySelector('base') : null;
+    const baseHref = baseEl ? baseEl.getAttribute('href') : null;
+    if (baseHref && baseHref !== '/' && baseHref !== './') {
+      const cleanBase = baseHref.endsWith('/') ? baseHref.slice(0, -1) : baseHref;
+      try {
+        const parsedBase = new URL(cleanBase, window.location.origin);
+        const basePath = parsedBase.pathname.endsWith('/') ? parsedBase.pathname.slice(0, -1) : parsedBase.pathname;
+        if (basePath && basePath !== '') {
+          if (rawSrc === basePath || rawSrc.startsWith(basePath + '/')) {
+            return `${parsedBase.origin}${rawSrc}`;
+          }
+          return `${parsedBase.origin}${basePath}${rawSrc}`;
+        }
+      } catch {
+        if (!rawSrc.startsWith(cleanBase)) {
+          return `${cleanBase}${rawSrc}`;
+        }
+      }
+    }
+
+    if (window.location && window.location.hostname.endsWith('github.io')) {
+      const pathParts = window.location.pathname.split('/').filter(Boolean);
+      if (pathParts.length > 0) {
+        const repoName = pathParts[0];
+        if (rawSrc === `/${repoName}` || rawSrc.startsWith(`/${repoName}/`)) {
+          return rawSrc;
+        }
+        return `/${repoName}${rawSrc}`;
+      }
+    }
+
+    return rawSrc;
+  }
+
   /**
    * Asynchronously loads or retrieves cached image element.
    */
-  private loadImage(src: string): void {
+  private loadImage(rawSrc: string): void {
+    const src = UIImage.resolveUrl(rawSrc);
     if (!src || typeof window === 'undefined') {
       this.imageElement = null;
       this.isLoaded = false;
@@ -124,7 +182,7 @@ export class UIImage extends UIElement {
     // Check if another component is already downloading this source
     if (UIImage.loadingMap.has(src)) {
       UIImage.loadingMap.get(src)!.push((img) => {
-        if (this.styles.src === src) {
+        if (this.styles.src === rawSrc || this.styles.src === src) {
           if (img) {
             this.imageElement = img;
             this.isLoaded = true;
@@ -145,7 +203,7 @@ export class UIImage extends UIElement {
 
     const onDone = () => {
       UIImage.imageCache.set(src, img);
-      if (this.styles.src === src) {
+      if (this.styles.src === rawSrc || this.styles.src === src) {
         this.imageElement = img;
         this.isLoaded = true;
         this.hasError = false;
@@ -166,7 +224,7 @@ export class UIImage extends UIElement {
     };
 
     img.onerror = () => {
-      if (this.styles.src === src) {
+      if (this.styles.src === rawSrc || this.styles.src === src) {
         this.imageElement = null;
         this.isLoaded = false;
         this.hasError = true;

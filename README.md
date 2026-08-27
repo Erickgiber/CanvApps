@@ -462,6 +462,105 @@ Import any `.cvs` component in `<script lang="ts">` and invoke it directly in te
 </view>
 ```
 
+### 7. Interactive Dropdown Selectors (`<select>`)
+Render high-performance 2D Canvas dropdown menus with reactive options, custom hover styling, and keyboard navigation:
+```html
+<script lang="ts">
+  const selectedTheme = signal('dark');
+  const themeOptions = [
+    { label: '☀️ Light Theme', value: 'light' },
+    { label: '🌙 Dark Theme', value: 'dark' },
+    { label: '⚡ Ultra Neon', value: 'neon' },
+  ];
+
+  function onThemeChange(e: any) {
+    selectedTheme.value = e?.value ?? e?.target?.value ?? 'dark';
+  }
+</script>
+
+<view width="100%" flexDirection="row" alignItems="center" gap="12">
+  <text fontSize="14" fontWeight="bold">Theme:</text>
+  <select 
+    width="180" 
+    :options="themeOptions" 
+    :value="selectedTheme.value" 
+    placeholder="Choose theme..."
+    @change="onThemeChange" 
+  />
+</view>
+```
+
+### 8. Event Handling System (`@event`) & How Events Work
+CanvApps uses declarative `@event` directives in `.cvs` templates. Event handlers are compiled directly into native listeners on the 2D Canvas Scene Graph (`element.on(eventType, handler)`) with **zero Virtual DOM diffing overhead** and sub-millisecond dispatching.
+
+#### Event Declaration Syntax
+* **Function Reference:** `@click="handleSave"` — automatically receives the `CanvasPointerEvent` object.
+* **Inline Arrow Function:** `@click="() => count.update(n => n + 1)"` — direct reactive signal mutations.
+* **Explicit `$event` Argument:** `@click="onClick($event)"` — access event telemetry.
+* **Form & Input Directives:** `@input="onInput"`, `@change="onChange"`, `@submit="onSubmit"` (dispatched on Enter).
+
+```html
+<view width="100%" flexDirection="column" gap="10">
+  <button label="Save Changes" @click="handleSave" />
+  <button label="+1 Increment" @click="() => count.update(n => n + 1)" />
+
+  <input placeholder="Type something..." @input="onTextChange" @submit="onEnterSubmit" />
+  <select :options="options" @change="onOptionSelect" />
+
+  <view 
+    padding="12" 
+    backgroundColor="#1e293b" 
+    @pointerenter="() => isHovered.value = true" 
+    @pointerleave="() => isHovered.value = false"
+  >
+    <text color="#ffffff">Hover over this Canvas node</text>
+  </view>
+</view>
+```
+
+#### The `CanvasPointerEvent` Payload
+Every pointer event handler receives a unified `CanvasPointerEvent` instance with high-precision metrics:
+* `e.x`, `e.y`: Sub-pixel logical Canvas coordinates (independent of device DPR/Retina scaling).
+* `e.clientX`, `e.clientY`: Absolute browser viewport coordinates.
+* `e.target` / `e.currentTarget`: Target `UIElement` in the Canvas scene graph.
+* `e.button`: Active mouse button (`0`: Primary/Left, `1`: Middle, `2`: Secondary/Right).
+* `e.ctrlKey`, `e.shiftKey`, `e.altKey`, `e.metaKey`: Modifier key states (`Cmd` on macOS).
+* `e.stopPropagation()`: Stops event bubbling up the Canvas node hierarchy.
+* `e.preventDefault()`: Prevents native browser default behaviors.
+* `e.value`: Direct string or numeric value emitted by `<select>`, `<slider>`, or `<input>`.
+
+#### Supported Event Types
+* **Pointer & Mouse / Touch:** `@click`, `@dblclick`, `@pointerdown`, `@pointerup`, `@pointermove`, `@pointerenter`, `@pointerleave`, `@hover`, `@pointercancel`.
+* **Forms & Data:** `@input`, `@change`, `@submit`.
+* **Keyboard & Gestures:** `@keydown`, `@keyup`, `@keypress`, `@scroll`, `@wheel`.
+* **Component Lifecycle & Animation:** `@finish` (in `<motion>`), `@close` (in `<modal>`).
+
+### 9. Important Attributes & Universal Node Properties
+All CanvApps primitives (`<view>`, `<text>`, `<button>`, `<input>`, `<select>`, `<image>`, `<slider>`, `<modal>`, `<motion>`) support universal layout and styling properties:
+
+| Category | Attributes | Type | Description |
+| :--- | :--- | :--- | :--- |
+| **Layout & Flexbox** | `width`, `height`, `minWidth`, `maxWidth`, `minHeight`, `maxHeight` | `number \| string` | Explicit pixel value or relative percentage (`"100%"`, `"50%"`). |
+| | `flexDirection` | `"row" \| "column" \| "row-reverse" \| "column-reverse"` | Main layout flow axis in the Flexbox tree. |
+| | `justifyContent` | `"flex-start" \| "center" \| "space-between" \| "space-around" \| "flex-end"` | Main-axis child alignment. |
+| | `alignItems` | `"flex-start" \| "center" \| "flex-end" \| "stretch"` | Cross-axis child alignment. |
+| | `gap` | `number` | Uniform spacing between adjacent child nodes in the flex layout. |
+| | `padding`, `margin` | `number \| number[]` | Inset spacing as single number, `[V, H]`, or `[T, R, B, L]`. |
+| | `flexGrow`, `flexShrink`, `flexWrap` | `number \| string` | Flex expansion, compression, and multi-line wrapping (`"wrap"`). |
+| **Visual Styling** | `backgroundColor`, `color` | `string` | Fill and text color in Hex (`#0284c7`), RGB/RGBA, HSL, or Canvas gradients. |
+| | `borderRadius` | `number \| number[]` | Corner radius as single radius or `[TL, TR, BR, BL]` array. |
+| | `borderWidth`, `borderColor` | `number`, `string` | Perimeter border stroke thickness and color. |
+| | `boxShadow` | `{ offsetX, offsetY, blur, color }` | Hardware-accelerated Canvas box shadow. |
+| | `opacity` | `number` | Global element opacity level (`0.0` to `1.0`). |
+| | `cursor` | `string` | Canvas cursor style (`"pointer"`, `"default"`, `"text"`, `"grab"`). |
+| | `disabled` | `boolean` | Inactivates node events and dims visual appearance. |
+| **Typography** | `fontSize`, `fontWeight`, `fontFamily`, `lineHeight`, `textAlign` | `number \| string` | Sub-pixel typography and multiline text alignment. |
+| **Special Directives** | `:prop="expression"` | `any` | Direct atomic Signal binding (updates in microseconds without VDOM). |
+| | `selectable="true"` | `boolean` | Mounts transparent Ghost DOM node for real text selection & system `Cmd+C`. |
+| | `:blur="true"` | `boolean` | Applies GPU Gaussian blur shader behind modals (Glassmorphism). |
+| | `:layoutId="string"` | `string` | Shared element identity for seamless Smart Animate transitions. |
+| | `safeArea="top" \| "all"` | `string` | Automatic device notch, Dynamic Island, and status bar inset spacing. |
+
 ---
 
 ## 🎞️ Hardware Motion & Animation Engine
@@ -887,6 +986,7 @@ codium --install-extension canvapps-vscode-0.1.0.vsix
 | `UIText` | Multiline typography renderer with word wrap, alignment, and optional Ghost DOM text selection (`selectable="true"`). |
 | `UIButton` | Interactive button supporting hover, active, disabled, and icon circular modes. |
 | `UIInput` | Native-feeling text input with mouse drag selection, cursor blinking, IME, and Ghost DOM mobile keyboard sync. |
+| `UISelect` | High-performance Canvas 2D dropdown selector with reactive options, keyboard navigation, and custom menus. |
 | `UIMotion` | Declarative 60/120 FPS scene entrance, slide, elastic, and cinematic splash transitions. |
 | `UIModal` | High-performance modal overlay with Hero Shared-Element Morph expansion and frosted glass blur. |
 | `KineticFX` | Curved parabolic flight tokens, stardust trails, and radial shockwave particle bursts. |

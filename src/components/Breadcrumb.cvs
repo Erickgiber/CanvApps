@@ -85,7 +85,7 @@
     flexShrink="0"
   >
     <image
-      src="/logo.svg"
+      src="./logo.svg"
       width="28"
       height="28"
       layoutId="brand-logo"

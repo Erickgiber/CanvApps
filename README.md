@@ -8,7 +8,7 @@
 
 <p align="center">
   <strong>The First Compiled UI Framework That Renders at 120 FPS by Eliminating the DOM.</strong><br>
-  <em>Svelte-like compiled syntax • Native 120 FPS hardware rasterization • Zero DOM layout thrashing • Ghost DOM accessibility</em>
+  <em>Native 120 FPS hardware rasterization • Zero DOM layout thrashing • Ghost DOM accessibility</em>
 </p>
 
 <p align="center">
@@ -28,7 +28,7 @@
 
 > **CanvApps is not a canvas drawing library — it's a full compiled UI framework.**
 
-It compiles declarative `.cvs` Single-File Components (Svelte-like syntax) into an HTML5 2D GPU-accelerated Canvas render tree at 120 FPS, backed by **Ghost DOM** for native text editing, mobile keyboards, and accessibility.
+It compiles declarative `.cvs` Single-File Components into an HTML5 2D GPU-accelerated Canvas render tree at 120 FPS, backed by **Ghost DOM** for native text editing, mobile keyboards, and accessibility.
 
 ```text
 ┌───────────────────────────────────────┬───────────────────────────────────────┐
@@ -48,7 +48,7 @@ It compiles declarative `.cvs` Single-File Components (Svelte-like syntax) into 
 - 🚫 **Zero DOM** — Pure TypeScript Flexbox solver, no reflows
 - 👻 **Ghost DOM** — Native keyboards, text selection, clipboard, screen readers
 - ⚡ **Signals** — `signal`, `computed`, `effect`, `batch` — no Virtual DOM diffing
-- 🎨 **`.cvs` SFC** — Svelte-like components compiled at build time
+- 🎨 **`.cvs` SFC** - components compiled at build time
 - 🎞️ **Motion & KineticFX** — Declarative animations, hero morphs, particle bursts
 - 📦 **Multi-Target** — SPA, PWA, or native mobile (Capacitor) from one config
 
@@ -114,7 +114,7 @@ npm install @canvapps/core
 
 ## 🎨 `.cvs` Single-File Components
 
-Compiled at build time with zero runtime overhead. Svelte-like syntax:
+Compiled at build time with zero runtime overhead. syntax:
 
 ```html
 <script lang="ts">

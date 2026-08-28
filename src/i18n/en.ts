@@ -181,15 +181,15 @@ export const en: TranslationSchema = {
     },
   },
   showcase: {
-    title: 'High-End Showcase Applications',
+    title: 'Showcase',
     subtitle: 'Explore full-scale applications built 100% on the Canvas 2D engine featuring 120 FPS animations and Ghost DOM accessibility.',
     galleryTitle: 'Interactive Visual Gallery',
     galleryTag: 'Masonry Layout • Lightbox Hero',
     galleryDesc: 'High-resolution photo explorer with fluid columns, category filtering, instant search, and cinematic modal dialogs.',
     galleryAction: 'Explore Gallery →',
-    musicTitle: 'Pro Music Studio',
+    musicTitle: 'Music Player',
     musicTag: 'Web Audio DSP • 60 FPS Visualizer',
-    musicDesc: 'Music player featuring a spinning vinyl deck, live synchronized lyrics, real-time DSP equalizers, and spectrum visualizer.',
+    musicDesc: 'Music Player featuring a spinning vinyl deck, live synchronized lyrics, real-time DSP equalizers, and spectrum visualizer.',
     musicAction: 'Launch Player →',
   },
   gallery: {
@@ -227,7 +227,7 @@ export const en: TranslationSchema = {
     notFoundBackBtn: 'Back to Gallery',
   },
   music: {
-    title: 'Pro Music Studio',
+    title: 'Music Player',
     brandTitle: 'CanvApps Music Studio',
     statusPlaying: '● Playing',
     statusPaused: 'Paused',

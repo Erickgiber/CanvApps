@@ -85,7 +85,7 @@ export class CLIBuilder {
 <html>
   <head>
     <meta charset="utf-8">
-    <title>CanvApps - Redirecting...</title>
+    <title>${config.title || 'CanvApps - Canvas UI Framework'}</title>
     <script>
       // Single Page Apps for GitHub Pages - Clean Path Routing (Safe Relative Redirect)
       var l = window.location;

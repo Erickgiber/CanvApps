@@ -154,6 +154,7 @@ if (typeof window !== 'undefined') {
       if (sessionStore.state.activeRoute !== current) {
         sessionStore.update((prev) => ({ ...prev, activeRoute: current }));
       }
+      updateDocumentTitle(current);
       Engine.invalidateActive();
       requestAnimationFrame(() => {
         SmartAnimate.prepare(Engine.getActiveRoot(), 350);
@@ -168,6 +169,32 @@ if (typeof window !== 'undefined') {
       navigateRoute(e.detail.href, true, Boolean(e.detail.replace));
     }
   });
+
+  // Initial title synchronization on load
+  updateDocumentTitle(currentRoute.value);
+}
+
+/**
+ * Updates document.title reactively based on active route
+ */
+export function updateDocumentTitle(route?: string): void {
+  if (typeof document === 'undefined') return;
+  const path = normalizeRoutePath(route || currentRoute.value);
+  if (path === '/') {
+    document.title = 'CanvApps - Canvas UI Framework';
+  } else if (path === '/docs') {
+    document.title = 'CanvApps - Documentation';
+  } else if (path === '/showcases') {
+    document.title = 'CanvApps - Showcases';
+  } else if (path === '/gallery' || path === '/showcases/gallery') {
+    document.title = 'CanvApps - Visual Gallery';
+  } else if (path.startsWith('/gallery/') || path.startsWith('/showcases/gallery/')) {
+    document.title = 'CanvApps - Artwork Details';
+  } else if (path.startsWith('/music') || path.startsWith('/showcases/music')) {
+    document.title = 'CanvApps - Music Player';
+  } else {
+    document.title = 'CanvApps - Canvas UI Framework';
+  }
 }
 
 
@@ -194,6 +221,7 @@ export function navigateRoute(route: string, playSound = true, replace = false):
     ...prev,
     activeRoute: target,
   }));
+  updateDocumentTitle(target);
 
   Engine.invalidateActive();
 

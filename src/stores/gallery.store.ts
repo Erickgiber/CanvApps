@@ -191,32 +191,38 @@ export const initialGalleryData: GalleryItem[] = [
 
 export const galleryData = signal<GalleryItem[]>(initialGalleryData);
 
-export function toggleSaveGalleryItem(itemOrId: GalleryItem | string, e?: any): void {
+export function toggleSaveGalleryItem(itemOrId: GalleryItem | string, e?: any): boolean {
   if (e && typeof e.stopPropagation === 'function') {
     e.stopPropagation();
   }
   const id = typeof itemOrId === 'string' ? itemOrId : itemOrId.id;
+  let nextSaved = false;
   galleryData.update((items) =>
     items.map((item) => {
       if (item.id !== id) return item;
-      return { ...item, isSaved: !item.isSaved };
+      nextSaved = !item.isSaved;
+      return { ...item, isSaved: nextSaved };
     })
   );
+  return nextSaved;
 }
 
-export function toggleLikeGalleryItem(itemOrId: GalleryItem | string, e?: any): void {
+export function toggleLikeGalleryItem(itemOrId: GalleryItem | string, e?: any): { isLiked: boolean; likes: number } {
   if (e && typeof e.stopPropagation === 'function') {
     e.stopPropagation();
   }
   const id = typeof itemOrId === 'string' ? itemOrId : itemOrId.id;
+  let nextLiked = false;
+  let nextLikes = 0;
   galleryData.update((items) =>
     items.map((item) => {
       if (item.id !== id) return item;
-      const isLiked = !item.isLiked;
-      const likes = isLiked ? item.likes + 1 : Math.max(0, item.likes - 1);
-      return { ...item, isLiked, likes };
+      nextLiked = !item.isLiked;
+      nextLikes = nextLiked ? item.likes + 1 : Math.max(0, item.likes - 1);
+      return { ...item, isLiked: nextLiked, likes: nextLikes };
     })
   );
+  return { isLiked: nextLiked, likes: nextLikes };
 }
 
 export const categories = ['All', 'Architecture', 'Cyberpunk', 'Art & Design', 'Nature', 'Fashion', 'Anime', 'Sci-Fi'];

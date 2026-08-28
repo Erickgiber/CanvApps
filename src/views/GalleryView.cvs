@@ -28,7 +28,8 @@
   // 3. Reactive Filtered Data
   const filteredItems = computed(() => {
       const cat = activeCategory.value;
-      const q = searchQuery.value.trim().toLowerCase();
+      const raw = searchQuery.value;
+      const q = (typeof raw === 'string' ? raw : String(raw?.value ?? raw?.target?.value ?? '')).trim().toLowerCase();
 
       return galleryData.value.filter((item) => {
           const matchCat = cat === 'All' || item.category === cat;
@@ -75,23 +76,24 @@
     activeCategory.value = cat;
   }
 
-  function onSearchChange(val: string) {
-    searchQuery.value = val;
+  function onSearchChange(e: any) {
+    const val = typeof e === 'string' ? e : (e?.value ?? e?.target?.value ?? '');
+    searchQuery.value = String(val);
   }
 
   function toggleSaveItem(item: GalleryItem, e?: any) {
     soundManager.playChime();
-    toggleSaveGalleryItem(item, e);
+    const nextSaved = toggleSaveGalleryItem(item, e);
     if (selectedItem.value && selectedItem.value.id === item.id) {
-      selectedItem.value = { ...selectedItem.value, isSaved: item.isSaved };
+      selectedItem.value = { ...selectedItem.value, isSaved: nextSaved };
     }
   }
 
   function toggleLikeItem(item: GalleryItem, e?: any) {
     soundManager.playPop(580);
-    toggleLikeGalleryItem(item, e);
+    const { isLiked, likes } = toggleLikeGalleryItem(item, e);
     if (selectedItem.value && selectedItem.value.id === item.id) {
-      selectedItem.value = { ...selectedItem.value, likes: item.likes, isLiked: item.isLiked };
+      selectedItem.value = { ...selectedItem.value, likes, isLiked };
     }
   }
 

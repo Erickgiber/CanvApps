@@ -48,7 +48,7 @@ assert.strictEqual(t.value.header.navHome, 'Inicio');
 assert.strictEqual(t.value.showcase.galleryAction, 'Explorar Galería →');
 assert.strictEqual(t.value.showcase.musicAction, 'Abrir Reproductor →');
 assert.strictEqual(t.value.gallery.allCategory, 'Todos');
-assert.strictEqual(t.value.music.title, 'Estudio de Música Pro');
+assert.strictEqual(t.value.music.title, 'Reproductor');
 
 setLocale('en');
 assert.strictEqual(currentLocale.value, 'en');

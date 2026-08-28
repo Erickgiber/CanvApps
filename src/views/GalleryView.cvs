@@ -321,7 +321,7 @@
                 top="8"
               >
                 <button
-                  :label={item.isSaved ? 'Saved ✓' : 'Save'}
+                  :label="item.isSaved ? t.value.gallery.savedBtn : t.value.gallery.saveBtn"
                   :backgroundColor={item.isSaved ? (isDark.value ? '#1e293b' : '#e2e8f0') : '#0284c7'}
                   :color={item.isSaved ? (isDark.value ? '#ffffff' : '#334155') : '#ffffff'}
                   borderRadius="14"
@@ -432,7 +432,7 @@
                 top="8"
               >
                 <button
-                  :label={item.isSaved ? 'Saved ✓' : 'Save'}
+                  :label="item.isSaved ? t.value.gallery.savedBtn : t.value.gallery.saveBtn"
                   :backgroundColor={item.isSaved ? (isDark.value ? '#1e293b' : '#e2e8f0') : '#0284c7'}
                   :color={item.isSaved ? (isDark.value ? '#ffffff' : '#334155') : '#ffffff'}
                   borderRadius="14"
@@ -544,7 +544,7 @@
                   top="8"
                 >
                   <button
-                    :label={item.isSaved ? 'Saved ✓' : 'Save'}
+                    :label="item.isSaved ? t.value.gallery.savedBtn : t.value.gallery.saveBtn"
                     :backgroundColor={item.isSaved ? (isDark.value ? '#1e293b' : '#e2e8f0') : '#0284c7'}
                     :color={item.isSaved ? (isDark.value ? '#ffffff' : '#334155') : '#ffffff'}
                     borderRadius="14"
@@ -657,7 +657,7 @@
                   top="8"
                 >
                   <button
-                    :label={item.isSaved ? 'Saved ✓' : 'Save'}
+                    :label="item.isSaved ? t.value.gallery.savedBtn : t.value.gallery.saveBtn"
                     :backgroundColor={item.isSaved ? (isDark.value ? '#1e293b' : '#e2e8f0') : '#0284c7'}
                     :color={item.isSaved ? (isDark.value ? '#ffffff' : '#334155') : '#ffffff'}
                     borderRadius="14"
@@ -770,7 +770,7 @@
                   top="8"
                 >
                   <button
-                    :label={item.isSaved ? 'Saved ✓' : 'Save'}
+                    :label="item.isSaved ? t.value.gallery.savedBtn : t.value.gallery.saveBtn"
                     :backgroundColor={item.isSaved ? (isDark.value ? '#1e293b' : '#e2e8f0') : '#0284c7'}
                     :color={item.isSaved ? (isDark.value ? '#ffffff' : '#334155') : '#ffffff'}
                     borderRadius="14"
@@ -900,7 +900,7 @@
               flexShrink="0"
             >
               <button
-                :label="t.value.gallery.closeButton"
+                :label="t.value.gallery.modalClose"
                 :backgroundColor={isDark.value ? '#162032' : '#f1f5f9'}
                 :color={isDark.value ? '#94a3b8' : '#475569'}
                 borderRadius="16"
@@ -909,7 +909,7 @@
                 @click="closeModal"
               />
               <button
-                :label="selectedItem.value?.isSaved ? t.value.gallery.savedButton : t.value.gallery.saveButton"
+                :label="selectedItem.value?.isSaved ? t.value.gallery.savedBtn : t.value.gallery.saveBtn"
                 :backgroundColor={selectedItem.value?.isSaved ? (isDark.value ? '#1e293b' : '#e2e8f0') : '#0284c7'}
                 :color={selectedItem.value?.isSaved ? (isDark.value ? '#ffffff' : '#334155') : '#ffffff'}
                 borderRadius="18"
@@ -996,7 +996,7 @@
                 </view>
               </view>
               <button
-                label="Follow"
+                :label="t.value.gallery.followBtn"
                 :backgroundColor={isDark.value ? '#1e293b' : '#e2e8f0'}
                 :color={isDark.value ? '#f1f5f9' : '#1e293b'}
                 borderRadius="14"
@@ -1015,7 +1015,7 @@
               flexShrink="0"
             >
               <button
-                :label={selectedItem.value?.isLiked ? '♥ Liked (' + (selectedItem.value?.likes || 0) + ')' : '♡ Like (' + (selectedItem.value?.likes || 0) + ')'}
+                :label="selectedItem.value?.isLiked ? (t.value.gallery.likedBtn + ' (' + (selectedItem.value?.likes || 0) + ')') : (t.value.gallery.likeBtn + ' (' + (selectedItem.value?.likes || 0) + ')') "
                 :color={selectedItem.value?.isLiked ? '#ff4d6d' : (isDark.value ? '#ffffff' : '#1e293b')}
                 :backgroundColor={isDark.value ? '#162032' : '#f1f5f9'}
                 borderRadius="14"

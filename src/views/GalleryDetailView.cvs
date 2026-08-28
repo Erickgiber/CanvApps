@@ -91,7 +91,7 @@
       >
         <a
           href="/gallery"
-          :label="t.value.gallery.backButton"
+          :label="t.value.galleryDetail.backBtn"
           :color={isDark.value ? '#38bdf8' : '#0284c7'}
           fontSize="12"
           fontWeight="bold"
@@ -154,7 +154,7 @@
             top="12"
           >
             <button
-              :label="currentItem.value?.isSaved ? t.value.gallery.savedButton : t.value.gallery.saveButton"
+              :label="currentItem.value?.isSaved ? t.value.galleryDetail.savedBtn : t.value.galleryDetail.saveBtn"
               :backgroundColor={currentItem.value?.isSaved ? (isDark.value ? '#1e293b' : '#e2e8f0') : '#0284c7'}
               :color={currentItem.value?.isSaved ? (isDark.value ? '#ffffff' : '#334155') : '#ffffff'}
               borderRadius="16"
@@ -278,7 +278,7 @@
               </view>
             </view>
             <button
-              label="Follow"
+              :label="t.value.galleryDetail.followBtn"
               :backgroundColor={isDark.value ? '#1e293b' : '#e2e8f0'}
               :color={isDark.value ? '#f1f5f9' : '#1e293b'}
               borderRadius="14"
@@ -298,7 +298,7 @@
             padding="[4, 0]"
           >
             <button
-              :label="currentItem.value?.isLiked ? '♥ Liked (' + (currentItem.value?.likes || 0) + ')' : '♡ Like (' + (currentItem.value?.likes || 0) + ')'"
+              :label="currentItem.value?.isLiked ? (t.value.galleryDetail.likedBtn + ' (' + (currentItem.value?.likes || 0) + ')') : (t.value.galleryDetail.likeBtn + ' (' + (currentItem.value?.likes || 0) + ')')"
               :color={currentItem.value?.isLiked ? '#ff4d6d' : (isDark.value ? '#ffffff' : '#1e293b')}
               :backgroundColor={isDark.value ? '#162032' : '#f1f5f9'}
               borderRadius="14"
@@ -308,14 +308,14 @@
               @click="handleLike"
             />
             <text fontSize="11" :color={isDark.value ? '#64748b' : '#94a3b8'}>
-              CanvApps Hardware Canvas 2D
+              {{ t.value.galleryDetail.hardwareTag }}
             </text>
           </view>
 
         </view>
 
       </view>
-      else {
+    } else {
       <!-- 3. Fallback: Item Not Found State -->
       <view
         width="100%"
@@ -341,18 +341,18 @@
             fontWeight="bold"
             :color={isDark.value ? '#ffffff' : '#0f172a'}
           >
-            {{ t.value.gallery.notFoundTitle }}
+            {{ t.value.galleryDetail.notFoundTitle }}
           </text>
           <text
             fontSize="12"
             :color={isDark.value ? '#94a3b8' : '#64748b'}
             textAlign="center"
           >
-            {{ t.value.gallery.notFoundDesc }}
+            {{ t.value.galleryDetail.notFoundDesc }}
           </text>
         </view>
         <button
-          :label="t.value.gallery.backButton"
+          :label="t.value.galleryDetail.notFoundBackBtn"
           backgroundColor="#0284c7"
           hoverBackgroundColor="#0369a1"
           color="#ffffff"

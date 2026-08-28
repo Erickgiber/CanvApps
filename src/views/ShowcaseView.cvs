@@ -25,7 +25,7 @@
     width="100%"
     maxWidth="1120"
     flexDirection="column"
-    :padding={isMobile.value ? [4, 4] : [10, 4]}
+    :padding={isMobile.value ? [4, 4, 15, 4] : [10, 4]}
     :gap={isMobile.value ? 16 : 24}
     alignItems="center"
     flexShrink="0"

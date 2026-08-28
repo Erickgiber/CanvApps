@@ -240,6 +240,44 @@
         />
       </view>
 
+      <!-- Direct Navigation Action Links (Docs & Showcases Hub) -->
+      <view
+        flexDirection="row"
+        alignItems="center"
+        justifyContent="center"
+        :gap={isMobile.value ? 10 : 14}
+        flexWrap="wrap"
+        width="100%"
+        flexShrink="0"
+      >
+        <a
+          href="/docs"
+          :label="'📖 ' + t.value.breadcrumb.docs"
+          backgroundColor="#0284c7"
+          hoverBackgroundColor="#0369a1"
+          color="#ffffff"
+          borderRadius="12"
+          :padding={isMobile.value ? [10, 16] : [10, 20]}
+          :fontSize={isMobile.value ? 12 : 13}
+          fontWeight="bold"
+          underline="never"
+        />
+        <a
+          href="/showcases"
+          :label="'🚀 ' + t.value.breadcrumb.showcases"
+          :backgroundColor={isDark.value ? '#162032' : '#ffffff'}
+          :hoverBackgroundColor={isDark.value ? '#1e293b' : '#f1f5f9'}
+          :color={isDark.value ? '#38bdf8' : '#0284c7'}
+          borderWidth="1"
+          :borderColor={isDark.value ? '#1e293b' : '#cbd5e1'}
+          borderRadius="12"
+          :padding={isMobile.value ? [10, 16] : [10, 20]}
+          :fontSize={isMobile.value ? 12 : 13}
+          fontWeight="bold"
+          underline="never"
+        />
+      </view>
+
     </view>
 
     <!-- ========================================================================= -->
@@ -255,20 +293,22 @@
       <!-- Mini Game HUD Bar (Transparent, Clean Spacing) -->
       <view
         width="100%"
-        flexDirection={isMobile.value ? 'column' : 'row'}
-        alignItems={isMobile.value ? 'flex-start' : 'center'}
+        :flexDirection={isMobile.value ? 'column' : 'row'}
+        :alignItems={isMobile.value ? 'stretch' : 'center'}
         justifyContent="space-between"
-        :gap={isMobile.value ? 10 : 16}
+        :gap={isMobile.value ? 8 : 16}
         flexShrink="0"
       >
         <!-- Game Title & Status Badge -->
         <view
           flexDirection="row"
           alignItems="center"
-          gap="10"
+          justifyContent="space-between"
+          gap="8"
+          flexShrink="0"
         >
           <text
-            :fontSize={isMobile.value ? 16 : 18}
+            :fontSize={isMobile.value ? 15 : 18}
             fontWeight="bold"
             :color={isDark.value ? '#f1f5f9' : '#0f172a'}
           >
@@ -280,6 +320,7 @@
               padding="[3, 8]"
               backgroundColor="rgba(34, 197, 94, 0.15)"
               borderRadius="8"
+              flexShrink="0"
             >
               <text
                 fontSize="11"
@@ -295,6 +336,7 @@
               padding="[3, 8]"
               backgroundColor="rgba(249, 115, 22, 0.15)"
               borderRadius="8"
+              flexShrink="0"
             >
               <text
                 fontSize="11"
@@ -310,6 +352,7 @@
               padding="[3, 8]"
               backgroundColor="rgba(239, 68, 68, 0.15)"
               borderRadius="8"
+              flexShrink="0"
             >
               <text
                 fontSize="11"
@@ -326,22 +369,25 @@
         <view
           flexDirection="row"
           alignItems="center"
-          :gap={isMobile.value ? 8 : 12}
-          flexWrap="wrap"
+          :justifyContent={isMobile.value ? 'space-between' : 'flex-start'}
+          :gap={isMobile.value ? 6 : 12}
+          :width={isMobile.value ? '100%' : 'auto'}
+          flexShrink="0"
         >
           <!-- Time Countdown Badge -->
           <view
             flexDirection="row"
             alignItems="center"
-            gap="6"
-            padding="[6, 12]"
+            gap="4"
+            :padding={isMobile.value ? [5, 8] : [6, 12]}
             :backgroundColor={isDark.value ? '#162032' : '#f1f5f9'}
             borderRadius="10"
             borderWidth="1"
             :borderColor={timeLeft.value <= 5 && gameState.value === 'playing' ? '#ef4444' : (isDark.value ? '#1e293b' : '#e2e8f0')}
+            flexShrink="0"
           >
             <text
-              fontSize="12"
+              :fontSize={isMobile.value ? 11 : 12}
               fontWeight="bold"
               :color={timeLeft.value <= 5 && gameState.value === 'playing' ? '#ef4444' : (isDark.value ? '#cbd5e1' : '#475569')}
             >
@@ -353,19 +399,20 @@
           <view
             flexDirection="row"
             alignItems="center"
-            gap="6"
-            padding="[6, 12]"
+            gap="4"
+            :padding={isMobile.value ? [5, 8] : [6, 12]}
             :backgroundColor={isDark.value ? '#162032' : '#f1f5f9'}
             borderRadius="10"
             borderWidth="1"
             :borderColor={isDark.value ? '#1e293b' : '#e2e8f0'}
+            flexShrink="0"
           >
             <text
-              fontSize="12"
+              :fontSize={isMobile.value ? 11 : 12}
               fontWeight="bold"
               color="#f97316"
             >
-              {{ t.value.home.gameScore }}: {{ basketballScore.value }} pts
+              {{ t.value.home.gameScore }}: {{ basketballScore.value }}
             </text>
           </view>
 
@@ -373,39 +420,40 @@
           <view
             flexDirection="row"
             alignItems="center"
-            gap="6"
-            padding="[6, 12]"
+            gap="4"
+            :padding={isMobile.value ? [5, 8] : [6, 12]}
             :backgroundColor={isDark.value ? '#162032' : '#f1f5f9'}
             borderRadius="10"
             borderWidth="1"
             :borderColor={isDark.value ? '#1e293b' : '#e2e8f0'}
+            flexShrink="0"
           >
             <text
-              fontSize="12"
+              :fontSize={isMobile.value ? 11 : 12}
               fontWeight="bold"
               :color={isDark.value ? '#fbbf24' : '#d97706'}
             >
-              {{ t.value.home.gameHighScore }}: {{ highScore.value }} pts
+              {{ t.value.home.gameHighScore }}: {{ highScore.value }}
             </text>
           </view>
         </view>
       </view>
 
-      <!-- Mini Game Interactive Playing Field (No Container, No Border, Transparent) -->
+      <!-- Mini Game Interactive Playing Field (Launch button and Hoop aligned horizontally) -->
       <view
         width="100%"
-        flexDirection={isMobile.value ? 'column' : 'row'}
+        flexDirection="row"
         alignItems="center"
         justifyContent="space-between"
-        :gap={isMobile.value ? 14 : 20}
+        :gap={isMobile.value ? 10 : 20}
         flexShrink="0"
       >
-        <!-- Launch Button, Speed UISelect Dropdown & Reset Button -->
+        <!-- Launch Button & Reset Button -->
         <view
           flexDirection="row"
           alignItems="center"
-          gap="10"
-          flexWrap="wrap"
+          :gap={isMobile.value ? 6 : 10}
+          flexShrink="0"
         >
           <button
             :label="gameState.value === 'playing' ? t.value.home.gameLaunchBtn : (gameState.value === 'victory' || gameState.value === 'gameover' ? t.value.home.gameRestartBtn : t.value.home.gameLaunchBtn)"
@@ -413,8 +461,8 @@
             hoverBackgroundColor="#c2410c"
             labelColor="#ffffff"
             borderRadius="12"
-            :padding={isMobile.value ? [12, 18] : [14, 24]}
-            fontSize="14"
+            :padding={isMobile.value ? [10, 16] : [14, 24]}
+            :fontSize={isMobile.value ? 13 : 14}
             fontWeight="bold"
             disableActive="true"
             @click="launchBasketball"
@@ -427,8 +475,8 @@
               :hoverBackgroundColor={isDark.value ? '#1e293b' : '#e2e8f0'}
               :labelColor={isDark.value ? '#cbd5e1' : '#475569'}
               borderRadius="12"
-              :padding={isMobile.value ? [12, 14] : [14, 18]}
-              fontSize="13"
+              :padding={isMobile.value ? [10, 12] : [14, 18]}
+              :fontSize={isMobile.value ? 12 : 13}
               fontWeight="bold"
               disableActive="true"
               @click="resetGame"
@@ -439,15 +487,16 @@
         <!-- Basketball Hoop Target Node -->
         <view
           id="basketball-hoop"
-          width="64"
-          height="48"
+          :width={isMobile.value ? 54 : 64}
+          :height={isMobile.value ? 42 : 48}
           borderRadius="12"
           alignItems="center"
           justifyContent="center"
           borderWidth="2"
           borderColor="#fed7aa"
+          flexShrink="0"
         >
-          <text fontSize="24">🗑️</text>
+          <text :fontSize={isMobile.value ? 20 : 24}>🗑️</text>
         </view>
       </view>
     </view>

@@ -37,9 +37,9 @@
     });
 
   const activeAppTitle = computed(() => {
-      if (isDocs.value) return '📖 ' + t.value.breadcrumb.docs;
+      if (isDocs.value) return isMobile.value ? '📖 Doc' : ('📖 ' + t.value.breadcrumb.docs);
       if (isShowcasesHub.value) return '🚀 ' + t.value.breadcrumb.showcases;
-      if (isGallery.value) return '🎨 ' + t.value.breadcrumb.gallery;
+      if (isGallery.value) return (!isMobile.value ? '🎨 ' : '') + t.value.breadcrumb.gallery;
       if (isGalleryDetail.value) return '🖼️ ' + t.value.breadcrumb.galleryDetail;
       if (isMusic.value) return '🎵 ' + t.value.breadcrumb.music;
       return t.value.breadcrumb.notFound;
@@ -74,29 +74,29 @@
   flexDirection="row"
   alignItems="center"
   justifyContent="space-between"
-  padding="[6, 0]"
+  :padding={isMobile.value ? [4, 2] : [6, 0]}
   flexShrink="0"
 >
   <!-- Left Section: Reactive Path Segments with Smart Animate Logo -->
   <view
     flexDirection="row"
     alignItems="center"
-    :gap={isMobile.value ? 6 : 10}
+    :gap={isMobile.value ? 4 : 8}
     flexShrink="0"
   >
     <image
       src="./logo.svg"
-      width="28"
-      height="28"
+      :width={isMobile.value ? 24 : 28}
+      :height={isMobile.value ? 24 : 28}
       layoutId="brand-logo"
     />
 
     <!-- Home Root Link -->
     <a
       href="/"
-      :label="currentRoute.value === '/' ? 'CanvApps' : t.value.breadcrumb.home"
+      :label="currentRoute.value === '/' ? 'CanvApps' : (isMobile.value ? 'CanvApps' : t.value.breadcrumb.home)"
       :color={isDark.value ? '#38bdf8' : '#0284c7'}
-      :fontSize={isMobile.value ? 17 : 20}
+      :fontSize={currentRoute.value === '/' ? (isMobile.value ? 16 : 20) : (isMobile.value ? 13 : 15)}
       fontWeight="bold"
       underline="never"
       keepColor="true"
@@ -104,26 +104,26 @@
 
     <text
       @if="currentRoute.value !== '/'"
-      :fontSize={isMobile.value ? 12 : 13}
+      :fontSize={isMobile.value ? 11 : 13}
       :color={isDark.value ? '#64748b' : '#cbd5e1'}
     >
       /
     </text>
 
-    <!-- Showcases Parent Link (when inside a sub-app) -->
-    @if (isShowcaseSubApp.value) {
+    <!-- Showcases Parent Link (when inside a sub-app on desktop) -->
+    @if (isShowcaseSubApp.value && !isMobile.value) {
       <a
         href="/showcases"
         :label="'🚀 ' + t.value.breadcrumb.showcases"
         :color={isDark.value ? '#38bdf8' : '#0284c7'}
-        :fontSize={isMobile.value ? 12 : 13}
+        :fontSize={13}
         fontWeight="bold"
         underline="never"
         keepColor="true"
         layoutId="nav-showcases"
       />
       <text
-        :fontSize={isMobile.value ? 12 : 13}
+        :fontSize={13}
         :color={isDark.value ? '#64748b' : '#cbd5e1'}
       >
         /
@@ -146,21 +146,23 @@
   <view
     flexDirection="row"
     alignItems="center"
-    :gap={isMobile.value ? 6 : 12}
+    :gap={isMobile.value ? 4 : 10}
     flexShrink="0"
   >
-    @each visibleNavLinks.value as nav {
-      <a
-        :href="nav.href"
-        :label="nav.label"
-        :target={nav.isExternal ? '_blank' : '_self'}
-        :color={isDark.value ? '#cbd5e1' : '#0284c7'}
-        :fontSize={isMobile.value ? 12 : 13}
-        fontWeight="bold"
-        underline="never"
-        keepColor="true"
-        :layoutId="'nav-' + nav.id"
-      />
+    @if (!isMobile.value) {
+      @each visibleNavLinks.value as nav {
+        <a
+          :href="nav.href"
+          :label="nav.label"
+          :target={nav.isExternal ? '_blank' : '_self'}
+          :color={isDark.value ? '#cbd5e1' : '#0284c7'}
+          :fontSize={13}
+          fontWeight="bold"
+          underline="never"
+          keepColor="true"
+          :layoutId="'nav-' + nav.id"
+        />
+      }
     }
 
     <!-- Grouped Sound & Theme Controls (Tightly Coupled on the Far Right) -->
@@ -171,9 +173,9 @@
     >
       <!-- Language Selector Dropdown (EN / ES) with reduced right padding -->
       <select
-        :width={65}
+        :width={isMobile.value ? 58 : 65}
         height="28"
-        padding="[2, 4, 2, 8]"
+        :padding={isMobile.value ? [2, 2, 2, 6] : [2, 4, 2, 8]}
         :options="langOptions"
         :value="currentLocale.value"
         :backgroundColor={isDark.value ? 'rgba(22, 32, 50, 0.9)' : 'rgba(241, 245, 249, 0.9)'}
@@ -186,7 +188,7 @@
         optionGap="2"
         dropdownSelectedBg="#0284c7"
         borderRadius="8"
-        fontSize="11"
+        :fontSize={isMobile.value ? 10 : 11}
         fontWeight="bold"
         @change="handleLangSelect"
       />
@@ -199,9 +201,9 @@
         borderWidth="1"
         :borderColor={isDark.value ? '#1e293b' : '#cbd5e1'}
         borderRadius="8"
-        padding="[5, 8]"
+        :padding={isMobile.value ? [4, 6] : [5, 8]}
         height="28"
-        fontSize="11"
+        :fontSize={isMobile.value ? 10 : 11}
         fontWeight="bold"
         disableActive="true"
         @click="handleSound"
@@ -216,9 +218,9 @@
         borderWidth="1"
         :borderColor={isDark.value ? '#1e293b' : '#cbd5e1'}
         borderRadius="8"
-        padding="[5, 8]"
+        :padding={isMobile.value ? [4, 6] : [5, 8]}
         height="28"
-        fontSize="11"
+        :fontSize={isMobile.value ? 10 : 11}
         fontWeight="bold"
         disableActive="true"
         @click="handleTheme"

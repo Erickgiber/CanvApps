@@ -139,14 +139,16 @@
     flexShrink="0"
   >
 
-    <!-- Tab Navigation Pills -->
+    <!-- Tab Navigation Pills Carousel -->
     <view
       width="100%"
       maxWidth="1120"
       flexDirection="row"
       alignItems="center"
-      flexWrap="wrap"
-      :gap={isMobile.value ? 6 : 8}
+      :overflow={isMobile.value ? 'auto' : 'visible'}
+      :flexWrap={isMobile.value ? 'nowrap' : 'wrap'}
+      :padding={isMobile.value ? [6, 2, 8, 2] : [4, 0]}
+      :gap={isMobile.value ? 8 : 8}
       flexShrink="0"
     >
       <button
@@ -154,10 +156,11 @@
         :backgroundColor={activeTab.value === 'quickstart' ? '#0284c7' : (isDark.value ? '#162032' : '#f1f5f9')}
         :hoverBackgroundColor={activeTab.value === 'quickstart' ? '#0369a1' : (isDark.value ? '#1e293b' : '#e2e8f0')}
         :labelColor={activeTab.value === 'quickstart' ? '#ffffff' : (isDark.value ? '#cbd5e1' : '#475569')}
-        borderRadius="8"
-        :padding={isMobile.value ? [6, 10] : [8, 16]}
-        :fontSize={isMobile.value ? 11 : 12}
+        borderRadius="10"
+        :padding={isMobile.value ? [7, 12] : [8, 16]}
+        :fontSize={isMobile.value ? 12 : 12}
         fontWeight="bold"
+        flexShrink="0"
         disableActive="true"
         @click="() => setDocTab('quickstart')"
       />
@@ -167,10 +170,11 @@
         :backgroundColor={activeTab.value === 'components' ? '#0284c7' : (isDark.value ? '#162032' : '#f1f5f9')}
         :hoverBackgroundColor={activeTab.value === 'components' ? '#0369a1' : (isDark.value ? '#1e293b' : '#e2e8f0')}
         :labelColor={activeTab.value === 'components' ? '#ffffff' : (isDark.value ? '#cbd5e1' : '#475569')}
-        borderRadius="8"
-        :padding={isMobile.value ? [6, 10] : [8, 16]}
-        :fontSize={isMobile.value ? 11 : 12}
+        borderRadius="10"
+        :padding={isMobile.value ? [7, 12] : [8, 16]}
+        :fontSize={isMobile.value ? 12 : 12}
         fontWeight="bold"
+        flexShrink="0"
         disableActive="true"
         @click="() => setDocTab('components')"
       />
@@ -178,12 +182,13 @@
       <button
         :label="t.value.docs.tabs.attributes"
         :backgroundColor={activeTab.value === 'attributes' ? '#0284c7' : (isDark.value ? '#162032' : '#f1f5f9')}
-        :hoverBackgroundColor={activeTab.value === 'attributes' ? '#0369a1' : (isDark.value ? '#1e293b' : '#f1f5f9')}
+        :hoverBackgroundColor={activeTab.value === 'attributes' ? '#0369a1' : (isDark.value ? '#1e293b' : '#e2e8f0')}
         :labelColor={activeTab.value === 'attributes' ? '#ffffff' : (isDark.value ? '#cbd5e1' : '#475569')}
-        borderRadius="8"
-        :padding={isMobile.value ? [6, 10] : [8, 16]}
-        :fontSize={isMobile.value ? 11 : 12}
+        borderRadius="10"
+        :padding={isMobile.value ? [7, 12] : [8, 16]}
+        :fontSize={isMobile.value ? 12 : 12}
         fontWeight="bold"
+        flexShrink="0"
         disableActive="true"
         @click="() => setDocTab('attributes')"
       />
@@ -191,12 +196,13 @@
       <button
         :label="t.value.docs.tabs.layout"
         :backgroundColor={activeTab.value === 'layout' ? '#0284c7' : (isDark.value ? '#162032' : '#f1f5f9')}
-        :hoverBackgroundColor={activeTab.value === 'layout' ? '#0369a1' : (isDark.value ? '#1e293b' : '#f1f5f9')}
+        :hoverBackgroundColor={activeTab.value === 'layout' ? '#0369a1' : (isDark.value ? '#1e293b' : '#e2e8f0')}
         :labelColor={activeTab.value === 'layout' ? '#ffffff' : (isDark.value ? '#cbd5e1' : '#475569')}
-        borderRadius="8"
-        :padding={isMobile.value ? [6, 10] : [8, 16]}
-        :fontSize={isMobile.value ? 11 : 12}
+        borderRadius="10"
+        :padding={isMobile.value ? [7, 12] : [8, 16]}
+        :fontSize={isMobile.value ? 12 : 12}
         fontWeight="bold"
+        flexShrink="0"
         disableActive="true"
         @click="() => setDocTab('layout')"
       />
@@ -204,12 +210,13 @@
       <button
         :label="t.value.docs.tabs.signals"
         :backgroundColor={activeTab.value === 'signals' ? '#0284c7' : (isDark.value ? '#162032' : '#f1f5f9')}
-        :hoverBackgroundColor={activeTab.value === 'signals' ? '#0369a1' : (isDark.value ? '#1e293b' : '#f1f5f9')}
+        :hoverBackgroundColor={activeTab.value === 'signals' ? '#0369a1' : (isDark.value ? '#1e293b' : '#e2e8f0')}
         :labelColor={activeTab.value === 'signals' ? '#ffffff' : (isDark.value ? '#cbd5e1' : '#475569')}
-        borderRadius="8"
-        :padding={isMobile.value ? [6, 10] : [8, 16]}
-        :fontSize={isMobile.value ? 11 : 12}
+        borderRadius="10"
+        :padding={isMobile.value ? [7, 12] : [8, 16]}
+        :fontSize={isMobile.value ? 12 : 12}
         fontWeight="bold"
+        flexShrink="0"
         disableActive="true"
         @click="() => setDocTab('signals')"
       />
@@ -217,12 +224,13 @@
       <button
         :label="t.value.docs.tabs.cli"
         :backgroundColor={activeTab.value === 'cli' ? '#0284c7' : (isDark.value ? '#162032' : '#f1f5f9')}
-        :hoverBackgroundColor={activeTab.value === 'cli' ? '#0369a1' : (isDark.value ? '#1e293b' : '#f1f5f9')}
+        :hoverBackgroundColor={activeTab.value === 'cli' ? '#0369a1' : (isDark.value ? '#1e293b' : '#e2e8f0')}
         :labelColor={activeTab.value === 'cli' ? '#ffffff' : (isDark.value ? '#cbd5e1' : '#475569')}
-        borderRadius="8"
-        :padding={isMobile.value ? [6, 10] : [8, 16]}
-        :fontSize={isMobile.value ? 11 : 12}
+        borderRadius="10"
+        :padding={isMobile.value ? [7, 12] : [8, 16]}
+        :fontSize={isMobile.value ? 12 : 12}
         fontWeight="bold"
+        flexShrink="0"
         disableActive="true"
         @click="() => setDocTab('cli')"
       />

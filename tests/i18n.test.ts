@@ -56,7 +56,7 @@ assert.strictEqual(t.value.header.navHome, 'Home');
 assert.strictEqual(t.value.showcase.galleryAction, 'Explore Gallery →');
 assert.strictEqual(t.value.showcase.musicAction, 'Launch Player →');
 assert.strictEqual(t.value.gallery.allCategory, 'All');
-assert.strictEqual(t.value.music.title, 'Pro Music Studio');
+assert.strictEqual(t.value.music.title, 'Music Player');
 console.log('  ✓ Signals reactively update translation dictionary on locale change');
 
 console.log('\n🎉 All i18n tests passed successfully!\n');
